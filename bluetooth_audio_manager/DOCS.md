@@ -1,18 +1,27 @@
 > **Patched build (chrisch4n, branch `chrischan`).** Based on scyto's
-> `dev` branch (v2.1.0 plus the UI escaping fix) with four fixes:
+> `dev` branch (v2.1.0 plus the UI escaping fix). Fixes for the issues
+> reported upstream:
 >
-> 1. **Reconnect after a failed manual connect** — a force-reconnect or
->    UI/API connect that fails no longer switches off auto-reconnect for that
->    device (based on Cayouche1989@2c38ea0).
-> 2. **MPD self-heal** — if a device is connected and its PulseAudio sink
->    exists but its MPD daemon is not running for 10 s, MPD is started
->    (at most once per 30 s per device). Log line: `... starting it (self-heal)`.
-> 3. **Adapter re-index** — when the Bluetooth adapter this app uses (matched
->    by MAC) disappears and comes back, e.g. as `hci2` instead of `hci0`, the
->    app restarts itself after 5 s instead of running on with stale D-Bus paths.
-> 4. **MPD stream volume** — every new MPD stream on a Bluetooth sink is set
->    to 100 % in PulseAudio, so a stale saved stream volume can never make a
->    speaker quieter than MPD/HA show (slawa19@0a5e806; complements #285).
+> - **#315 Adapter re-index** — when the Bluetooth adapter this app uses
+>   (matched by MAC) disappears and comes back, e.g. as `hci2` instead of
+>   `hci0`, the app restarts itself after 5 s instead of running on with
+>   stale D-Bus paths. Nothing happens if the adapter does not come back.
+> - **#316 MPD after reconnect** — a speaker that reconnects by itself
+>   (e.g. after a power cycle) now gets its MPD daemon; in addition a
+>   connected speaker with a sink but no MPD for 10 s is healed
+>   (at most once per 30 s). Log line: `... starting it (self-heal)`.
+> - **#317 Auto-reconnect after force-reconnect** — a failed manual or
+>   forced connect hands the device back to the reconnect scheduler
+>   (based on Cayouche1989@2c38ea0), and the "user-initiated disconnect"
+>   flag expires after 30 s instead of swallowing an unrelated later drop.
+> - **#318 Streams mixing on one speaker** — an MPD stream that PulseAudio
+>   moves onto another speaker's sink is moved straight back to its own
+>   (at most 3 times per minute per stream).
+> - **#319 Discovery vs. playback** — no silent RSSI discovery bursts while
+>   audio is running; streams playing during a manual scan are restarted
+>   one by one when it ends; sink listing no longer spawns `pactl` each call.
+> - **MPD stream volume** — every new MPD stream is set to 100 % in
+>   PulseAudio (slawa19@0a5e806; complements #285).
 >
 > Built locally by the Supervisor from this repository; no prebuilt image.
 
