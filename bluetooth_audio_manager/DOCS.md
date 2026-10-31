@@ -23,6 +23,14 @@
 > - **MPD stream volume** — every new MPD stream is set to 100 % in
 >   PulseAudio (slawa19@0a5e806; complements #285).
 >
+> Optimisations:
+>
+> - **Repeat for live radio** — MPD runs with repeat on, so a stream the
+>   server ends is re-opened at once instead of falling silent. More than 5
+>   stream ends in 60 s switch repeat off for 10 minutes.
+> - **Fewer D-Bus signals** — only ObjectManager signals and the own
+>   adapter's subtree are subscribed (all BlueZ signals with log_level debug).
+>
 > Built locally by the Supervisor from this repository; no prebuilt image.
 
 # Bluetooth Audio Manager
