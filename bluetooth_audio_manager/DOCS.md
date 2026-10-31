@@ -28,6 +28,12 @@
 > - **Repeat for live radio** — MPD runs with repeat on, so a stream the
 >   server ends is re-opened at once instead of falling silent. More than 5
 >   stream ends in 60 s switch repeat off for 10 minutes.
+> - **Retry after a stream error** — if MPD stops because the stream cannot
+>   be opened (internet or DNS down, station offline) it is retried after
+>   5, 10, 20 s and then every 60 s until it plays again. A plain stop or
+>   pause is left alone; a stop issued while the error is still pending is
+>   indistinguishable from it, so to really stop during an outage switch the
+>   speaker off as usual.
 > - **Fewer D-Bus signals** — only ObjectManager signals and the own
 >   adapter's subtree are subscribed (all BlueZ signals with log_level debug).
 >
