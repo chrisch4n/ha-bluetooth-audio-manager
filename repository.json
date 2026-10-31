@@ -1,5 +1,5 @@
 {
-  "name": "Bluetooth Audio Manager for Home Assistant",
-  "url": "https://github.com/scyto/ha-bluetooth-audio-manager",
-  "maintainer": "scyto"
+  "name": "Bluetooth Audio Manager (Chrischan patches)",
+  "url": "https://github.com/chrisch4n/ha-bluetooth-audio-manager",
+  "maintainer": "chrisch4n"
 }
