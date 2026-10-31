@@ -1,7 +1,7 @@
 name: "Bluetooth Audio Manager (Chrischan)"
 version: "2.1.0-cc.1"
 slug: bluetooth_audio_manager
-description: "Patched build of scyto's add-on (reconnect, MPD self-heal, adapter re-index). Manage Bluetooth audio device connections (A2DP) with persistent pairing, auto-reconnect, and AppArmor security."
+description: "Patched build of scyto's add-on (reconnect, MPD self-heal, adapter re-index, MPD stream volume). Manage Bluetooth audio device connections (A2DP) with persistent pairing, auto-reconnect, and AppArmor security."
 url: "https://github.com/chrisch4n/ha-bluetooth-audio-manager/tree/chrischan"
 # No "image:" — the Supervisor builds this folder locally (see tools/sync-addon-build.sh).
 arch:
