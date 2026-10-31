@@ -1,3 +1,18 @@
+> **Patched build (chrisch4n, branch `chrischan`).** Based on scyto's
+> `dev` branch (v2.1.0 plus the UI escaping fix) with three fixes:
+>
+> 1. **Reconnect after a failed manual connect** — a force-reconnect or
+>    UI/API connect that fails no longer switches off auto-reconnect for that
+>    device (based on Cayouche1989@2c38ea0).
+> 2. **MPD self-heal** — if a device is connected and its PulseAudio sink
+>    exists but its MPD daemon is not running for 10 s, MPD is started
+>    (at most once per 30 s per device). Log line: `... starting it (self-heal)`.
+> 3. **Adapter re-index** — when the Bluetooth adapter this app uses (matched
+>    by MAC) disappears and comes back, e.g. as `hci2` instead of `hci0`, the
+>    app restarts itself after 5 s instead of running on with stale D-Bus paths.
+>
+> Built locally by the Supervisor from this repository; no prebuilt image.
+
 # Bluetooth Audio Manager
 
 Manage Bluetooth audio device connections (A2DP speakers and receivers) with
