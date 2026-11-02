@@ -20,7 +20,8 @@
 > - **#319 Discovery vs. playback** — no silent RSSI discovery bursts while
 >   audio is running (these caused a short dropout about once a minute);
 >   streams playing during a manual scan are restarted one by one when it
->   ends; sink listing no longer spawns `pactl` each call.
+>   ends; sink listing spawns `pactl` only when a Bluetooth sink is new or
+>   recreated, never on a timer.
 > - **Sink state detection** — PulseAudio running/idle transitions are now
 >   recognised (upstream compared pulsectl's enum repr with `"running"`, so
 >   idle-mode handling and AVRCP status updates never fired).
@@ -48,6 +49,13 @@
 >   speaker off as usual.
 > - **Fewer D-Bus signals** — only ObjectManager signals and the own
 >   adapter's subtree are subscribed (all BlueZ signals with log_level debug).
+>
+> Diagnostics:
+>
+> - `GET /api/diagnostics/audio-logs?grep=Skipping&lines=2000` — the HAOS
+>   audio plugin's PulseAudio log (read through the Supervisor, timestamped).
+>   PulseAudio logs `Skipping N us ... in audio stream` when a Bluetooth link
+>   did not take audio in time, which lines dropouts up with the log.
 >
 > Built locally by the Supervisor from this repository; no prebuilt image.
 

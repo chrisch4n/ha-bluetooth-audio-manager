@@ -1,5 +1,5 @@
 name: "Bluetooth Audio Manager (Chrischan)"
-version: "2.1.0-cc.7"
+version: "2.1.0-cc.8"
 slug: bluetooth_audio_manager
 description: "Patched build of scyto's add-on (fixes for #315-#319 plus MPD stream volume). Manage Bluetooth audio device connections (A2DP) with persistent pairing, auto-reconnect, and AppArmor security."
 url: "https://github.com/chrisch4n/ha-bluetooth-audio-manager/tree/chrischan"
