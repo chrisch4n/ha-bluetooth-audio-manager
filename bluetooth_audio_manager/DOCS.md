@@ -55,7 +55,14 @@
 > - `GET /api/diagnostics/audio-logs?grep=Skipping&lines=2000` — the HAOS
 >   audio plugin's PulseAudio log (read through the Supervisor, timestamped).
 >   PulseAudio logs `Skipping N us ... in audio stream` when a Bluetooth link
->   did not take audio in time, which lines dropouts up with the log.
+>   did not take audio in time. Note: on HAOS the audio plugin's
+>   PulseAudio does not write to the journal, so this usually stays empty.
+> - `POST /api/diagnostics/gap-monitor {"minutes": 10}` (result:
+>   `GET /api/diagnostics/gap-monitor`) — records each speaker's PulseAudio
+>   monitor and logs every ≥30 ms stretch of digital silence
+>   (`Audio gap before Bluetooth: ...`). Gaps there = audio already missing
+>   before Bluetooth (player/stream/PulseAudio); audible dropouts without
+>   gaps there = lost on the radio link or in the speaker.
 >
 > Built locally by the Supervisor from this repository; no prebuilt image.
 
