@@ -60,9 +60,11 @@
 > - `POST /api/diagnostics/gap-monitor {"minutes": 10}` (result:
 >   `GET /api/diagnostics/gap-monitor`) — records each speaker's PulseAudio
 >   monitor and logs every ≥30 ms stretch of digital silence
->   (`Audio gap before Bluetooth: ...`). Gaps there = audio already missing
->   before Bluetooth (player/stream/PulseAudio); audible dropouts without
->   gaps there = lost on the radio link or in the speaker.
+>   (`Audio gap before Bluetooth: ...`, audio already missing before
+>   Bluetooth) and every ≥60 ms pause of PulseAudio's Bluetooth output
+>   (`Bluetooth output stalled: ...`, the link/adapter/USB stopped taking
+>   data). `stall_clusters` groups stalls that hit several speakers at once
+>   (shared path) and gives the spacing between them.
 >
 > Built locally by the Supervisor from this repository; no prebuilt image.
 
