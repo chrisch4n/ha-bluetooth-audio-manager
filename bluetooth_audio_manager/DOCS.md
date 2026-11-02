@@ -29,6 +29,11 @@
 > - **MPD stream volume** — every new MPD stream is set to 100 % in
 >   PulseAudio (slawa19@0a5e806; complements #285).
 >
+> - **Lock volume at 100 %** (device settings → MPD section, or
+>   `PUT /api/devices/<mac>/settings {"volume_lock": true}`) — holds MPD
+>   volume, the MPD stream and the speaker's own (AVRCP) volume at 100 %;
+>   any change is undone within seconds (speaker resets at most 5× a minute).
+>
 > Optimisations:
 >
 > - **Repeat for live radio** — MPD runs with repeat on, so a stream the
