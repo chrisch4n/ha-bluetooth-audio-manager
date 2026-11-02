@@ -18,8 +18,14 @@
 >   moves onto another speaker's sink is moved straight back to its own
 >   (at most 3 times per minute per stream).
 > - **#319 Discovery vs. playback** — no silent RSSI discovery bursts while
->   audio is running; streams playing during a manual scan are restarted
->   one by one when it ends; sink listing no longer spawns `pactl` each call.
+>   audio is running (these caused a short dropout about once a minute);
+>   streams playing during a manual scan are restarted one by one when it
+>   ends; sink listing no longer spawns `pactl` each call.
+> - **Sink state detection** — PulseAudio running/idle transitions are now
+>   recognised (upstream compared pulsectl's enum repr with `"running"`, so
+>   idle-mode handling and AVRCP status updates never fired).
+> - **HA Bluetooth badge** — an adapter set to *Ignore* in HA's Bluetooth
+>   integration no longer counts as HA-managed.
 > - **MPD stream volume** — every new MPD stream is set to 100 % in
 >   PulseAudio (slawa19@0a5e806; complements #285).
 >
