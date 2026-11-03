@@ -737,6 +737,41 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
 
+  /api/diagnostics/pulse-bluetooth:
+    get:
+      tags: [Diagnostics]
+      summary: PulseAudio Bluetooth module arguments
+      description: >
+        Lists the loaded `module-bluetooth-discover` / `module-bluez5-discover`
+        with their arguments and reports the A2DP bitrate recovery interval
+        in effect (`output_rate_refresh_interval_ms`, PulseAudio default
+        500 ms). Read-only; the interval is set through the audio plugin's
+        `/data/custom.pa` (see the documentation).
+      responses:
+        "200":
+          description: Modules and interval.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  modules:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index: { type: integer }
+                        name: { type: string }
+                        argument: { type: string }
+                  output_rate_refresh_interval_ms: { type: integer, nullable: true }
+                  effective_interval_ms: { type: integer }
+                  custom: { type: boolean }
+        "503":
+          description: PulseAudio not connected.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
   /api/diagnostics/gap-monitor:
     get:
       tags: [Diagnostics]
@@ -1283,20 +1318,6 @@ components:
           type: integer
           minimum: 5
           maximum: 120
-        bt_bitrate_recovery_seconds:
-          type: integer
-          minimum: 0
-          maximum: 86400
-          default: 0
-          description: >
-            How long PulseAudio waits before raising the Bluetooth (A2DP)
-            bitrate again after an overload — its module-bluez5-discover
-            argument `output_rate_refresh_interval_ms`. PulseAudio's default
-            is 0.5 s, which with several speakers on one adapter climbs
-            straight back into the next overload and dropout. `0` leaves the
-            default. Changing it reloads PulseAudio's Bluetooth module (a few
-            seconds without Bluetooth audio, streams are restored); the app
-            re-applies it after a PulseAudio restart.
         volume_lock_all:
           type: boolean
           description: >

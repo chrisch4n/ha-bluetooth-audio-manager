@@ -76,9 +76,6 @@ class PulseAudioManager:
         self._volume_callback = None
         self._state_callback = None
         self._idle_callback = None
-        # Called after the event connection to PulseAudio was re-established
-        # (PulseAudio / audio plugin restarted underneath us).
-        self._server_reconnect_callback = None
         # stream index → monotonic times we moved it back to its own sink (#318)
         self._pin_history: dict[int, list[float]] = {}
         # Optional fallback for _stream_owner(): proplist → speaker MAC
@@ -194,15 +191,6 @@ class PulseAudioManager:
         """
         self._idle_callback = callback
 
-    def on_server_reconnect(self, callback) -> None:
-        """Register ``callback()`` for when the PA event connection comes back.
-
-        Not called for the first connection — only when it had been lost,
-        e.g. because the audio plugin restarted and loaded its default
-        modules again.
-        """
-        self._server_reconnect_callback = callback
-
     async def start_event_monitor(self) -> None:
         """Subscribe to PulseAudio sink events via pulsectl_asyncio.
 
@@ -232,7 +220,6 @@ class PulseAudioManager:
         """
         retry_delay = 2
         bt_sink_states: dict[str, str] = {}
-        connected_before = False
         while True:
             try:
                 _pe = PulseAsync("bt-audio-events")
@@ -241,12 +228,6 @@ class PulseAudioManager:
                 try:
                     retry_delay = 2  # reset on successful connection
                     logger.info("PA event subscription started (sink and sink-input events)")
-                    if connected_before and self._server_reconnect_callback:
-                        try:
-                            self._server_reconnect_callback()
-                        except Exception as e:
-                            logger.debug("PA reconnect callback failed: %s", e)
-                    connected_before = True
                     async for event in _pe.subscribe_events("sink", "sink_input", "server"):
                         if event.facility == "sink" and event.t == "change" and self._pulse:
                             try:
@@ -816,69 +797,35 @@ class PulseAudioManager:
             logger.debug("Failed to normalize new MPD stream %d: %s", stream_index, e)
         return False
 
-    # -- module-bluez5-discover arguments ---------------------------------
+    # -- Bluetooth module arguments (read-only) ----------------------------
     #
     # PulseAudio lowers the A2DP encoder bitrate (SBC: bitpool -5) whenever a
-    # Bluetooth socket falls more than two blocks behind — and throws the
-    # late audio away, which is the audible dropout.  It then raises the
-    # bitrate again (+1) every ``output_rate_refresh_interval_ms`` (default
-    # 500 ms) while writes keep up.  With an adapter at its airtime limit
-    # (several speakers on one radio) that climbs straight back into the
-    # next overload.  A longer interval lets the bitrate settle just below
-    # the limit.  The value is a module-bluez5-discover argument.
+    # Bluetooth socket falls more than two blocks behind and throws the late
+    # audio away (the audible dropout).  It raises the bitrate again (+1)
+    # every ``output_rate_refresh_interval_ms`` (default 500 ms), which with
+    # several speakers on one adapter climbs straight back into the next
+    # overload.  The interval is an argument of module-bluetooth-discover /
+    # module-bluez5-discover and can only be set safely when PulseAudio
+    # starts (reloading the module at runtime crashed PulseAudio on HAOS),
+    # i.e. through the audio plugin's /data/custom.pa — see DOCS.md.  The
+    # app only reports what is in effect.
 
     BT_DISCOVER_MODULE = "module-bluez5-discover"
     RATE_REFRESH_ARG = "output_rate_refresh_interval_ms"
+    RATE_REFRESH_DEFAULT_MS = 500
 
-    async def bt_discover_module(self) -> tuple[int, str] | None:
-        """``(index, argument)`` of the loaded module-bluez5-discover, or None."""
-        for module in await self._pulse.module_list():
-            if module.name == self.BT_DISCOVER_MODULE:
-                return module.index, module.argument or ""
-        return None
+    async def bt_module_args(self) -> list[dict]:
+        """Loaded Bluetooth discovery modules with their arguments."""
+        return [
+            {"index": m.index, "name": m.name, "argument": m.argument or ""}
+            for m in await self._pulse.module_list()
+            if m.name in ("module-bluetooth-discover", self.BT_DISCOVER_MODULE)
+        ]
 
     @classmethod
     def rate_refresh_from_args(cls, args: str) -> int | None:
         match = re.search(rf"(?:^|\s){cls.RATE_REFRESH_ARG}=(\d+)", args or "")
         return int(match.group(1)) if match else None
-
-    @classmethod
-    def args_with_rate_refresh(cls, args: str, interval_ms: int | None) -> str:
-        """*args* with the refresh interval set (or removed for None)."""
-        kept = [
-            part for part in (args or "").split()
-            if not part.startswith(cls.RATE_REFRESH_ARG + "=")
-        ]
-        if interval_ms:
-            kept.append(f"{cls.RATE_REFRESH_ARG}={int(interval_ms)}")
-        return " ".join(kept)
-
-    async def reload_bt_discover_module(self, new_args: str, restore_args: str) -> bool:
-        """Unload module-bluez5-discover and load it with *new_args*.
-
-        All Bluetooth cards and sinks disappear while the module is out, and
-        the A2DP streams have to be re-established afterwards.  If loading
-        with *new_args* fails, the module is loaded again with
-        *restore_args* so Bluetooth audio is not left without its module.
-        Returns True if *new_args* are in effect.
-        """
-        current = await self.bt_discover_module()
-        if current is not None:
-            await self._pulse.module_unload(current[0])
-            logger.info("Unloaded %s (index %d)", self.BT_DISCOVER_MODULE, current[0])
-            await asyncio.sleep(2)
-        try:
-            await self._pulse.module_load(self.BT_DISCOVER_MODULE, new_args)
-            logger.info("Loaded %s with '%s'", self.BT_DISCOVER_MODULE, new_args)
-            return True
-        except Exception as e:
-            logger.error("Loading %s with '%s' failed: %s", self.BT_DISCOVER_MODULE, new_args, e)
-        try:
-            await self._pulse.module_load(self.BT_DISCOVER_MODULE, restore_args)
-            logger.warning("Restored %s with '%s'", self.BT_DISCOVER_MODULE, restore_args)
-        except Exception as e:
-            logger.error("Restoring %s failed: %s", self.BT_DISCOVER_MODULE, e)
-        return False
 
     async def set_sink_volume(self, sink_name: str, volume_pct: int) -> bool:
         """Set PulseAudio sink volume (0-100%).

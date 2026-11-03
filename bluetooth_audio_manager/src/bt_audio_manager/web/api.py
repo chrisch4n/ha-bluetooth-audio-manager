@@ -499,20 +499,14 @@ def create_api_routes(
                 errors.append("scan_duration_seconds must be an integer between 5 and 120")
         if "volume_lock_all" in body and not isinstance(body["volume_lock_all"], bool):
             errors.append("volume_lock_all must be a boolean")
-        if "bt_bitrate_recovery_seconds" in body:
-            v = body["bt_bitrate_recovery_seconds"]
-            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 86400:
-                errors.append("bt_bitrate_recovery_seconds must be an integer between 0 and 86400")
 
         if errors:
             return web.json_response({"error": "; ".join(errors)}, status=400)
 
         # Apply to live config
         allowed = {"auto_reconnect", "reconnect_interval_seconds",
-                    "reconnect_max_backoff_seconds", "scan_duration_seconds",
-                    "bt_bitrate_recovery_seconds"}
+                    "reconnect_max_backoff_seconds", "scan_duration_seconds"}
         was_auto_reconnect = manager.config.auto_reconnect
-        old_bitrate_recovery = manager.config.bt_bitrate_recovery_seconds
         for key in allowed:
             if key in body:
                 setattr(manager.config, key, body[key])
@@ -527,12 +521,6 @@ def create_api_routes(
 
         # Persist
         manager.config.save_settings()
-
-        # Bitrate recovery lives in PulseAudio's Bluetooth module: applying it
-        # reloads the module (a few seconds without Bluetooth audio), so it
-        # runs in the background and only when the value really changed.
-        if manager.config.bt_bitrate_recovery_seconds != old_bitrate_recovery:
-            manager._fire_and_forget(manager.ensure_bt_bitrate_recovery(force=True))
 
         # Volume lock for all devices: stored per device, not in settings.json
         if "volume_lock_all" in body:
@@ -686,6 +674,25 @@ def create_api_routes(
             "fetched": len(fetched),
             "count": len(matched),
             "lines": matched,
+        })
+
+    @routes.get("/api/diagnostics/pulse-bluetooth")
+    async def diagnostics_pulse_bluetooth(request: web.Request) -> web.Response:
+        """PulseAudio's Bluetooth discovery modules and the bitrate recovery in effect."""
+        pulse = manager.pulse
+        if not pulse:
+            return web.json_response({"error": "PulseAudio not connected"}, status=503)
+        try:
+            modules = await pulse.bt_module_args()
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+        bluez5 = next((m for m in modules if m["name"] == pulse.BT_DISCOVER_MODULE), None)
+        interval = pulse.rate_refresh_from_args(bluez5["argument"]) if bluez5 else None
+        return web.json_response({
+            "modules": modules,
+            "output_rate_refresh_interval_ms": interval,
+            "effective_interval_ms": interval or pulse.RATE_REFRESH_DEFAULT_MS,
+            "custom": interval is not None,
         })
 
     @routes.get("/api/diagnostics/gap-monitor")
