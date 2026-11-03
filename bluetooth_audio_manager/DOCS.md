@@ -36,15 +36,22 @@
 >   volume, the MPD stream and the speaker's own (AVRCP) volume at 100 %;
 >   any change is undone within seconds (speaker resets at most 5× a minute).
 >
-> - **Bluetooth bitrate recovery** (App Settings, `PUT /api/settings
->   {"bt_bitrate_recovery_seconds": 600}`) — after a Bluetooth overload
->   PulseAudio drops a little audio and lowers the A2DP bitrate, then raises
->   it again every 0.5 s. With several speakers on one adapter that climbs
->   straight into the next overload (a short dropout about once a minute).
->   A longer interval lets the bitrate settle just below the adapter's limit.
->   Applying it reloads PulseAudio's Bluetooth module (a few seconds of
->   silence, A2DP is restored automatically); the app re-applies it after a
->   PulseAudio restart. 0 = PulseAudio default.
+> - **Several speakers on one adapter: short dropout about once a minute** —
+>   after a Bluetooth overload PulseAudio drops a little audio and lowers the
+>   A2DP bitrate, then raises it again every 0.5 s and runs straight into the
+>   next overload. A longer interval lets the bitrate settle just below the
+>   adapter's limit. It can only be set when PulseAudio starts (reloading
+>   the module at runtime crashes PulseAudio on HAOS): with protection mode
+>   of the *Advanced SSH & Web Terminal* app temporarily off, run
+>
+>   ```
+>   docker exec hassio_audio sh -c 'printf "%s\n" "unload-module module-bluetooth-discover" "load-module module-bluetooth-discover output_rate_refresh_interval_ms=600000" > /data/custom.pa'
+>   ```
+>
+>   then restart the audio plugin (`ha audio restart`; speakers reconnect).
+>   The file survives reboots and updates. Check with
+>   `GET /api/diagnostics/pulse-bluetooth`; undo with
+>   `docker exec hassio_audio rm /data/custom.pa` and an audio restart.
 >
 > Optimisations:
 >
