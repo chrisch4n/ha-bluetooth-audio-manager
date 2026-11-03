@@ -292,6 +292,22 @@
 
           <hr>
 
+          <!-- Bluetooth bitrate recovery -->
+          <div class="mb-3">
+            <label for="setting-bt-bitrate-recovery" class="form-label">Bluetooth Bitrate Recovery (seconds)</label>
+            <input type="number" class="form-control" id="setting-bt-bitrate-recovery" min="0" max="86400" step="1">
+            <div class="form-text">
+              After a Bluetooth overload PulseAudio drops a little audio and lowers the bitrate,
+              then raises it again every 0.5&nbsp;s by default &mdash; with several speakers on one
+              adapter that leads straight into the next dropout. A longer interval (e.g. 600) lets
+              the bitrate settle just below the limit. 0 = PulseAudio default.
+              Saving a new value reloads PulseAudio's Bluetooth module: all speakers go
+              quiet for a few seconds.
+            </div>
+          </div>
+
+          <hr>
+
           <!-- Volume lock (all devices) -->
           <div class="mb-3">
             <div class="form-check form-switch">

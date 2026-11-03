@@ -499,14 +499,20 @@ def create_api_routes(
                 errors.append("scan_duration_seconds must be an integer between 5 and 120")
         if "volume_lock_all" in body and not isinstance(body["volume_lock_all"], bool):
             errors.append("volume_lock_all must be a boolean")
+        if "bt_bitrate_recovery_seconds" in body:
+            v = body["bt_bitrate_recovery_seconds"]
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 86400:
+                errors.append("bt_bitrate_recovery_seconds must be an integer between 0 and 86400")
 
         if errors:
             return web.json_response({"error": "; ".join(errors)}, status=400)
 
         # Apply to live config
         allowed = {"auto_reconnect", "reconnect_interval_seconds",
-                    "reconnect_max_backoff_seconds", "scan_duration_seconds"}
+                    "reconnect_max_backoff_seconds", "scan_duration_seconds",
+                    "bt_bitrate_recovery_seconds"}
         was_auto_reconnect = manager.config.auto_reconnect
+        old_bitrate_recovery = manager.config.bt_bitrate_recovery_seconds
         for key in allowed:
             if key in body:
                 setattr(manager.config, key, body[key])
@@ -521,6 +527,12 @@ def create_api_routes(
 
         # Persist
         manager.config.save_settings()
+
+        # Bitrate recovery lives in PulseAudio's Bluetooth module: applying it
+        # reloads the module (a few seconds without Bluetooth audio), so it
+        # runs in the background and only when the value really changed.
+        if manager.config.bt_bitrate_recovery_seconds != old_bitrate_recovery:
+            manager._fire_and_forget(manager.ensure_bt_bitrate_recovery(force=True))
 
         # Volume lock for all devices: stored per device, not in settings.json
         if "volume_lock_all" in body:

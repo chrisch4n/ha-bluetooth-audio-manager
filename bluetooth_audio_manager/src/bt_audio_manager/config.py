@@ -26,6 +26,7 @@ _SETTINGS_KEYS = {
     "reconnect_interval_seconds",
     "reconnect_max_backoff_seconds",
     "scan_duration_seconds",
+    "bt_bitrate_recovery_seconds",
 }
 
 
@@ -42,6 +43,10 @@ class AppConfig:
     reconnect_interval_seconds: int = 30
     reconnect_max_backoff_seconds: int = 300
     scan_duration_seconds: int = 30
+    # PulseAudio raises the Bluetooth bitrate again after an overload every
+    # this many seconds (module-bluez5-discover output_rate_refresh_interval_ms).
+    # 0 = leave PulseAudio's default (0.5 s).
+    bt_bitrate_recovery_seconds: int = 0
 
     @property
     def bt_adapter_is_mac(self) -> bool:
@@ -61,6 +66,7 @@ class AppConfig:
             "reconnect_interval_seconds": self.reconnect_interval_seconds,
             "reconnect_max_backoff_seconds": self.reconnect_max_backoff_seconds,
             "scan_duration_seconds": self.scan_duration_seconds,
+            "bt_bitrate_recovery_seconds": self.bt_bitrate_recovery_seconds,
         }
 
     def save_settings(self) -> None:
@@ -104,6 +110,7 @@ class AppConfig:
                 config.reconnect_interval_seconds = settings.get("reconnect_interval_seconds", 30)
                 config.reconnect_max_backoff_seconds = settings.get("reconnect_max_backoff_seconds", 300)
                 config.scan_duration_seconds = settings.get("scan_duration_seconds", 30)
+                config.bt_bitrate_recovery_seconds = settings.get("bt_bitrate_recovery_seconds", 0)
                 logger.info("Loaded settings from %s", SETTINGS_PATH)
                 return config
             except (json.JSONDecodeError, KeyError) as e:
