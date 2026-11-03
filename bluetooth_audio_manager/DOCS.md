@@ -36,6 +36,16 @@
 >   volume, the MPD stream and the speaker's own (AVRCP) volume at 100 %;
 >   any change is undone within seconds (speaker resets at most 5× a minute).
 >
+> - **Bluetooth bitrate recovery** (App Settings, `PUT /api/settings
+>   {"bt_bitrate_recovery_seconds": 600}`) — after a Bluetooth overload
+>   PulseAudio drops a little audio and lowers the A2DP bitrate, then raises
+>   it again every 0.5 s. With several speakers on one adapter that climbs
+>   straight into the next overload (a short dropout about once a minute).
+>   A longer interval lets the bitrate settle just below the adapter's limit.
+>   Applying it reloads PulseAudio's Bluetooth module (a few seconds of
+>   silence, A2DP is restored automatically); the app re-applies it after a
+>   PulseAudio restart. 0 = PulseAudio default.
+>
 > Optimisations:
 >
 > - **Repeat for live radio** — MPD runs with repeat on, so a stream the

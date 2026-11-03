@@ -1283,6 +1283,20 @@ components:
           type: integer
           minimum: 5
           maximum: 120
+        bt_bitrate_recovery_seconds:
+          type: integer
+          minimum: 0
+          maximum: 86400
+          default: 0
+          description: >
+            How long PulseAudio waits before raising the Bluetooth (A2DP)
+            bitrate again after an overload — its module-bluez5-discover
+            argument `output_rate_refresh_interval_ms`. PulseAudio's default
+            is 0.5 s, which with several speakers on one adapter climbs
+            straight back into the next overload and dropout. `0` leaves the
+            default. Changing it reloads PulseAudio's Bluetooth module (a few
+            seconds without Bluetooth audio, streams are restored); the app
+            re-applies it after a PulseAudio restart.
         volume_lock_all:
           type: boolean
           description: >

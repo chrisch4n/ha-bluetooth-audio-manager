@@ -118,6 +118,8 @@ class BluetoothAudioManager:
         # source for "is audio flowing" next to the PA event callbacks.
         self._poll_running_sinks: set[str] = set()
         self._gap_monitor = None  # audio.gap_monitor.GapMonitor while a diagnosis runs
+        self._bt_rate_lock = asyncio.Lock()
+        self._bt_rate_failed_for: int | None = None  # interval whose load failed
         self._last_signaled_volume: dict[str, int] = {}  # addr → raw 0-127
         self._last_pa_volume: dict[str, int] = {}  # addr → last PA vol% synced to MPD
         self._device_connect_time: dict[str, float] = {}  # addr → time.time()
@@ -724,6 +726,7 @@ class BluetoothAudioManager:
             self.pulse.on_sink_idle(self._on_pa_sink_idle)
             self.pulse.set_stream_owner_resolver(self._mpd_stream_owner)
             self.pulse.set_volume_lock_resolver(self._volume_locked)
+            self.pulse.on_server_reconnect(self._on_pa_server_reconnect)
             await self.pulse.start_event_monitor()
         except Exception as e:
             logger.warning("PulseAudio connection failed (will retry): %s", e)
@@ -930,6 +933,10 @@ class BluetoothAudioManager:
         self._rssi_poll_task = asyncio.create_task(self._rssi_refresh_loop())
 
         logger.info("Bluetooth Audio Manager started successfully")
+
+        # 11. PulseAudio forgets module arguments when the audio plugin
+        #     restarts (it loads its default system.pa) — re-apply ours.
+        self._fire_and_forget(self._ensure_bt_bitrate_recovery_later(self.BT_RATE_CHECK_DELAY))
 
     async def shutdown(self) -> None:
         """Graceful teardown in reverse order."""
@@ -2807,6 +2814,115 @@ class BluetoothAudioManager:
                 continue
 
         logger.error("Failed to restart audio service via Supervisor API")
+
+    # -- Bluetooth bitrate recovery (module-bluez5-discover argument) --
+
+    BT_RATE_CHECK_DELAY = 10  # s after startup / PA reconnect
+    BT_RATE_RESTORE_STAGGER = 3  # s between speakers when restoring A2DP
+
+    def _desired_rate_refresh_ms(self) -> int | None:
+        seconds = int(getattr(self.config, "bt_bitrate_recovery_seconds", 0) or 0)
+        return seconds * 1000 if seconds > 0 else None
+
+    def _on_pa_server_reconnect(self) -> None:
+        logger.info("PulseAudio connection re-established — re-checking Bluetooth module arguments")
+        self._fire_and_forget(self._ensure_bt_bitrate_recovery_later(self.BT_RATE_CHECK_DELAY))
+
+    async def _ensure_bt_bitrate_recovery_later(self, delay: float) -> None:
+        await asyncio.sleep(delay)
+        try:
+            await self.ensure_bt_bitrate_recovery()
+        except Exception as e:
+            logger.warning("Could not check the Bluetooth bitrate recovery setting: %s", e)
+
+    async def ensure_bt_bitrate_recovery(self, *, force: bool = False) -> dict:
+        """Make PulseAudio's bitrate recovery interval match the setting.
+
+        Reloads module-bluez5-discover only when its argument differs, then
+        brings the A2DP streams of connected speakers back.  A value whose
+        load failed is not retried automatically (only via *force*, i.e. a
+        settings change), so a PulseAudio that refuses it cannot cause a
+        reload loop.
+        """
+        if not self.pulse:
+            return {"applied": False, "reason": "PulseAudio not connected"}
+        async with self._bt_rate_lock:
+            desired = self._desired_rate_refresh_ms()
+            info = await self.pulse.bt_discover_module()
+            if info is None:
+                return {"applied": False, "reason": "module-bluez5-discover not loaded"}
+            _, args = info
+            current = self.pulse.rate_refresh_from_args(args)
+            if current == desired:
+                return {"applied": False, "reason": "already in effect", "interval_ms": current}
+            if not force and desired is not None and self._bt_rate_failed_for == desired:
+                return {"applied": False, "reason": "failed before", "interval_ms": current}
+
+            new_args = self.pulse.args_with_rate_refresh(args, desired)
+            logger.warning(
+                "Reloading module-bluez5-discover for Bluetooth bitrate recovery "
+                "%s (was %s) — Bluetooth audio drops for a few seconds",
+                f"{desired} ms" if desired else "PulseAudio default",
+                f"{current} ms" if current else "PulseAudio default",
+            )
+            ok = await self.pulse.reload_bt_discover_module(new_args, restore_args=args)
+            if not ok:
+                self._bt_rate_failed_for = desired
+                if await self.pulse.bt_discover_module() is None:
+                    logger.error("module-bluez5-discover could not be restored — restarting the audio service")
+                    await self._restart_audio_service()
+                    return {"applied": False, "reason": "load failed, audio service restarted"}
+            else:
+                self._bt_rate_failed_for = None
+            await asyncio.sleep(2)
+            restored = await self._restore_a2dp_after_module_reload()
+            return {
+                "applied": ok,
+                "interval_ms": desired if ok else current,
+                "speakers": restored,
+            }
+
+    async def _restore_a2dp_after_module_reload(self) -> dict[str, str]:
+        """Bring back the A2DP stream of every connected speaker.
+
+        Unloading module-bluez5-discover unregisters PulseAudio's A2DP
+        endpoints, which closes the streams; the speakers usually stay
+        connected (AVRCP).  ConnectProfile(A2DP) sets the stream up again
+        and PulseAudio creates the sink; the event monitor then moves each
+        MPD stream back onto its own speaker.  Speakers that dropped the
+        whole connection are left to the reconnect service; a stream that
+        does not come back gets a forced reconnect.
+        """
+        from .bluez.constants import A2DP_SINK_UUID
+
+        results: dict[str, str] = {}
+        for address in sorted(self._device_connect_time):
+            device = self.managed_devices.get(address)
+            if device is None:
+                continue
+            try:
+                if not await device.is_connected():
+                    results[address] = "disconnected (auto-reconnect)"
+                    continue
+                if await self.pulse.get_sink_for_address(address):
+                    results[address] = "sink back by itself"
+                    continue
+                await device.connect_profile(A2DP_SINK_UUID)
+                if await self.pulse.wait_for_bt_sink(address, timeout=15):
+                    results[address] = "A2DP restored"
+                else:
+                    results[address] = "forced reconnect"
+                    await self.force_reconnect_device(address)
+            except Exception as e:
+                results[address] = f"forced reconnect after error: {e}"
+                logger.warning("Restoring A2DP for %s failed: %s — forcing a reconnect", address, e)
+                try:
+                    await self.force_reconnect_device(address)
+                except Exception as e2:
+                    logger.warning("Forced reconnect of %s failed: %s", address, e2)
+            await asyncio.sleep(self.BT_RATE_RESTORE_STAGGER)
+        logger.info("A2DP after module reload: %s", results)
+        return results
 
     GAP_MONITOR_MAX_MINUTES = 60
 
