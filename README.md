@@ -1,5 +1,13 @@
 # Bluetooth Audio Manager for Home Assistant
 
+> **Fork note (branch `chrischan`).** Patched build of scyto's add-on with fixes
+> for #315–#319, volume lock, diagnostics and a PulseAudio setting against
+> dropouts with several speakers on one adapter — see the notice at the top of
+> [`bluetooth_audio_manager/DOCS.md`](bluetooth_audio_manager/DOCS.md). The setup
+> it runs in (three radio streams to Bluetooth FM transmitters) is documented in
+> [`docs/chrischan-radiostream.md`](docs/chrischan-radiostream.md), with the
+> Home Assistant configuration in [`docs/chrischan-ha/`](docs/chrischan-ha/).
+
 [![GitHub Release](https://img.shields.io/github/v/release/scyto/ha-bluetooth-audio-manager?style=flat-square)](https://github.com/scyto/ha-bluetooth-audio-manager/releases)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/scyto/ha-bluetooth-audio-manager/build.yaml?branch=main&style=flat-square)](https://github.com/scyto/ha-bluetooth-audio-manager/actions/workflows/build.yaml)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/scyto?style=flat-square)](https://github.com/sponsors/scyto)
