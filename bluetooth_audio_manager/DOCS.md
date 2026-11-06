@@ -53,6 +53,13 @@
 >   `GET /api/diagnostics/pulse-bluetooth`; undo with
 >   `docker exec hassio_audio rm /data/custom.pa` and an audio restart.
 >
+> - **Prefer 44.1 kHz** (App Settings, on by default) — whoever sets up an
+>   A2DP stream picks its format: the app's connects run at 44.1 kHz, but a
+>   speaker connecting by itself after a power cycle may pick 48 kHz
+>   (resampling, ~9 % more radio time). Such a stream is closed and re-opened
+>   from the app a few seconds after the connect (MPD paused meanwhile); at
+>   most two attempts per speaker in 10 minutes.
+>
 > Optimisations:
 >
 > - **Repeat for live radio** — MPD runs with repeat on, so a stream the
