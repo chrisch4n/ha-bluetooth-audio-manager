@@ -1,0 +1,139 @@
+# Teil der Home-Assistant-Konfiguration (Stand 06.11.2026), eingebunden in configuration.yaml mit
+#   rest_command: !include configuration_yaml/rest_command.yaml
+# Beschreibung: ../README.md
+#rest_command:
+
+  bt_audio_health:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/health"
+    method: GET
+
+  bt_audio_forget_device:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/forget"
+    method: POST
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_force_reconnect:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/force-reconnect"
+    method: POST
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_scan:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/scan"
+    method: POST
+
+  bt_audio_connect:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/connect"
+    method: post
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_disconnect:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/disconnect"
+    method: post
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_pair_device:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/pair"
+    method: POST
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_set_mpd:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/devices/{{ address }}/settings"
+    method: PUT
+    content_type: "application/json"
+    payload: '{"mpd_enabled": true, "mpd_port": {{ mpd_port }}}'
+
+  # Lautstaerke fest auf 100 % (gepatchtes Add-on, ab 2.1.0-cc.6). Angelegt 02.11.2026 von Claude.
+  # Aufruf: rest_command.bt_audio_set_volume_lock mit address (MAC) und lock (true/false).
+  bt_audio_set_volume_lock:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/devices/{{ address }}/settings"
+    method: PUT
+    content_type: "application/json"
+    payload: '{"volume_lock": {{ "true" if (lock | bool) else "false" }}}'
+
+  bt_audio_get_devices:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/devices"
+    method: GET
+    content_type: "application/json"
+
+  bt_audio_get_sinks:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/audio/sinks"
+    method: get
+
+  bt_audio_get_state:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/state"
+    method: get
+
+  bt_audio_get_info:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/info"
+    method: get
+
+  bt_audio_scan_status:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/scan/status"
+    method: get
+
+  bt_audio_get_adapters:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/adapters"
+    method: get
+
+  bt_audio_set_adapter:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/set-adapter"
+    method: post
+    content_type: "application/json"
+    payload: '{"adapter": "{{ adapter }}", "clean": {{ "true" if clean | default(false) else "false" }}}'
+
+  bt_audio_restart:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/restart"
+    method: post
+
+  bt_audio_get_settings:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/settings"
+    method: get
+
+  bt_audio_put_settings:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/settings"
+    method: put
+    content_type: "application/json"
+    payload: "{{ payload }}"
+
+  bt_audio_get_logs:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/logs"
+    method: get
+
+  bt_audio_diagnostics_mpris:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/diagnostics/mpris"
+    method: get
+
+#   bt_audio_debug_avrcp_cycle:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/avrcp-cycle"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'
+
+#   bt_audio_debug_mpris_reregister:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/mpris-reregister"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'
+
+#   bt_audio_debug_mpris_avrcp_cycle:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/mpris-avrcp-cycle"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'
+
+#   bt_audio_debug_disconnect_hfp:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/disconnect-hfp"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'
+
+#   bt_audio_debug_hfp_reconnect_cycle:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/hfp-reconnect-cycle"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'

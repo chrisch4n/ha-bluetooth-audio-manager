@@ -11,11 +11,11 @@ MAC-Adressen, Config-Entry-IDs und Gerätenamen der Handys stehen bewusst nicht
 hier (öffentliches Repository) – sie liegen in den HA-Helfern
 (`input_text.radiostream_address_map` usw.).
 
-Die Automationen und Skripte selbst liegen als anonymisierter Export aus
-`automations.yaml` / `scripts.yaml` unter
-[`docs/chrischan-ha/`](chrischan-ha/) (Box-MACs → `<MAC_87_5>` usw.,
-Mobilgeräte → `geraet_1..3`), ebenso die Rohkonfiguration des Dashboards
-`radio-streams` ([`dashboard-radio-streams.yaml`](chrischan-ha/dashboard-radio-streams.yaml)).
+Die Konfiguration selbst – Automationen, Skripte, Dashboard `radio-streams`,
+REST-Befehle, Universal-Media-Player und Senderlisten-Sensor – liegt als
+anonymisierter Export unter [`docs/chrischan-ha/`](chrischan-ha/); dort
+beschreibt die [README](chrischan-ha/README.md) Platzhalter, nötige Helfer und
+das Einspielen.
 
 ## 1. Aufbau
 

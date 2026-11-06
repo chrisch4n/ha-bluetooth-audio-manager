@@ -1,0 +1,222 @@
+# Teil der Home-Assistant-Konfiguration (Stand 06.11.2026), eingebunden in configuration.yaml mit
+#   media_player: !include configuration_yaml/media_player.yaml
+# Beschreibung: ../README.md
+#media_player:
+
+  - platform: universal
+    name: "Radiostream 87.5"
+    unique_id: radiostream_87_5_player
+    children:
+      - media_player.musik_radiostream_87_5
+    commands:
+      turn_on:
+        service: script.radiostream_power_toggle
+        data:
+          player: "87_5"
+          action: "on"
+      turn_off:
+        service: script.radiostream_power_toggle
+        data:
+          player: "87_5"
+          action: "off"
+      media_play:
+        service: script.radiostream_power_toggle
+        data:
+          player: "87_5"
+          action: "on"
+      media_pause:
+        service: script.radiostream_power_toggle
+        data:
+          player: "87_5"
+          action: "off"
+      media_stop:
+        service: media_player.media_stop
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+      volume_up:
+        service: media_player.volume_up
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+      volume_down:
+        service: media_player.volume_down
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+      volume_set:
+        service: media_player.volume_set
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+        data:
+          volume_level: "{{ volume_level }}"
+      volume_mute:
+        service: media_player.volume_mute
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+        data:
+          is_volume_muted: "{{ is_volume_muted }}"
+      select_source:
+        service: input_select.select_option
+        target:
+          entity_id: input_select.radiosender_87_5
+        data:
+          option: "{{ source }}"
+      media_next_track:
+        service: input_select.select_next
+        target:
+          entity_id: input_select.radiosender_87_5
+      media_previous_track:
+        service: input_select.select_previous
+        target:
+          entity_id: input_select.radiosender_87_5
+    attributes:
+      volume_level: media_player.musik_radiostream_87_5|volume_level
+      is_volume_muted: media_player.musik_radiostream_87_5|is_volume_muted
+      media_title: media_player.musik_radiostream_87_5|media_title
+      source: input_select.radiosender_87_5
+      source_list: input_select.radiosender_87_5|options
+
+  - platform: universal
+    name: "Radiostream 97.0"
+    unique_id: radiostream_sender_97_0_player
+    children:
+      - media_player.musik_radiostream_97_0
+    commands:
+      turn_on:
+        service: script.radiostream_power_toggle
+        data:
+          player: "97_0"
+          action: "on"
+      turn_off:
+        service: script.radiostream_power_toggle
+        data:
+          player: "97_0"
+          action: "off"
+      media_play:
+        service: script.radiostream_power_toggle
+        data:
+          player: "97_0"
+          action: "on"
+      media_pause:
+        service: script.radiostream_power_toggle
+        data:
+          player: "97_0"
+          action: "off"
+      media_stop:
+        service: media_player.media_stop
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+      volume_up:
+        service: media_player.volume_up
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+      volume_down:
+        service: media_player.volume_down
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+      volume_set:
+        service: media_player.volume_set
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+        data:
+          volume_level: "{{ volume_level }}"
+      volume_mute:
+        service: media_player.volume_mute
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+        data:
+          is_volume_muted: "{{ is_volume_muted }}"
+      select_source:
+        service: input_select.select_option
+        target:
+          entity_id: input_select.radiosender_97_0
+        data:
+          option: "{{ source }}"
+      media_next_track:
+        service: input_select.select_next
+        target:
+          entity_id: input_select.radiosender_97_0
+      media_previous_track:
+        service: input_select.select_previous
+        target:
+          entity_id: input_select.radiosender_97_0
+    attributes:
+      volume_level: media_player.musik_radiostream_97_0|volume_level
+      is_volume_muted: media_player.musik_radiostream_97_0|is_volume_muted
+      media_title: media_player.musik_radiostream_97_0|media_title
+      source: input_select.radiosender_97_0
+      source_list: input_select.radiosender_97_0|options
+
+  - platform: universal
+    name: "Radiostream 105.9"
+    unique_id: radiostream_105_9_player
+    children:
+      - media_player.musik_radiostream_105_9
+    commands:
+      turn_on:
+        service: script.radiostream_power_toggle
+        data:
+          player: "105_9"
+          action: "on"
+      turn_off:
+        service: script.radiostream_power_toggle
+        data:
+          player: "105_9"
+          action: "off"
+      media_play:
+        service: script.radiostream_power_toggle
+        data:
+          player: "105_9"
+          action: "on"
+      media_pause:
+        service: script.radiostream_power_toggle
+        data:
+          player: "105_9"
+          action: "off"
+      media_stop:
+        service: media_player.media_stop
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+      volume_up:
+        service: media_player.volume_up
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+      volume_down:
+        service: media_player.volume_down
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+      volume_set:
+        service: media_player.volume_set
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+        data:
+          volume_level: "{{ volume_level }}"
+      volume_mute:
+        service: media_player.volume_mute
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+        data:
+          is_volume_muted: "{{ is_volume_muted }}"
+      select_source:
+        service: input_select.select_option
+        target:
+          entity_id: input_select.radiosender_105_9
+        data:
+          option: "{{ source }}"
+      media_next_track:
+        service: input_select.select_next
+        target:
+          entity_id: input_select.radiosender_105_9
+      media_previous_track:
+        service: input_select.select_previous
+        target:
+          entity_id: input_select.radiosender_105_9
+    attributes:
+      volume_level: media_player.musik_radiostream_105_9|volume_level
+      is_volume_muted: media_player.musik_radiostream_105_9|is_volume_muted
+      media_title: media_player.musik_radiostream_105_9|media_title
+      source: input_select.radiosender_105_9
+      source_list: input_select.radiosender_105_9|options
+      
+      
+      
+      
+      
