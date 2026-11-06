@@ -72,6 +72,17 @@ das Einspielen.
 | cc.13 | 06.11. | 44,1 kHz bevorzugen: 48-kHz-Verbindungen, die eine Box selbst aufbaut, werden neu geöffnet |
 | cc.14 | 06.11. | Nach dem Neuöffnen das A2DP-Profil der Karte aktivieren (sonst fehlte der Sink) |
 
+### Basis und übernommene Arbeit aus anderen Forks
+
+| Quelle | Was | Wie übernommen |
+|--------|-----|----------------|
+| [scyto/ha-bluetooth-audio-manager](https://github.com/scyto/ha-bluetooth-audio-manager), Branch `dev` | Original-Add-on, Stand 2.1.0 plus UI-Escaping-Fix | Basis dieses Branches |
+| [slawa19/ha-bluetooth-audio-manager](https://github.com/slawa19/ha-bluetooth-audio-manager), Branch `fix/normalize-mpd-stream-volume`, Commit [`0a5e806`](https://github.com/slawa19/ha-bluetooth-audio-manager/commit/0a5e806cc7f978c91a354e10d01c70ced5d9e9c7) (Slawa Gorobets, 18.07.2026) | „fix: normalize MPD PulseAudio stream volume" – jeder neue MPD-Stream wird in PulseAudio auf 100 % gesetzt (ergänzt scyto#285) | Unverändert per Cherry-Pick als `5e73193`, Autor bleibt Slawa Gorobets; seit cc.1 |
+| [Cayouche1989/ha-bluetooth-audio-manager](https://github.com/Cayouche1989/ha-bluetooth-audio-manager), Branch `cayouche/reconnect-2.1.1`, Commit [`2c38ea0`](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e) (23.08.2026) | „Fix auto-reconnect after speaker availability" | Nur der Teil für fehlgeschlagene explizite Verbindungen, neu umgesetzt in `fc313d0` (Hinweis im Commit); der Discovery-gesteuerte Teil nicht. Zusammen mit `84ad826` deckt das beide Vorschläge aus scyto#317 ab; seit cc.1 |
+
+Alles Übrige im Branch ist eigene Arbeit (Fixes für scyto#315–#319 und die
+Erweiterungen cc.2–cc.14).
+
 ## 3. PulseAudio: Aussetzer-Fix (custom.pa)
 
 **Symptom:** Mit drei gleichzeitigen Streams alle 50–70 Sekunden ein kurzer
