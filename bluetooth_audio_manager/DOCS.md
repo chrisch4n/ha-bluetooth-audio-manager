@@ -12,7 +12,8 @@
 >   (at most once per 30 s). Log line: `... starting it (self-heal)`.
 > - **#317 Auto-reconnect after force-reconnect** — a failed manual or
 >   forced connect hands the device back to the reconnect scheduler
->   (based on Cayouche1989@2c38ea0), and the "user-initiated disconnect"
+>   (based on [Cayouche1989@2c38ea0](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e),
+>   explicit-connect part only), and the "user-initiated disconnect"
 >   flag expires after 30 s instead of swallowing an unrelated later drop.
 > - **#318 Streams mixing on one speaker** — an MPD stream that PulseAudio
 >   moves onto another speaker's sink is moved straight back to its own
@@ -28,7 +29,8 @@
 > - **HA Bluetooth badge** — an adapter set to *Ignore* in HA's Bluetooth
 >   integration no longer counts as HA-managed.
 > - **MPD stream volume** — every new MPD stream is set to 100 % in
->   PulseAudio (slawa19@0a5e806; complements #285).
+>   PulseAudio ([slawa19@0a5e806](https://github.com/slawa19/ha-bluetooth-audio-manager/commit/0a5e806cc7f978c91a354e10d01c70ced5d9e9c7),
+>   cherry-picked unchanged; complements #285).
 >
 > - **Lock volume at 100 %** (device settings → MPD section, for all devices
 >   at once in App Settings, or `PUT /api/devices/<mac>/settings

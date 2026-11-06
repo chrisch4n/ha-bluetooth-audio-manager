@@ -7,6 +7,11 @@
 > it runs in (three radio streams to Bluetooth FM transmitters) is documented in
 > [`docs/chrischan-radiostream.md`](docs/chrischan-radiostream.md), with the
 > Home Assistant configuration in [`docs/chrischan-ha/`](docs/chrischan-ha/).
+> Includes work from parallel forks:
+> [slawa19@0a5e806](https://github.com/slawa19/ha-bluetooth-audio-manager/commit/0a5e806cc7f978c91a354e10d01c70ced5d9e9c7)
+> (MPD stream volume, cherry-picked unchanged) and
+> [Cayouche1989@2c38ea0](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e)
+> (auto-reconnect after a failed connect, explicit-connect part adapted).
 
 [![GitHub Release](https://img.shields.io/github/v/release/scyto/ha-bluetooth-audio-manager?style=flat-square)](https://github.com/scyto/ha-bluetooth-audio-manager/releases)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/scyto/ha-bluetooth-audio-manager/build.yaml?branch=main&style=flat-square)](https://github.com/scyto/ha-bluetooth-audio-manager/actions/workflows/build.yaml)
