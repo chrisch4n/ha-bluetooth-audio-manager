@@ -1,0 +1,888 @@
+# Export aus Home Assistant (scripts.yaml), nur Radiostream-Teile, Stand 06.11.2026.
+# Anonymisiert: Box-MACs -> <MAC_87_5>/<MAC_105_9>/<MAC_97_0>, Mobilgeraete -> geraet_1..3.
+# Beschreibung des Systems: ../chrischan-radiostream.md
+radiostream_preset_abspielen:
+  alias: Radiostream Preset abspielen
+  description: 'Spielt einen der 10 globalen Radiostream-Presets (input_select.radiostream_preset_1..10)
+    auf einem der drei Player-Helfer (radiosender_97_0 / _105_9 / _87_5) ab, indem
+    der Sendername per input_select.select_option in den Ziel-Helper geschrieben wird
+    - triggert die konsolidierte automation.radiostream_permanent_97_0_105_9_87_5.
+    Am 21.08.2026 vereinfacht: 3-faches choose durch direktes templated Target ersetzt
+    (ziel_helper wird bereits als vollstaendige entity_id uebergeben).'
+  fields:
+    preset:
+      description: Preset-Nummer 1-10
+      name: Preset
+      selector:
+        select:
+          options:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+          - '6'
+          - '7'
+          - '8'
+          - '9'
+          - '10'
+    ziel_helper:
+      description: Welcher Player soll den Preset abspielen
+      name: Ziel-Player-Helfer
+      selector:
+        select:
+          options:
+          - label: '97.0'
+            value: input_select.radiosender_97_0
+          - label: '105.9'
+            value: input_select.radiosender_105_9
+          - label: '87.5'
+            value: input_select.radiosender_87_5
+  mode: parallel
+  sequence:
+  - variables:
+      preset_sender: '{{ states(''input_select.radiostream_preset_'' ~ preset) }}'
+  - action: input_select.select_option
+    data:
+      option: '{{ preset_sender }}'
+    target:
+      entity_id: '{{ ziel_helper }}'
+radiostream_notfall_forget_pair:
+  alias: 'Radiostream Notfall: Forget + Pair + MPD zuweisen'
+  description: 'Manueller Nothelfer fuer eine haengende Bluetooth-Audio-Box: vergisst
+    das Geraet, scannt neu, pairt es erneut und setzt danach mpd_enabled/mpd_port
+    ueber die Add-on-API. Nur manuell aufrufen (z.B. ueber Entwicklertools > Aktionen),
+    keine automatische Ausloesung. Nutzt die rest_command-Definitionen bt_audio_forget_device/bt_audio_scan/bt_audio_pair_device/bt_audio_set_mpd.
+    [25.09.2026 Ueberarbeitet: (1) set_mpd uebergibt jetzt mpd_enabled: true - fehlte
+    bisher, sodass ein frisch gekoppeltes Geraet ohne MPD-Dienst (stumm) blieb. (2)
+    Nach dem Scan bis zu 3 Kopplungsversuche mit Erfolgskontrolle per get_devices
+    statt eines einzelnen Versuchs mit fester Wartezeit. (3) Fuer bereits gemappte
+    Boxen am Ende script.radiostream_mpd_sicherstellen. Hinweis: Wird die Box trotzdem
+    nicht gefunden, muss sie in den Kopplungsmodus versetzt werden.]'
+  fields:
+    address:
+      description: Bluetooth-Adresse der Box, z.B. <MAC_87_5> (87.5/es-bt17)
+      name: MAC-Adresse
+      required: true
+      selector:
+        text: {}
+    mpd_port:
+      description: Zu setzender MPD-Port, z.B. 6600 fuer 87.5
+      name: MPD-Port
+      required: true
+      selector:
+        number:
+          max: 6699
+          min: 6600
+          mode: box
+  mode: single
+  sequence:
+  - variables:
+      address_map: '{{ states(''input_text.radiostream_address_map'') | from_json
+        }}'
+      player_key: '{% set ns = namespace(k='''') %}{% for k, v in address_map.items()
+        %}{% if v | upper == address | upper %}{% set ns.k = k %}{% endif %}{% endfor
+        %}{{ ns.k }}'
+  - action: rest_command.bt_audio_forget_device
+    continue_on_error: true
+    data:
+      address: '{{ address }}'
+    note: Geraet aus dem Add-on-Store entfernen, damit ein sauberes Re-Pairing moeglich
+      ist
+  - delay:
+      seconds: 5
+  - action: rest_command.bt_audio_scan
+    continue_on_error: true
+    note: Scan anstossen (laeuft 30s) - ein neuer oder vergessener Adapter kennt das
+      Geraet sonst gar nicht ("interface not found")
+  - delay:
+      seconds: 15
+  - repeat:
+      sequence:
+      - action: rest_command.bt_audio_pair_device
+        continue_on_error: true
+        data:
+          address: '{{ address }}'
+      - delay:
+          seconds: 10
+      - action: rest_command.bt_audio_get_devices
+        continue_on_error: true
+        response_variable: dev_result
+      - variables:
+          gekoppelt: '{{ dev_result is defined and dev_result.content is defined and
+            (dev_result.content.devices | selectattr(''address'', ''equalto'', address
+            | upper) | selectattr(''connected'') | list | count) > 0 }}'
+      until:
+      - condition: template
+        value_template: '{{ gekoppelt or repeat.index >= 3 }}'
+    note: Bis zu 3 Kopplungsversuche im 10s-Abstand, bis das Geraet als verbunden
+      gemeldet wird - vorher gab es nur einen Versuch mit fester Wartezeit, der oft
+      zu frueh kam
+  - action: rest_command.bt_audio_set_mpd
+    continue_on_error: true
+    data:
+      address: '{{ address }}'
+      mpd_enabled: true
+      mpd_port: '{{ mpd_port | int }}'
+    note: mpd_enabled MUSS mitgegeben werden - ein frisch gekoppeltes Geraet startet
+      mit MPD aus. Fehlte bisher, die Box blieb dann stumm.
+  - if:
+    - condition: template
+      value_template: '{{ player_key != '''' }}'
+    then:
+    - delay:
+        seconds: 5
+    - action: script.turn_on
+      target:
+        entity_id: script.radiostream_mpd_sicherstellen
+      data:
+        variables:
+          player: '{{ player_key }}'
+    note: Nur fuer bereits in radiostream_address_map eingetragene Boxen (bei einer
+      ganz neuen Box gibt es noch keinen Player)
+radiostream_power_toggle:
+  alias: Radiostream Power umschalten
+  description: 'action=on: schaltet IMMER beides ein - Steckdose (switch_map) UND
+    Stream-Start (aktiv_map) - unabhaengig vom Modus-Flag, seit 08.09.2026 (Claude),
+    damit z.B. der Dashboard-Tile-Tap nach einem vorherigen Pause zuverlaessig auch
+    die Box wieder mit Strom versorgt statt nur MPD zu starten. action=off: verhaelt
+    sich weiterhin je nach input_boolean.radiostream_power_schaltet_steckdosen - entweder
+    Steckdose aus (Schalter-Variante, kappt Strom = Pause-Verhalten) oder nur input_boolean.radiostream_<player>_aktiv
+    aus (Stream-Modus). switch_map und aktiv_map zentral aus input_text.radiostream_schalter_map
+    bzw. input_text.radiostream_aktiv_map (JSON). [21.09.2026 Fix: 8s Pause zwischen
+    Steckdose-an und Stream-Start ergaenzt (action=on) - vorher kein Delay, wodurch
+    der erste Play-Versuch oft fehlschlug, bevor die Box überhaupt gebootet/reconnected
+    war. [25.09.2026: Nach action=on wird script.radiostream_mpd_sicherstellen aufgerufen
+    - faengt den Fall ab, dass das Add-on nach dem verzoegerten Neuverbinden den MPD-Dienst
+    nicht mitstartet.]'
+  fields:
+    action:
+      description: on oder off
+      name: Aktion
+      selector:
+        select:
+          options:
+          - 'on'
+          - 'off'
+    player:
+      description: 97_0, 105_9 oder 87_5
+      name: Player
+      selector:
+        select:
+          options:
+          - '97_0'
+          - '105_9'
+          - '87_5'
+  mode: parallel
+  sequence:
+  - variables:
+      aktiv_map: '{{ states(''input_text.radiostream_aktiv_map'') | from_json }}'
+      switch_map: '{{ states(''input_text.radiostream_schalter_map'') | from_json
+        }}'
+  - else:
+    - else:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: '{{ aktiv_map[player] }}'
+      if:
+      - condition: state
+        entity_id: input_boolean.radiostream_power_schaltet_steckdosen
+        state: 'on'
+      then:
+      - action: switch.turn_off
+        target:
+          entity_id: '{{ switch_map[player] }}'
+    if:
+    - condition: template
+      value_template: '{{ action == ''on'' }}'
+    then:
+    - action: switch.turn_on
+      target:
+        entity_id: '{{ switch_map[player] }}'
+    - delay:
+        seconds: 8
+      note: 'NEU 21.09.2026: Box braucht nach dem Stromstoss Zeit zum Booten/Reconnecten,
+        bevor MPD sinnvoll starten kann - vorher wurde sofort im selben Moment gestartet,
+        was den ersten Play-Versuch oft ins Leere laufen liess (musste dann vom Watchdog
+        nach 2+ Min repariert werden)'
+    - action: input_boolean.turn_on
+      target:
+        entity_id: '{{ aktiv_map[player] }}'
+    - action: script.turn_on
+      target:
+        entity_id: script.radiostream_mpd_sicherstellen
+      data:
+        variables:
+          player: '{{ player }}'
+      note: Nach dem Einschalten verbindet sich die Box verzoegert neu - das Add-on
+        startet den MPD-Dienst dann oft nicht mit (#316). Ohne diese Pruefung bliebe
+        der Player dauerhaft unavailable, weil weder Watchdog (kein neuer Wechsel
+        zu unavailable) noch der 5-Min-Takt (ueberspringt unavailable) eingreifen.
+radiostream_steckdose_zyklieren:
+  alias: Radiostream Steckdose zyklieren (ohne Add-on-Neustart)
+  description: 'Schaltet NUR die Steckdose des angegebenen Players kurz aus und wieder
+    ein, OHNE das Bluetooth Audio Manager Add-on neu zu starten - stoert die anderen
+    beiden laufenden Boxen nicht. [07.09.2026 von Claude: Steckdosen-Zuordnung jetzt
+    zentral aus input_text.radiostream_dose_switch_map (JSON) gelesen statt hartcodiert.]
+    [22.09.2026: Steckdosen-Aus-Dauer von 15 auf 30 Sekunden verdoppelt - 15s reichte
+    bei einem hartnaeckigen Ausfall (87.5, 22.09.) moeglicherweise nicht aus, um die
+    Box vollstaendig stromlos genug fuer einen wirksamen Reset zu machen.]'
+  fields:
+    player:
+      description: 97_0, 105_9 oder 87_5
+      name: Player
+      required: true
+      selector:
+        select:
+          options:
+          - '97_0'
+          - '105_9'
+          - '87_5'
+  mode: single
+  sequence:
+  - variables:
+      switch_map: '{{ states(''input_text.radiostream_dose_switch_map'') | from_json
+        }}'
+  - action: switch.turn_off
+    target:
+      entity_id: '{{ switch_map[player] }}'
+  - delay:
+      seconds: 30
+  - action: switch.turn_on
+    target:
+      entity_id: '{{ switch_map[player] }}'
+radiostream_reparieren_ultralight:
+  alias: Radiostream Diagnose
+  description: 'Schnellste, unaufdringlichste Reparaturstufe (Stand 19.09.2026, jetzt
+    inkl. Audio-Sink-Check). Prueft per GET /api/devices ob Bluetooth gesund ist (connected+has_transport)
+    UND per GET /api/audio/sinks ob der PulseAudio-Sink tatsaechlich ''running'' ist
+    (das ist das Feld, das die Add-on-App als STREAMING/idle anzeigt - deckt jetzt
+    auch den frueher nicht automatisch erkennbaren Audio-Routing-Bug ab, live bestaetigt
+    am 19.09.2026: BT+HA meldeten ''gesund''/''playing'', aber der Sink war ''idle''
+    und es kam nachweislich kein Ton). Falls BT NICHT gesund: direkte Delegation an
+    script.radiostream_reparieren_light (BT-Reparatur mit eigener Retry-Schleife).
+    Falls BT gesund, aber Player nicht ''playing'' ODER Sink nicht ''running'': kombinierter
+    Fix - MPD-Daemon per rest_command.bt_audio_set_mpd aus/an (behebt toten Daemon,
+    nie gestarteten Daemon nach verzoegertem Reconnect, UND den Audio-Routing-Bug)
+    + homeassistant.reload_config_entry (behebt haengende HA-MPD-Integration). Danach
+    3s-Check; falls Player weiterhin unavailable, bis zu 3 Retries via reparieren_light
+    im 6s-Abstand (deckt pausierten Reconnect-Scheduler ab). Schutzbedingung: laeuft
+    nur, wenn NICHT (Player playing UND Sink running) - ein bereits vollstaendig gesunder
+    Stream wird nicht angetastet. Deckt damit jetzt 5 von 5 bekannten Fehlermodi ab
+    (nur der harte BT-Stack-Haenger und Adapter-Reindex brauchen weiterhin steckdosen_zyklus
+    bzw. addon_neustart). [19.09.2026 v3, Doppelpruefung ergaenzt: Bevor tatsaechlich
+    repariert wird, erfolgt nach 2s eine zweite Abfrage von /api/devices und /api/audio/sinks
+    - nur wenn der Fehlerzustand dort bestaetigt wird, laufen die eigentlichen Reparaturaktionen
+    (MPD-Toggle/Reload/Delegation). Grund: eigene automatische Pruefungen sind nicht
+    neutral - sie koennen selbst zur Instabilitaet beitragen (siehe Diskussion 19.09.2026:
+    die stuendliche RSSI-Scan-Automation kann A2DP-Verbindungen kurz stoeren, was
+    ohne Zweitpruefung faelschlich als echter Ausfall interpretiert und unnoetig ''repariert''
+    werden koennte). [19.09.2026 v4, Race-Fix: Modus von ''parallel'' auf ''queued''
+    (max 5) umgestellt - verhindert, dass zwei Ausloeser (z.B. Watchdog-diagnose-Stufe
+    UND periodischer Sink-Check) gleichzeitig fuer DENSELBEN Player laufen und sich
+    beim MPD-Toggle gegenseitig ins Gehege kommen (z.B. ein Lauf schaltet MPD gerade
+    aus, waehrend der andere wieder an schaltet). Kosten: max. ~25s Wartezeit falls
+    wirklich zwei Ausloeser gleichzeitig feuern - vernachlaessigbar gegenueber den
+    Minuten-Zeitskalen des restlichen Systems.] [20.09.2026: Beide get_devices+get_sinks-Aufrufpaare
+    (Erst- und Zweitpruefung) auf den kombinierten rest_command.bt_audio_get_state
+    (GET /api/state) umgestellt - halbiert die Anzahl der REST-Calls pro Lauf, keine
+    funktionale Aenderung.] [20.09.2026 KRITISCHER FIX: Bei der get_state-Umstellung
+    blieben an beiden Pruefpunkten (Erst- und Zweitpruefung) alte devices_result/sinks_result-Variablen-Schritte
+    liegen, die device/sink sofort wieder auf none zurücksetzten (diese Variablen
+    existierten seit der Umstellung nicht mehr). Folge: bt_healthy/sink_healthy waren
+    IMMER false, die Schutzbedingung griff nie, das Script nahm bei JEDEM Lauf den
+    Reparaturzweig, und device.mpd_port schlug fehl (device=none) - das erzeugte die
+    real beobachteten ''Failed to update settings: Expecting value'' Fehler alle ~5
+    Min fuer alle 3 Geraete. Beide verwaisten Schritte entfernt - device/sink werden
+    jetzt nur noch korrekt aus state_result berechnet. [Nachbesserung: bei der ersten
+    Fix-Runde wurde versehentlich der KORREKTE state_result-Schritt geloescht statt
+    des fehlerhaften devices_result-Schritts (Index-Verschiebung falsch berechnet)
+    - jetzt per Inhaltspruefung (enthaelt ''devices_result'') gezielt korrigiert,
+    statt per Index.] [Endgueltig korrigiert: fehlenden device/sink-Berechnungsschritt
+    (aus state_result) in der Zweitpruefung wieder eingefuegt, der durch die vorherigen
+    zwei fehlerhaften Korrekturversuche versehentlich ganz entfernt worden war.] [21.09.2026:
+    Alias von ''Radiostream reparieren (Ultralight)'' auf ''Radiostream Diagnose''
+    geaendert - ''ultralight'' klang nach minimal, ist aber inzwischen die ausgefeilteste
+    Stufe (Sink-Check, Doppelpruefung, intelligente Connect/Force-Logik, Retries).
+    Entity-ID/Storage-Key bewusst UNVERAENDERT gelassen (reine Kosmetik, kein Risiko
+    wie bei der fruaeheren ''s''-Umbenennungshistorie). [23.09.2026 KRITISCHER LOGIK-FIX:
+    Die if/then/else-Bedingung fuer ''BT gesund -> MPD-Toggle, BT nicht gesund ->
+    delegieren'' war VERTAUSCHT (if bt_healthy delegierte faelschlich an BT-Reconnect,
+    else machte MPD-Toggle bei nicht-gesundem BT) - jetzt korrigiert auf ''if not
+    bt_healthy -> delegieren, else -> MPD-Toggle+Reload'', wie urspruenglich dokumentiert
+    und beabsichtigt. Gefunden bei einer angeforderten vollstaendigen Logik-Audit
+    aller Stufen. [23.09.2026 KORREKTUR DES VORHERIGEN FIXES: der Fix von vorhin hatte
+    Bedingung UND Zweige gleichzeitig invertiert und war damit wirkungslos - der Block
+    ist jetzt eindeutig neu aufgebaut: ''not bt_healthy'' -> BT-Reconnect (mit Warten
+    auf dessen Ende), sonst MPD-Toggle+Reload. Ausserdem: Wartezeit nach Reparatur
+    3s -> 10s, und nach jedem BT-Reconnect-Aufruf (Delegation und Retries) wird per
+    wait_template auf dessen Ende gewartet statt blind weiterzulaufen.] [25.09.2026:
+    Jeder Retry ruft nach BT-Reconnect zusaetzlich script.radiostream_mpd_sicherstellen
+    auf (mit Warten auf dessen Ende). Vorher blieb die Diagnose haengen, wenn die
+    Box per Bluetooth zurueckkam, der MPD-Dienst aber fehlte (am 25.09. bei 87.5):
+    BT-Reconnect sah eine gesunde Verbindung und tat nichts, einen MPD-Neustart gab
+    es nur im ersten Zweig.] [06.10.2026: Sink-Abfrage nur noch, wenn der Player ''playing''
+    meldet. Vor jeder der beiden Pruefungen wird der Player-Zustand gemerkt (mit_sinks):
+    bei ''playing'' wie bisher bt_audio_get_state (inkl. Sinks), sonst nur bt_audio_get_devices
+    - kein Stocken auf den gesunden Boxen, waehrend eine Box ausgefallen ist. Hintergrund:
+    die Sink-Daten gehen nur in die Entscheidung ein, wenn der Player ''playing''
+    ist; fuer die Wahl BT-Reconnect vs. MPD-Toggle zaehlt allein der Bluetooth-Status,
+    und get_devices liefert connected/has_transport/mpd_port ebenfalls (live geprueft).
+    Doppelpruefung unveraendert. Einzige Verhaltensaenderung: wird der Player genau
+    waehrend einer Abfrage ohne Sink-Daten von selbst ''playing'' und ist Bluetooth
+    gesund, wird nicht eingegriffen (vorher entschied in diesem Moment der Sink-Zustand).]
+    [08.10.2026: device/sink-Vorlagen in beiden Pruefungen um ''| default(none)''
+    ergaenzt. Ohne Sink-Daten (get_devices-Pfad) lieferte ''| first'' auf einer leeren
+    Liste bei jedem Lauf die Log-Warnung ''No first item, sequence was empty''. Ergebnis
+    der Pruefung unveraendert: fehlender Sink bzw. fehlendes Geraet gilt weiter als
+    nicht gesund.]'
+  fields:
+    player:
+      description: 97_0, 105_9 oder 87_5
+      name: Player
+      required: true
+      selector:
+        select:
+          options:
+          - '97_0'
+          - '105_9'
+          - '87_5'
+  mode: queued
+  sequence:
+  - variables:
+      address_map: '{{ states(''input_text.radiostream_address_map'') | from_json
+        }}'
+      entry_map: '{{ states(''input_text.radiostream_mpd_entry_map'') | from_json
+        }}'
+      player_entity: media_player.musik_radiostream_{{ player }}
+      sink_name: bluez_sink.{{ address_map[player].replace(':', '_') }}.a2dp_sink
+  - variables:
+      mit_sinks: '{{ is_state(player_entity, ''playing'') }}'
+    note: '06.10.2026: Sink-Daten werden nur gebraucht, wenn der Player ''playing''
+      meldet - nur dann die volle Abfrage (get_state inkl. Sinks, stockt hoerbar).
+      In jedem anderen Zustand reicht get_devices (connected/has_transport/mpd_port),
+      ohne die gesunden Boxen zu stoeren.'
+  - action: '{{ ''rest_command.bt_audio_get_state'' if mit_sinks else ''rest_command.bt_audio_get_devices''
+      }}'
+    response_variable: state_result
+  - variables:
+      device: '{{ (state_result.content.devices | selectattr(''address'', ''equalto'',
+        address_map[player]) | list | first | default(none)) if state_result is defined
+        else none }}'
+      sink: '{{ (state_result.content.sinks | default([]) | selectattr(''name'', ''equalto'',
+        sink_name) | list | first | default(none)) if state_result is defined else
+        none }}'
+  - variables:
+      bt_healthy: '{{ device is not none and device.connected and device.has_transport
+        }}'
+      sink_healthy: '{{ sink is not none and sink.state == ''running'' }}'
+  - if:
+    - condition: template
+      value_template: '{{ not (states(player_entity) == ''playing'' and bt_healthy
+        and (sink_healthy or not mit_sinks)) }}'
+    note: Erste Ampel steht auf Rot (Player nicht playing ODER BT nicht gesund ODER
+      Sink nicht running) - vor dem eigentlichen Eingriff wird das per Zweitpruefung
+      nach 2s bestaetigt (siehe verschachtelter if-Block), um Fehlalarme durch kurze
+      Wackler zu vermeiden
+    then:
+    - delay:
+        seconds: 2
+      note: Kurze Pause vor der Zweitpruefung, um einen momentanen Status-Wackler
+        nicht sofort als echten Fehler zu werten
+    - variables:
+        mit_sinks: '{{ is_state(player_entity, ''playing'') }}'
+      note: '06.10.2026: Sink-Daten werden nur gebraucht, wenn der Player ''playing''
+        meldet - nur dann die volle Abfrage (get_state inkl. Sinks, stockt hoerbar).
+        In jedem anderen Zustand reicht get_devices (connected/has_transport/mpd_port),
+        ohne die gesunden Boxen zu stoeren.'
+    - action: '{{ ''rest_command.bt_audio_get_state'' if mit_sinks else ''rest_command.bt_audio_get_devices''
+        }}'
+      response_variable: state_result
+    - variables:
+        device: '{{ (state_result.content.devices | selectattr(''address'', ''equalto'',
+          address_map[player]) | list | first | default(none)) if state_result is
+          defined else none }}'
+        sink: '{{ (state_result.content.sinks | default([]) | selectattr(''name'',
+          ''equalto'', sink_name) | list | first | default(none)) if state_result
+          is defined else none }}'
+    - variables:
+        bt_healthy: '{{ device is not none and device.connected and device.has_transport
+          }}'
+        sink_healthy: '{{ sink is not none and sink.state == ''running'' }}'
+    - if:
+      - condition: template
+        value_template: '{{ not (states(player_entity) == ''playing'' and bt_healthy
+          and (sink_healthy or not mit_sinks)) }}'
+      note: Zweitpruefung nach 2s - bestaetigt, dass es kein kurzer Status-Wackler
+        war (z.B. durch den stuendlichen RSSI-Scan oder eine normale Trackpause),
+        bevor tatsaechlich eingegriffen wird
+      then:
+      - if:
+        - condition: template
+          value_template: '{{ not bt_healthy }}'
+        then:
+        - action: script.turn_on
+          target:
+            entity_id: script.radiostream_reparieren_light
+          data:
+            variables:
+              player: '{{ player }}'
+          note: Bluetooth ist NICHT gesund - an BT-Reconnect delegieren (MPD/Reload
+            waeren ohne Verbindung sinnlos)
+        - delay:
+            seconds: 1
+        - wait_template: '{{ is_state(''script.radiostream_reparieren_light'', ''off'')
+            }}'
+          timeout:
+            seconds: 60
+          continue_on_timeout: true
+          note: Auf das tatsaechliche Ende von BT-Reconnect warten statt blind weiterzulaufen
+            (script.turn_on wartet nicht)
+        else:
+        - action: rest_command.bt_audio_set_mpd
+          data:
+            address: '{{ address_map[player] }}'
+            mpd_enabled: false
+            mpd_port: '{{ device.mpd_port }}'
+          note: MPD-Daemon stoppen - deckt toten Daemon, nie gestarteten Daemon nach
+            verzoegertem Reconnect, UND den Audio-Routing/Sink-Bug ab (sink_healthy
+            war false)
+        - delay:
+            seconds: 1
+        - action: rest_command.bt_audio_set_mpd
+          data:
+            address: '{{ address_map[player] }}'
+            mpd_enabled: true
+            mpd_port: '{{ device.mpd_port }}'
+          note: MPD-Daemon wieder starten
+        - delay:
+            seconds: 2
+        - action: homeassistant.reload_config_entry
+          data:
+            entry_id: '{{ entry_map[player] }}'
+          note: HAs eigene MPD-Integration neu einlesen, falls die selbst haengt
+        note: BT nicht gesund -> BT-Reconnect; BT gesund, aber Player/Sink nicht ->
+          MPD-Toggle + Reload
+      - delay:
+          seconds: 10
+        note: Reload/Reconnect braucht einige Sekunden, in denen der Player normal
+          unavailable ist - 10s statt 3s, damit die Retries nicht auf einen gerade
+          erst reparierten Zustand treffen
+      - repeat:
+          sequence:
+          - action: script.turn_on
+            target:
+              entity_id: script.radiostream_reparieren_light
+            data:
+              variables:
+                player: '{{ player }}'
+            note: Retry - dank Gesundheits-Schutz in BT-Reconnect ungefaehrlich fuer
+              eine bereits gesunde Verbindung
+          - delay:
+              seconds: 1
+          - wait_template: '{{ is_state(''script.radiostream_reparieren_light'', ''off'')
+              }}'
+            timeout:
+              seconds: 60
+            continue_on_timeout: true
+            note: Auf das tatsaechliche Ende von BT-Reconnect warten statt blind weiterzulaufen
+              (script.turn_on wartet nicht)
+          - action: script.turn_on
+            target:
+              entity_id: script.radiostream_mpd_sicherstellen
+            data:
+              variables:
+                player: '{{ player }}'
+            note: Ist die Box nach BT-Reconnect wieder verbunden, fehlt oft nur der
+              MPD-Dienst (#316) - BT-Reconnect sieht dann eine gesunde Verbindung
+              und tut nichts. MPD sicherstellen startet den Dienst nach (ohne Sink-Abfrage).
+          - delay:
+              seconds: 1
+          - wait_template: '{{ is_state(''script.radiostream_mpd_sicherstellen'',
+              ''off'') }}'
+            timeout:
+              seconds: 60
+            continue_on_timeout: true
+          - delay:
+              seconds: 6
+          while:
+          - condition: template
+            value_template: '{{ states(player_entity) == ''unavailable'' and repeat.index
+              <= 3 }}'
+  max: 5
+radiostream_mpd_sicherstellen:
+  alias: Radiostream MPD sicherstellen
+  description: 'Baustein (25.09.2026): stellt nach einem Neuverbinden sicher, dass
+    der MPD-Dienst der Box laeuft. Hintergrund: Das Add-on startet den MPD-Dienst
+    nach einem verzoegerten Reconnect oft nicht mit (GitHub-Issue #316, zuletzt 25.09.2026
+    bei 87.5). Ablauf: bis zu 20s abwarten, ob der Player von selbst verfuegbar wird;
+    falls nicht, NUR die Bluetooth-Geraete abfragen (get_devices, keine Sink-Abfrage
+    = kein Stocken); ist die Box verbunden mit Audio-Transport, MPD-Dienst aus/an
+    (Port aus radiostream_port_map) und HA-MPD-Integration neu laden. Ist die Box
+    noch nicht per Bluetooth da, passiert nichts (das ist Sache von BT-Reconnect/Watchdog).
+    Wird aufgerufen von: Power-Ein, Voll-Reparatur, Neu koppeln, Diagnose-Retries.'
+  fields:
+    player:
+      description: 97_0, 105_9 oder 87_5
+      name: Player
+      required: true
+      selector:
+        select:
+          options:
+          - '97_0'
+          - '105_9'
+          - '87_5'
+  max: 10
+  mode: queued
+  sequence:
+  - variables:
+      address_map: '{{ states(''input_text.radiostream_address_map'') | from_json
+        }}'
+      entry_map: '{{ states(''input_text.radiostream_mpd_entry_map'') | from_json
+        }}'
+      player_entity: media_player.musik_radiostream_{{ player }}
+      port_map: '{{ states(''input_text.radiostream_port_map'') | from_json }}'
+  - continue_on_timeout: true
+    note: Dem Add-on zuerst die Chance geben, MPD selbst zu starten (passiert sofort
+      weiter, falls der Player schon verfuegbar ist)
+    timeout:
+      seconds: 20
+    wait_template: '{{ not is_state(player_entity, ''unavailable'') }}'
+  - if:
+    - condition: template
+      value_template: '{{ is_state(player_entity, ''unavailable'') }}'
+    then:
+    - action: rest_command.bt_audio_get_devices
+      continue_on_error: true
+      response_variable: dev_result
+    - variables:
+        device: '{{ (dev_result.content.devices | selectattr(''address'', ''equalto'',
+          address_map[player]) | list | first) if dev_result is defined and dev_result.content
+          is defined else none }}'
+    - else:
+      - action: logbook.log
+        data:
+          entity_id: '{{ player_entity }}'
+          message: '{{ player }}: Box noch nicht per Bluetooth verbunden - MPD-Neustart
+            waere sinnlos, kein Eingriff'
+          name: Radiostream MPD sicherstellen
+      if:
+      - condition: template
+        value_template: '{{ device is not none and device.connected and device.has_transport
+          }}'
+      then:
+      - action: logbook.log
+        data:
+          entity_id: '{{ player_entity }}'
+          message: '{{ player }}: Box verbunden, aber Player nicht verfuegbar - MPD-Dienst
+            wird neu gestartet'
+          name: Radiostream MPD sicherstellen
+      - action: rest_command.bt_audio_set_mpd
+        continue_on_error: true
+        data:
+          address: '{{ address_map[player] }}'
+          mpd_enabled: false
+          mpd_port: '{{ port_map[player] | int }}'
+      - delay:
+          seconds: 1
+      - action: rest_command.bt_audio_set_mpd
+        continue_on_error: true
+        data:
+          address: '{{ address_map[player] }}'
+          mpd_enabled: true
+          mpd_port: '{{ port_map[player] | int }}'
+      - delay:
+          seconds: 2
+      - action: homeassistant.reload_config_entry
+        continue_on_error: true
+        data:
+          entry_id: '{{ entry_map[player] }}'
+benachrichtigung_alle_geraete:
+  alias: Benachrichtigung alle Geräte
+  description: 'Zentrale Benachrichtigung an die drei Mobilgeräte (geraet_1..3). Ersetzt die dreifach kopierten notify.mobile_app_*-Blöcke
+    in den Automationen. Felder: message (Pflicht; ''clear_notification'' entfernt
+    eine Meldung), title (optional), daten (optional, wird als data an die Mobile-App
+    durchgereicht, z.B. {tag: ...}). Ein nicht erreichbares Gerät bricht die anderen
+    nicht ab. Bewusst ein Script statt einer Notify-Gruppe: die Gruppe aus Notify-Entitäten
+    kann kein data (Tag, clear_notification) durchreichen. Eingerichtet 02.10.2026.'
+  fields:
+    daten:
+      description: 'Zusatzdaten für die Mobile-App, z.B. {tag: lueften_bad}'
+      name: Daten
+      selector:
+        object: {}
+    message:
+      description: Text der Meldung; 'clear_notification' entfernt die Meldung mit
+        dem angegebenen Tag
+      name: Nachricht
+      required: true
+      selector:
+        text:
+          multiline: true
+    title:
+      description: Titel der Meldung
+      name: Titel
+      selector:
+        text: {}
+  icon: mdi:cellphone-message
+  max: 20
+  mode: parallel
+  sequence:
+  - variables:
+      nachricht: '{% set d = {''message'': message, ''data'': daten if daten is defined
+        and daten else {}} %}{{ dict(d, title=title) if title is defined and title
+        else d }}'
+  - parallel:
+    - action: notify.mobile_app_geraet_1
+      continue_on_error: true
+      data: '{{ nachricht }}'
+    - action: notify.mobile_app_geraet_3
+      continue_on_error: true
+      data: '{{ nachricht }}'
+    - action: notify.mobile_app_geraet_2
+      continue_on_error: true
+      data: '{{ nachricht }}'
+radiostream_reparieren:
+  alias: Radiostream Voll-Reparatur
+  description: 'Schaltet die Bluetooth-Steckdose(n) kurz aus, startet waehrend sie
+    noch aus sind das Bluetooth Audio Manager (stabil) neu, und schaltet die Steckdose(n)
+    danach wieder ein. Feld ''player'' optional: leer = alle drei (87.5/97.0/105.9)
+    nacheinander mit 20s Abstand - fuer Totalausfaelle; gesetzt (97_0/105_9/87_5)
+    = nur die eine betroffene Steckdose. Der Add-on-Neustart selbst betrifft immer
+    alle drei gemeinsam (laesst sich nicht trennen). Laedt am Ende die drei MPD-Config-Entries
+    einzeln (nicht als Liste) parallel neu. [Neu angelegt 12.09.2026 von Claude nach
+    Registrierungs-Bug post-Neustart, Config identisch zur Vorversion: Steckdosen-Zuordnung
+    zentral aus input_text.radiostream_dose_switch_map (JSON).] [20.09.2026: abschliessendes
+    reload_config_entry von parallel auf sequenziell (3s Abstand) umgestellt, vorsorglich
+    gegen dieselbe Race-Condition-Klasse wie beim Mixing-Bug.] [21.09.2026 Konsistenz-Fix:
+    die 3 reload_config_entry-Aufrufe nutzten bisher wortwoertlich eingetragene entry_ids
+    statt radiostream_mpd_entry_map - jetzt per entry_map[player]-Template aus der
+    zentralen Map bezogen, analog zu switch_map. Verhindert eine kuenftige Divergenz
+    zwischen Map und Script, z.B. beim geplanten FM02-Tausch. [21.09.2026: Alias von
+    ''Radiostream reparieren'' auf ''Radiostream Voll-Reparatur'' geaendert - Symmetrie
+    zur Dashboard-Sektion ''Volle Reparatur'' und klare Abgrenzung zu Diagnose/BT-Reconnect.
+    Entity-ID/Storage-Key bewusst UNVERAENDERT gelassen. [22.09.2026: beide Steckdosen-Aus-Dauern
+    (Einzelplayer- und Alle-Drei-Zweig) von 15 auf 30 Sekunden verdoppelt - analog
+    zum selben Fix in radiostream_steckdose_zyklieren, ausgelöst durch einen hartnaeckigen
+    87.5-Ausfall am 22.09.] [25.09.2026: (a) Alle-drei-Zweig schaltet am Ende nur
+    die Steckdosen wieder ein, die vorher an waren (vorher_an) - bewusst ausgeschaltete
+    Boxen bleiben aus. (b) Abschliessend wird fuer jede betroffene Box script.radiostream_mpd_sicherstellen
+    aufgerufen, da das Add-on nach verzoegertem Reconnect den MPD-Dienst oft nicht
+    mitstartet (#316).] [13.10.2026: Storage-Key von ''radiostreams_reparieren'' auf
+    ''radiostream_reparieren'' angeglichen (jetzt identisch mit der Entity-ID script.radiostream_reparieren)
+    - Watchman konnte das Script vorher keiner Entitaet zuordnen. Inhalt unveraendert,
+    veralteter Registry-Name ''Radiostream reparieren'' entfaellt, angezeigt wird
+    der Alias.] [01.11.2026 (Claude): Add-on-Neustart auf das gepatchte Add-on 1b3a7c56_bluetooth_audio_manager
+    (Chrischan-Fork) umgestellt; das alte d4261985 ist gestoppt und bleibt als Rueckweg
+    installiert.] [06.11.2026 (Claude): das alte Add-on d4261985 wurde deinstalliert;
+    die Neustart-Schritte zeigen ausschliesslich auf 1b3a7c56_bluetooth_audio_manager.]'
+  fields:
+    player:
+      description: 97_0, 105_9 oder 87_5 - leer lassen fuer alle drei (Totalausfall)
+      name: Player (optional)
+      required: false
+      selector:
+        select:
+          options:
+          - '97_0'
+          - '105_9'
+          - '87_5'
+  mode: single
+  sequence:
+  - variables:
+      entry_map: '{{ states(''input_text.radiostream_mpd_entry_map'') | from_json
+        }}'
+      switch_map: '{{ states(''input_text.radiostream_dose_switch_map'') | from_json
+        }}'
+      vorher_an: '{% set ns = namespace(l=[]) %}{% for p in [''97_0'', ''105_9'',
+        ''87_5''] %}{% if is_state(switch_map[p], ''on'') %}{% set ns.l = ns.l + [p]
+        %}{% endif %}{% endfor %}{{ ns.l }}'
+  - else:
+    - action: switch.turn_off
+      target:
+        entity_id:
+        - switch.dose_bt_87_5
+        - switch.dose_bt_97_0
+        - switch.dose_bt_105_9
+    - delay:
+        seconds: 30
+    - action: hassio.addon_restart
+      data:
+        addon: 1b3a7c56_bluetooth_audio_manager
+      note: Neustart waehrend alle Steckdosen aus sind, damit das Addon beim Start
+        nicht sofort auf 3 Geraete gleichzeitig trifft
+    - delay:
+        seconds: 25
+    - note: Nur die Steckdosen wieder einschalten, die vor der Reparatur an waren
+        - eine bewusst ausgeschaltete Box bleibt aus. Reihenfolge 97.0, 105.9, 87.5
+        mit 20s Abstand wie bisher.
+      repeat:
+        for_each: '{{ vorher_an }}'
+        sequence:
+        - action: switch.turn_on
+          target:
+            entity_id: '{{ switch_map[repeat.item] }}'
+        - delay:
+            seconds: 20
+    if:
+    - condition: template
+      value_template: '{{ player is defined and player not in [none, ''''] }}'
+    then:
+    - action: switch.turn_off
+      note: Gezielt nur die betroffene Steckdose
+      target:
+        entity_id: '{{ switch_map[player] }}'
+    - delay:
+        seconds: 30
+    - action: hassio.addon_restart
+      data:
+        addon: 1b3a7c56_bluetooth_audio_manager
+      note: Neustart waehrend alle Steckdosen aus sind, damit das Addon beim Start
+        nicht sofort auf 3 Geraete gleichzeitig trifft
+    - delay:
+        seconds: 25
+    - action: switch.turn_on
+      target:
+        entity_id: '{{ switch_map[player] }}'
+  - delay:
+      seconds: 20
+  - note: '20.09.2026: von parallel auf sequenziell mit 3s Abstand umgestellt - vorsorglich
+      gegen dieselbe Klasse von Race Condition (gleichzeitiges Anfassen aller drei
+      Streams), die am selben Tag beim gleichzeitigen play_media-Aufruf als Mixing-Bug-Ursache
+      identifiziert wurde'
+    sequence:
+    - action: homeassistant.reload_config_entry
+      data:
+        entry_id: '{{ entry_map[''97_0''] }}'
+    - delay:
+        seconds: 3
+    - action: homeassistant.reload_config_entry
+      data:
+        entry_id: '{{ entry_map[''105_9''] }}'
+    - delay:
+        seconds: 3
+    - action: homeassistant.reload_config_entry
+      data:
+        entry_id: '{{ entry_map[''87_5''] }}'
+  - variables:
+      ziele: '{{ [player] if (player is defined and player not in [none, '''']) else
+        vorher_an }}'
+  - note: 'Nach Add-on-Neustart und zeitversetztem Einschalten verbinden sich die
+      Boxen verzoegert - genau das Szenario aus Issue #316, in dem das Add-on MPD
+      nicht mitstartet. Das Neuladen der MPD-Integration hilft dagegen nicht; MPD
+      sicherstellen startet den fehlenden Dienst nach.'
+    repeat:
+      for_each: '{{ ziele }}'
+      sequence:
+      - action: script.turn_on
+        data:
+          variables:
+            player: '{{ repeat.item }}'
+        target:
+          entity_id: script.radiostream_mpd_sicherstellen
+radiostream_reparieren_light:
+  alias: Radiostream BT-Reconnect
+  description: 'Leichte Variante von script.radiostream_reparieren. UEBERARBEITET
+    21.09.2026: prueft jetzt erst den tatsaechlichen Verbindungsstatus (rest_command.bt_audio_get_state)
+    und waehlt je Geraet die mildere Aktion: ist das Geraet laut Add-on bereits getrennt
+    (connected=false), wird nur ein normaler rest_command.bt_audio_connect versucht
+    (kein unnoetiger Force-Disconnect eines ohnehin schon getrennten Geraets). NUR
+    wenn das Geraet sich faelschlich noch fuer verbunden haelt (connected=true, aber
+    offensichtlich nicht richtig funktionierend - deshalb wurde dieses Script ueberhaupt
+    aufgerufen), wird der haertere rest_command.bt_audio_force_reconnect als letztes
+    Mittel eingesetzt. Grund: force_reconnect erzwingt einen Disconnect+Reconnect-Zyklus
+    - bei einem bereits getrennten Geraet ist der Disconnect-Teil unnoetig scharf
+    und kann einen laufenden natuerlichen Reconnect-Versuch des Add-ons stoeren, statt
+    ihm Zeit zu geben. Feld ''player'' optional: leer = alle drei Geraete nacheinander
+    (5s Abstand), gesetzt = nur das eine Geraet. continue_on_error je Geraet, damit
+    ein einzelner BT-Fehler andere nicht blockiert. MAC-Adressen zentral aus input_text.radiostream_address_map
+    (JSON). [21.09.2026: Alias von ''Radiostream reparieren (Light)'' auf ''Radiostream
+    BT-Reconnect'' geaendert - beschreibt praeziser was es tut (Connect/Force-Reconnect).
+    Entity-ID/Storage-Key bewusst UNVERAENDERT gelassen. [23.09.2026 Race-Fix: Modus
+    von ''single'' auf ''queued'' (max 5) umgestellt - bei ''single'' konnte ein Retry-Aufruf
+    aus der Retry-Schleife von radiostream_reparieren_ultralight (3s nach dem ersten
+    Delegations-Aufruf) still verworfen werden, falls der erste Lauf noch nicht fertig
+    war. ''queued'' stellt sicher, dass jeder angeforderte Lauf irgendwann tatsaechlich
+    ausgefuehrt wird, statt geraeuschlos zu verpuffen. Gefunden bei der vollstaendigen
+    Logik-Audit vom 23.09.2026. [23.09.2026 GESUNDHEITS-SCHUTZ: Entscheidung jetzt
+    dreistufig statt zweistufig - (1) verbunden+Transport = gesund -> nichts tun (nur
+    Logbuch), (2) verbunden ohne Transport = halbtot -> force_reconnect, (3) getrennt/unbekannt
+    -> connect. Vorher loeste jede bestehende Verbindung einen Force-Reconnect aus,
+    auch eine voellig gesunde - live passiert beim Testaufruf am 23.09.2026 (87.5+105.9
+    getrennt) und theoretisch auch bei jedem Diagnose-Retry kurz nach einem erfolgreichen
+    Reload.] [23.09.2026: Abfrage von bt_audio_get_state auf bt_audio_get_devices
+    umgestellt. Das Script braucht nur die Bluetooth-Daten; das Auslesen der PulseAudio-Sinks
+    (Teil von get_state) verursacht nachweislich ein hoerbares Stocken (gezielter
+    A/B-Test: get_devices unauffaellig, get_sinks stockt).] [13.10.2026: Storage-Key
+    von ''radiostreams_reparieren_light'' auf ''radiostream_reparieren_light'' angeglichen
+    (jetzt identisch mit der Entity-ID script.radiostream_reparieren_light). Inhalt
+    unveraendert, veralteter Registry-Name ''Radiostream reparieren (Light)'' entfaellt,
+    angezeigt wird der Alias.]'
+  fields:
+    player:
+      description: 97_0, 105_9 oder 87_5 - leer lassen fuer alle drei
+      name: Player (optional)
+      required: false
+      selector:
+        select:
+          options:
+          - '97_0'
+          - '105_9'
+          - '87_5'
+  max: 5
+  mode: queued
+  sequence:
+  - variables:
+      address_map: '{{ states(''input_text.radiostream_address_map'') | from_json
+        }}'
+      targets: '{{ [player] if (player is defined and player not in [none, ''''])
+        else [''97_0'', ''105_9'', ''87_5''] }}'
+  - action: rest_command.bt_audio_get_devices
+    continue_on_error: true
+    note: Nur Bluetooth-Geraete abfragen (reicht hier vollstaendig) - KEINE Sink-Abfrage,
+      da das Auslesen der PulseAudio-Sinks nachweislich ein hoerbares Stocken verursacht
+      (Test 23.09.2026)
+    response_variable: state_result
+  - variables:
+      devices: '{{ state_result.content.devices if state_result is defined else []
+        }}'
+  - repeat:
+      for_each: '{{ targets }}'
+      sequence:
+      - variables:
+          device: '{{ (devices | selectattr(''address'', ''equalto'', address_map[repeat.item])
+            | list | first) if devices is defined else none }}'
+          mac: '{{ address_map[repeat.item] }}'
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: '{{ device is not none and device.connected and device.has_transport
+              }}'
+          note: 'GESUND: verbunden UND Audio-Transport vorhanden - nichts tun. Verhindert,
+            dass ein Aufruf (z.B. Retry der Diagnose oder manueller Button) eine funktionierende
+            Verbindung per Force-Reconnect kaputt macht (real passiert am 23.09.2026)'
+          sequence:
+          - action: logbook.log
+            data:
+              entity_id: media_player.musik_radiostream_{{ repeat.item }}
+              message: '{{ repeat.item }}: Bluetooth ist gesund (verbunden + Audio-Transport)
+                - kein Eingriff'
+              name: Radiostream BT-Reconnect
+        - conditions:
+          - condition: template
+            value_template: '{{ device is not none and device.connected }}'
+          note: Verbunden, aber OHNE Audio-Transport (halbtote Verbindung) - einziger
+            Fall, in dem der harte Force-Reconnect gerechtfertigt ist
+          sequence:
+          - action: rest_command.bt_audio_force_reconnect
+            continue_on_error: true
+            data:
+              address: '{{ mac }}'
+        default:
+        - action: rest_command.bt_audio_connect
+          continue_on_error: true
+          data:
+            address: '{{ mac }}'
+          note: Getrennt oder unbekannt - milder Connect-Versuch
+      - delay:
+          seconds: 5

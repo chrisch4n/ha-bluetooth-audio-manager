@@ -11,6 +11,11 @@ MAC-Adressen, Config-Entry-IDs und Gerätenamen der Handys stehen bewusst nicht
 hier (öffentliches Repository) – sie liegen in den HA-Helfern
 (`input_text.radiostream_address_map` usw.).
 
+Die Automationen und Skripte selbst liegen als anonymisierter Export aus
+`automations.yaml` / `scripts.yaml` unter
+[`docs/chrischan-ha/`](chrischan-ha/) (Box-MACs → `<MAC_87_5>` usw.,
+Mobilgeräte → `geraet_1..3`).
+
 ## 1. Aufbau
 
 | Box | Frequenz | MPD-Port | Steckdose |
