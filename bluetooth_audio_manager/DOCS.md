@@ -45,13 +45,18 @@
 >   of the *Advanced SSH & Web Terminal* app temporarily off, run
 >
 >   ```
->   docker exec hassio_audio sh -c 'printf "%s\n" "unload-module module-bluetooth-discover" "load-module module-bluetooth-discover output_rate_refresh_interval_ms=600000" > /data/custom.pa'
+>   docker exec hassio_audio sh -c 'printf "%s\n" "unload-module module-bluetooth-discover" "load-module module-bluetooth-discover output_rate_refresh_interval_ms=3600000" > /data/custom.pa'
 >   ```
 >
 >   then restart the audio plugin (`ha audio restart`; speakers reconnect).
 >   The file survives reboots and updates. Check with
 >   `GET /api/diagnostics/pulse-bluetooth`; undo with
 >   `docker exec hassio_audio rm /data/custom.pa` and an audio restart.
+>   With three speakers on one Realtek RTL8761B stick, 10 minutes cut the
+>   output stalls from about 44 a minute to two in 20 minutes; 60 minutes
+>   (`3600000`, as above) also avoids the occasional dropout when the
+>   bitrate steps up again. Measurements and the full setup this build is
+>   used with: [docs/chrischan-radiostream.md](https://github.com/chrisch4n/ha-bluetooth-audio-manager/blob/chrischan/docs/chrischan-radiostream.md).
 >
 > - **Prefer 44.1 kHz** (App Settings, on by default) — whoever sets up an
 >   A2DP stream picks its format: the app's connects run at 44.1 kHz, but a
