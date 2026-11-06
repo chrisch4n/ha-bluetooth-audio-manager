@@ -1,0 +1,1128 @@
+# Dashboard "radio-streams" (Radiostreams, Reparatur, Presets, Radio, Receiver),
+# Export der Rohkonfiguration aus Home Assistant, Stand 06.11.2026.
+# Einfuegen ueber Dashboard > Bearbeiten > Rohkonfigurations-Editor.
+# Enthaelt keine MACs, IPs, Benutzer- oder Geraete-IDs. Braucht card-mod/UIX.
+# Beschreibung des Systems: ../chrischan-radiostream.md
+views:
+- icon: mdi:radio
+  path: radiostreams
+  sections:
+  - cards:
+    - type: markdown
+      content: ' '
+      text_only: true
+      card_mod:
+        style: 'ha-card { background: transparent !important; box-shadow: none !important; border: none
+          !important; min-height: 12px !important; }'
+    - type: vertical-stack
+      grid_options:
+        columns: full
+      cards:
+      - type: tile
+        entity: media_player.radiostream_87_5_sender
+        name: Radiostream 87.5
+        state_content:
+        - state
+        - source
+        vertical: false
+        features:
+        - controls:
+          - media_previous_track
+          - media_play_pause
+          - media_next_track
+          type: media-player-playback
+        - show_mute_button: true
+          type: media-player-volume-slider
+        - type: media-player-source
+        features_position: bottom
+        card_mod:
+          style: 'ha-card { border-radius: 12px 12px 0 0 !important; box-shadow: none !important; margin-bottom:
+            0 !important; border-bottom: none !important; }'
+        tap_action:
+          action: perform-action
+          perform_action: script.radiostream_power_toggle
+          data:
+            player: '87_5'
+            action: 'on'
+      - type: grid
+        columns: 5
+        square: true
+        cards:
+        - type: button
+          entity: input_select.radiostream_preset_1
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '1'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_1'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_2
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '2'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_2'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_3
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '3'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_3'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_4
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '4'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_4'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_5
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '5'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_5'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_6
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '6'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_6'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_7
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '7'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_7'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_8
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '8'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_8'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_9
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '9'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_9'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_10
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '10'
+              ziel_helper: input_select.radiosender_87_5
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_10'') %}{% set s = states(''input_select.radiosender_87_5'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+      card_mod:
+        style: 'ha-card { --preset-padding-x: 3px; } .card:not(:last-child) { margin-bottom: 0px !important;
+          }'
+    - type: markdown
+      content: ' '
+      text_only: true
+      card_mod:
+        style: 'ha-card { background: transparent !important; box-shadow: none !important; border: none
+          !important; min-height: 12px !important; }'
+    - type: vertical-stack
+      grid_options:
+        columns: full
+      card_mod:
+        style: 'ha-card { --preset-padding-x: 3px; } .card:not(:last-child) { margin-bottom: 0px !important;
+          }'
+      cards:
+      - entity: media_player.radiostream_97_0_sender
+        features:
+        - controls:
+          - media_previous_track
+          - media_play_pause
+          - media_next_track
+          type: media-player-playback
+        - show_mute_button: true
+          type: media-player-volume-slider
+        - type: media-player-source
+        name: Radiostream 97.0
+        state_content:
+        - state
+        - source
+        type: tile
+        card_mod:
+          style: 'ha-card { border-radius: 12px 12px 0 0 !important; box-shadow: none !important; margin-bottom:
+            0 !important; border-bottom: none !important; }'
+        tap_action:
+          action: perform-action
+          perform_action: script.radiostream_power_toggle
+          data:
+            player: '97_0'
+            action: 'on'
+      - type: grid
+        columns: 5
+        square: true
+        cards:
+        - type: button
+          entity: input_select.radiostream_preset_1
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '1'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_1'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_2
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '2'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_2'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_3
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '3'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_3'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_4
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '4'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_4'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_5
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '5'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_5'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_6
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '6'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_6'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_7
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '7'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_7'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_8
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '8'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_8'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_9
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '9'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_9'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_10
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '10'
+              ziel_helper: input_select.radiosender_97_0
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_10'') %}{% set s = states(''input_select.radiosender_97_0'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+    - type: markdown
+      content: ' '
+      text_only: true
+      card_mod:
+        style: 'ha-card { background: transparent !important; box-shadow: none !important; border: none
+          !important; min-height: 12px !important; }'
+    - type: vertical-stack
+      grid_options:
+        columns: full
+      card_mod:
+        style: 'ha-card { --preset-padding-x: 3px; } .card:not(:last-child) { margin-bottom: 0px !important;
+          }'
+      cards:
+      - entity: media_player.radiostream_105_9_sender
+        features:
+        - controls:
+          - media_previous_track
+          - media_play_pause
+          - media_next_track
+          type: media-player-playback
+        - show_mute_button: true
+          type: media-player-volume-slider
+        - type: media-player-source
+        name: Radiostream 105.9
+        state_content:
+        - state
+        - source
+        type: tile
+        card_mod:
+          style: 'ha-card { border-radius: 12px 12px 0 0 !important; box-shadow: none !important; margin-bottom:
+            0 !important; border-bottom: none !important; }'
+        tap_action:
+          action: perform-action
+          perform_action: script.radiostream_power_toggle
+          data:
+            player: '105_9'
+            action: 'on'
+      - type: grid
+        columns: 5
+        square: true
+        cards:
+        - type: button
+          entity: input_select.radiostream_preset_1
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '1'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_1'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_2
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '2'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_2'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_3
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '3'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_3'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_4
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '4'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_4'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_5
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '5'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_5'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_6
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '6'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_6'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_7
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '7'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_7'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_8
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '8'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_8'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_9
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '9'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_9'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+        - type: button
+          entity: input_select.radiostream_preset_10
+          name: ''
+          show_state: true
+          tap_action:
+            action: perform-action
+            perform_action: script.radiostream_preset_abspielen
+            data:
+              preset: '10'
+              ziel_helper: input_select.radiosender_105_9
+          grid_options:
+            columns: 4
+            rows: 1
+          card_mod:
+            style: '{% set p = states(''input_select.radiostream_preset_10'') %}{% set s = states(''input_select.radiosender_105_9'')
+              %}{% set active = p == s and p not in [''unknown'',''unavailable''] %}ha-card { justify-content:
+              flex-start !important; align-items: center !important; padding-top: 10px !important; padding-left:
+              var(--preset-padding-x, 6px) !important; padding-right: var(--preset-padding-x, 6px) !important;
+              border: {% if active %}1px solid var(--primary-color){% else %}1px solid var(--divider-color){%
+              endif %} !important; }'
+    - type: markdown
+      content: ' '
+      text_only: true
+      card_mod:
+        style: 'ha-card { background: transparent !important; box-shadow: none !important; border: none
+          !important; min-height: 12px !important; }'
+    type: grid
+  title: Radiostreams
+  type: sections
+- path: reparatur
+  title: Reparatur
+  type: sections
+  icon: mdi:wrench
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Stufe 1 · Diagnose
+      icon: mdi:magnify-scan
+    - type: grid
+      columns: 3
+      square: false
+      cards:
+      - type: button
+        name: '87.5'
+        icon: mdi:magnify-scan
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          target:
+            entity_id: script.radiostream_reparieren_ultralight
+          data:
+            variables:
+              player: '87_5'
+          confirmation:
+            text: 'Stufe 1 · Diagnose für 87.5: prüft Bluetooth und Audio-Sink. Gesunde Verbindungen werden
+              nie angefasst. Bei Bedarf: milder Connect wenn getrennt, MPD-Neustart wenn nur der Ton hängt,
+              Force-Reconnect nur bei Verbindung ohne Audio. Hinweis: Die Prüfung selbst verursacht ein
+              kurzes hörbares Stocken. Fortfahren?'
+        show_state: false
+      - type: button
+        name: '97.0'
+        icon: mdi:magnify-scan
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          target:
+            entity_id: script.radiostream_reparieren_ultralight
+          data:
+            variables:
+              player: '97_0'
+          confirmation:
+            text: 'Stufe 1 · Diagnose für 97.0: prüft Bluetooth und Audio-Sink. Gesunde Verbindungen werden
+              nie angefasst. Bei Bedarf: milder Connect wenn getrennt, MPD-Neustart wenn nur der Ton hängt,
+              Force-Reconnect nur bei Verbindung ohne Audio. Hinweis: Die Prüfung selbst verursacht ein
+              kurzes hörbares Stocken. Fortfahren?'
+        show_state: false
+      - type: button
+        name: '105.9'
+        icon: mdi:magnify-scan
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          target:
+            entity_id: script.radiostream_reparieren_ultralight
+          data:
+            variables:
+              player: '105_9'
+          confirmation:
+            text: 'Stufe 1 · Diagnose für 105.9: prüft Bluetooth und Audio-Sink. Gesunde Verbindungen
+              werden nie angefasst. Bei Bedarf: milder Connect wenn getrennt, MPD-Neustart wenn nur der
+              Ton hängt, Force-Reconnect nur bei Verbindung ohne Audio. Hinweis: Die Prüfung selbst verursacht
+              ein kurzes hörbares Stocken. Fortfahren?'
+        show_state: false
+    - type: heading
+      heading: Stufe 2 · Steckdosen-Zyklus
+      icon: mdi:power-cycle
+    - type: grid
+      columns: 3
+      square: false
+      cards:
+      - type: button
+        name: '87.5'
+        icon: mdi:power-plug-outline
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          data:
+            variables:
+              player: '87_5'
+          confirmation:
+            text: 'Stufe 2 · Steckdosen-Zyklus für 87.5: Steckdose 30 s stromlos, danach wieder an. Kein
+              Add-on-Neustart, die anderen beiden Streams laufen weiter. Fortfahren?'
+          target:
+            entity_id: script.radiostream_steckdose_zyklieren
+        show_state: false
+      - type: button
+        name: '97.0'
+        icon: mdi:power-plug-outline
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          data:
+            variables:
+              player: '97_0'
+          confirmation:
+            text: 'Stufe 2 · Steckdosen-Zyklus für 97.0: Steckdose 30 s stromlos, danach wieder an. Kein
+              Add-on-Neustart, die anderen beiden Streams laufen weiter. Fortfahren?'
+          target:
+            entity_id: script.radiostream_steckdose_zyklieren
+        show_state: false
+      - type: button
+        name: '105.9'
+        icon: mdi:power-plug-outline
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          data:
+            variables:
+              player: '105_9'
+          confirmation:
+            text: 'Stufe 2 · Steckdosen-Zyklus für 105.9: Steckdose 30 s stromlos, danach wieder an. Kein
+              Add-on-Neustart, die anderen beiden Streams laufen weiter. Fortfahren?'
+          target:
+            entity_id: script.radiostream_steckdose_zyklieren
+        show_state: false
+    - type: heading
+      heading: Stufe 3 · Voll-Reparatur
+      icon: mdi:wrench
+    - type: tile
+      entity: script.radiostream_reparieren
+      name: Voll-Reparatur (Add-on-Neustart, alle drei)
+      icon: mdi:wrench
+      grid_options:
+        columns: full
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_reparieren
+        confirmation:
+          text: 'Stufe 3 · Voll-Reparatur für ALLE DREI Streams: Steckdosen aus, Add-on-Neustart, Steckdosen
+            gestaffelt wieder an, MPD neu laden. Unterbricht alle drei Boxen für ca. 2 Minuten. Fortfahren?'
+    - type: heading
+      heading: Notfall · Neu koppeln (nur manuell)
+      icon: mdi:alert-octagon
+    - type: grid
+      columns: 3
+      square: false
+      cards:
+      - type: button
+        name: '87.5'
+        icon: mdi:bluetooth-transfer
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          data:
+            variables:
+              address: '{{ (states(''input_text.radiostream_address_map'') | from_json)[''87_5''] }}'
+              mpd_port: '{{ (states(''input_text.radiostream_port_map'') | from_json)[''87_5''] | int
+                }}'
+          confirmation:
+            text: 'Notfall · Neu koppeln für 87.5: Die Box wird vergessen und neu gekoppelt. Nur verwenden,
+              wenn Stufe 1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: Box in den Kopplungsmodus
+              versetzen (Taste halten, bis die LED schnell blinkt) und erneut versuchen. Fortfahren?'
+          target:
+            entity_id: script.radiostream_notfall_forget_pair
+      - type: button
+        name: '97.0'
+        icon: mdi:bluetooth-transfer
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          data:
+            variables:
+              address: '{{ (states(''input_text.radiostream_address_map'') | from_json)[''97_0''] }}'
+              mpd_port: '{{ (states(''input_text.radiostream_port_map'') | from_json)[''97_0''] | int
+                }}'
+          confirmation:
+            text: 'Notfall · Neu koppeln für 97.0: Die Box wird vergessen und neu gekoppelt. Nur verwenden,
+              wenn Stufe 1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: Box in den Kopplungsmodus
+              versetzen (Taste halten, bis die LED schnell blinkt) und erneut versuchen. Fortfahren?'
+          target:
+            entity_id: script.radiostream_notfall_forget_pair
+      - type: button
+        name: '105.9'
+        icon: mdi:bluetooth-transfer
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          data:
+            variables:
+              address: '{{ (states(''input_text.radiostream_address_map'') | from_json)[''105_9''] }}'
+              mpd_port: '{{ (states(''input_text.radiostream_port_map'') | from_json)[''105_9''] | int
+                }}'
+          confirmation:
+            text: 'Notfall · Neu koppeln für 105.9: Die Box wird vergessen und neu gekoppelt. Nur verwenden,
+              wenn Stufe 1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: Box in den Kopplungsmodus
+              versetzen (Taste halten, bis die LED schnell blinkt) und erneut versuchen. Fortfahren?'
+          target:
+            entity_id: script.radiostream_notfall_forget_pair
+    - type: heading
+      heading: Steckdosen manuell
+      icon: mdi:power-socket-de
+    - type: grid
+      columns: 3
+      square: false
+      cards:
+      - type: tile
+        entity: switch.dose_bt_87_5
+        name: '87.5'
+        icon: mdi:power-plug
+        icon_tap_action:
+          action: toggle
+          confirmation:
+            text: Steckdose 87.5 wirklich schalten? Beim Ausschalten verliert die Box sofort den Strom.
+      - type: tile
+        entity: switch.dose_bt_97_0
+        name: '97.0'
+        icon: mdi:power-plug
+        icon_tap_action:
+          action: toggle
+          confirmation:
+            text: Steckdose 97.0 wirklich schalten? Beim Ausschalten verliert die Box sofort den Strom.
+      - type: tile
+        entity: switch.dose_bt_105_9
+        name: '105.9'
+        icon: mdi:power-plug
+        icon_tap_action:
+          action: toggle
+          confirmation:
+            text: Steckdose 105.9 wirklich schalten? Beim Ausschalten verliert die Box sofort den Strom.
+    - type: heading
+      heading: Einstellungen & Status
+      icon: mdi:cog
+    - type: markdown
+      content: '**Frequenz** | **MAC** | **Port**
+
+        :--|:--:|:--:
+
+        {% set a = states(''input_text.radiostream_address_map'') | from_json %}{% set pm = states(''input_text.radiostream_port_map'')
+        | from_json %}{% for p, l in [(''87_5'',''87.5''),(''97_0'',''97.0''),(''105_9'',''105.9'')] %}{{
+        l }} | {{ a[p] }} | {{ pm[p] }}
+
+        {% endfor %}
+
+        _MAC und Port live aus den zentralen Maps._'
+      entity_id:
+      - input_text.radiostream_address_map
+      - input_text.radiostream_port_map
+    - type: grid
+      columns: 2
+      square: false
+      cards:
+      - type: tile
+        entity: input_boolean.radiostream_power_schaltet_steckdosen
+        name: Power schaltet Steckdosen
+        icon: mdi:power-socket-de
+        tap_action:
+          action: toggle
+      - type: tile
+        entity: input_boolean.radiostream_lautstarke_fest_100
+        name: Lautstärke fest 100 %
+        icon: m3o:volume-up
+        tap_action:
+          action: toggle
+      - type: tile
+        entity: automation.radiostream_player_unavailable_bt_audio_manager_bug_watch
+        name: Watchdog
+        icon: mdi:shield-alert
+        show_entity_picture: false
+        features:
+        - type: toggle
+      - type: tile
+        entity: input_datetime.radiostream_letzte_automatische_voll_reparatur
+        name: Letzte Auto-Reparatur
+        icon: mdi:wrench-clock
+- path: presets
+  title: Presets
+  type: sections
+  icon: mdi:radiobox-marked
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Preset-Zuordnung
+      icon: mdi:radio
+    - type: tile
+      entity: input_select.radiostream_preset_1
+      name: Preset 1
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_select.radiostream_preset_2
+      name: Preset 2
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_select.radiostream_preset_3
+      name: Preset 3
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_select.radiostream_preset_4
+      name: Preset 4
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_select.radiostream_preset_5
+      name: Preset 5
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_select.radiostream_preset_6
+      name: Preset 6
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_select.radiostream_preset_7
+      name: Preset 7
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_select.radiostream_preset_8
+      name: Preset 8
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_select.radiostream_preset_9
+      name: Preset 9
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_select.radiostream_preset_10
+      name: Preset 10
+      icon: mdi:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 6
+  max_columns: 4
+  cards: []
+- title: Radio
+  path: radio
+  icon: m3o:radio
+  type: panel
+  cards:
+  - type: custom:radiostream-radio-card
+    title: Radiostream
+- type: panel
+  title: Receiver
+  path: receiver
+  icon: m3o:speaker
+  cards:
+  - type: custom:radiostream-receiver-card
+    title: Radiostream

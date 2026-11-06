@@ -14,7 +14,8 @@ hier (öffentliches Repository) – sie liegen in den HA-Helfern
 Die Automationen und Skripte selbst liegen als anonymisierter Export aus
 `automations.yaml` / `scripts.yaml` unter
 [`docs/chrischan-ha/`](chrischan-ha/) (Box-MACs → `<MAC_87_5>` usw.,
-Mobilgeräte → `geraet_1..3`).
+Mobilgeräte → `geraet_1..3`), ebenso die Rohkonfiguration des Dashboards
+`radio-streams` ([`dashboard-radio-streams.yaml`](chrischan-ha/dashboard-radio-streams.yaml)).
 
 ## 1. Aufbau
 
