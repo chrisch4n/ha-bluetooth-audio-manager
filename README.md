@@ -12,6 +12,25 @@
 > (MPD stream volume, cherry-picked unchanged) and
 > [Cayouche1989@2c38ea0](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e)
 > (auto-reconnect after a failed connect, explicit-connect part adapted).
+>
+> **Known limitations (fork).**
+> - One Bluetooth adapter per app instance. Three A2DP streams on one
+>   Realtek RTL8761B stick only run without dropouts with the PulseAudio
+>   setting described in DOCS.md; after an overload the SBC bitrate stays
+>   lower for up to a few hours.
+> - After the app restarts or updates, MPD does not resume playback by itself:
+>   a Home Assistant automation has to start it again.
+> - Signal strength is only measured during a scan, and a scan disturbs
+>   running streams on the same adapter.
+> - *Locked volume* is one value for all locked devices and acts on MPD's
+>   volume; the speaker's own volume stays at 100 %.
+> - With Bluetooth FM transmitters (ES-BT17), the FM sound can degrade until
+>   the box is power-cycled; Home Assistant only sees Bluetooth and MPD, not
+>   the FM signal.
+>
+> Full lists: [DOCS.md](bluetooth_audio_manager/DOCS.md) (this build) and
+> [setup doc, section 7](docs/chrischan-radiostream.md#7-bekannte-grenzen-stand-07112026)
+> (setup incl. FM boxes, German).
 
 [![GitHub Release](https://img.shields.io/github/v/release/scyto/ha-bluetooth-audio-manager?style=flat-square)](https://github.com/scyto/ha-bluetooth-audio-manager/releases)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/scyto/ha-bluetooth-audio-manager/build.yaml?branch=main&style=flat-square)](https://github.com/scyto/ha-bluetooth-audio-manager/actions/workflows/build.yaml)
