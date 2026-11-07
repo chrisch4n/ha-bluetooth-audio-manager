@@ -1,4 +1,4 @@
-# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 06.11.2026.
+# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 07.11.2026.
 # Anonymisiert: Box-MACs -> <MAC_87_5>/<MAC_105_9>/<MAC_97_0>, Mobilgeraete -> geraet_1..3.
 # Beschreibung des Systems: ../chrischan-radiostream.md
 - id: '1785450992212'
@@ -1016,16 +1016,28 @@
   alias: Radiostream Lautstärke-Sperre an Add-on übertragen
   description: 'Überträgt den Schalter input_boolean.radiostream_lautstarke_fest_100
     an das gepatchte BT-Audio-Add-on (Einstellung volume_lock je Box, ab 2.1.0-cc.6):
-    an = MPD-Lautstärke, Stream und Box-Lautstärke werden für alle drei Boxen auf
-    100 % gehalten, aus = normale Lautstärkeregelung. Läuft bei jedem Umschalten und
-    beim HA-Start (Abgleich, falls das Add-on einen anderen Stand hat). Boxen kommen
-    aus input_text.radiostream_address_map. Angelegt 02.11.2026 von Claude.'
+    an = Lautstärke gesperrt, aus = normale Lautstärkeregelung. Läuft bei jedem Umschalten
+    und beim HA-Start (Abgleich, falls das Add-on einen anderen Stand hat). Boxen
+    kommen aus input_text.radiostream_address_map. Angelegt 02.11.2026 von Claude.
+    [07.11.2026 Claude, auf Wunsch des Nutzers: Sperr-Wert einstellbar statt fest
+    100 % (Add-on ab 2.1.0-cc.16, App-Einstellung volume_lock_level). input_number.radiostream_lautstarke_alle_boxen
+    (10-100 %) wird bei jeder Änderung und beim HA-Start per rest_command.bt_audio_put_settings
+    an das Add-on gegeben, immer vor dem Sperr-Schalter. Der Wert wirkt auf die MPD-Lautstärke
+    aller gesperrten Boxen; Stream und Box bleiben auf 100 %. Unter 100 % hilft er,
+    wenn die UKW-Sender bei vollem Pegel übersteuern. Eine reine Wert-Änderung schickt
+    den Sperr-Schalter nicht erneut.]'
   triggers:
   - entity_id: input_boolean.radiostream_lautstarke_fest_100
     id: geschaltet
     to:
     - 'on'
     - 'off'
+    trigger: state
+  - entity_id: input_number.radiostream_lautstarke_alle_boxen
+    id: stufe
+    not_to:
+    - unavailable
+    - unknown
     trigger: state
   - event: start
     id: ha_start
@@ -1037,14 +1049,31 @@
         | list }}'
       sperre: '{{ is_state(''input_boolean.radiostream_lautstarke_fest_100'', ''on'')
         }}'
-  - repeat:
-      for_each: '{{ adressen }}'
-      sequence:
-      - action: rest_command.bt_audio_set_volume_lock
-        continue_on_error: true
-        data:
-          address: '{{ repeat.item }}'
-          lock: '{{ sperre }}'
-        note: Fehler bei einer Box (z. B. Add-on startet gerade) halten die anderen
-          nicht auf; das Add-on speichert die Einstellung selbst dauerhaft.
+      stufe: '{{ states(''input_number.radiostream_lautstarke_alle_boxen'') | int(100)
+        }}'
+  - action: rest_command.bt_audio_put_settings
+    continue_on_error: true
+    data:
+      payload: '{"volume_lock_level": {{ stufe }}}'
+    note: Wert zuerst, damit eine im selben Lauf eingeschaltete Sperre gleich auf
+      diesem Wert startet
+    response_variable: antwort_stufe
+  - if:
+    - condition: trigger
+      id:
+      - geschaltet
+      - ha_start
+    note: Nur bei Umschalten und HA-Start; eine reine Wert-Änderung lässt den Sperr-Schalter
+      unberührt
+    then:
+    - repeat:
+        for_each: '{{ adressen }}'
+        sequence:
+        - action: rest_command.bt_audio_set_volume_lock
+          continue_on_error: true
+          data:
+            address: '{{ repeat.item }}'
+            lock: '{{ sperre }}'
+          note: Fehler bei einer Box (z. B. Add-on startet gerade) halten die anderen
+            nicht auf; das Add-on speichert die Einstellung selbst dauerhaft.
   mode: restart

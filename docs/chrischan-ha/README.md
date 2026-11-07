@@ -1,4 +1,4 @@
-# Home-Assistant-Konfiguration „Radiostream" (Export, Stand 06.11.2026)
+# Home-Assistant-Konfiguration „Radiostream" (Export, Stand 07.11.2026)
 
 Anonymisierter Export der Home-Assistant-Teile, mit denen drei Internetradio-Streams
 über dieses Add-on dauerhaft an drei Bluetooth-UKW-Sender (ES-BT17) gehen. Was das
@@ -15,7 +15,7 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 |-------|-------|--------|
 | [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 8 Radiostream-Automationen |
 | [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 8 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
-| [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Radiostreams, Reparatur, Presets, Radio, Receiver |
+| [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver, Reparatur, Presets, Radio, Radiostreams |
 | [`configuration_yaml/rest_command.yaml`](configuration_yaml/rest_command.yaml) | `rest_command: !include …` | `rest_command.bt_audio_*` für die REST-API des Add-ons |
 | [`configuration_yaml/media_player.yaml`](configuration_yaml/media_player.yaml) | `media_player: !include …` | Universal-Media-Player `media_player.radiostream_<p>_sender` |
 | [`configuration_yaml/template_radiostream_senderliste.yaml`](configuration_yaml/template_radiostream_senderliste.yaml) | Ausschnitt aus `template: !include …` | `sensor.radiostream_senderliste` (Sendername → Stream-URL) |
@@ -46,7 +46,8 @@ anpassen (siehe [`../api.md`](../api.md)).
 - Pro Box eine MPD-Integration (Host = Add-on, Port wie oben), die Player heißen
   `media_player.musik_radiostream_<p>`.
 - Companion-App auf den Geräten, die Meldungen bekommen sollen.
-- Für das Dashboard: card-mod bzw. UIX.
+- Für das Dashboard: card-mod bzw. UIX; die Ansicht *Receiver* nutzt die eigene Karte
+  `custom:radiostream-receiver-card`, die nicht in diesem Export liegt.
 
 **Helfer (UI → Einstellungen → Helfer)**
 
@@ -62,7 +63,8 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_text.letzter_sender_<p>`, `input_text.letzter_preset_1..10` | Text | leer (gemerkte Auswahl) |
 | `input_boolean.radiostream_<p>_aktiv` | Schalter | soll die Box spielen |
 | `input_boolean.radiostream_ausfall_gemeldet_<p>` | Schalter | Merker für die Entwarnung |
-| `input_boolean.radiostream_lautstarke_fest_100` | Schalter | Lautstärke-Sperre aller Boxen |
+| `input_boolean.radiostream_lautstarke_fest_100` | Schalter | Lautstärke-Sperre aller Boxen („Radiostream Lautstärke fest") |
+| `input_number.radiostream_lautstarke_alle_boxen` | Zahl (10–100 %, Schieberegler) | Wert, auf dem die Sperre die Boxen hält (Add-on-Einstellung `volume_lock_level`, ab cc.16) |
 | `input_boolean.radiostream_power_schaltet_steckdosen` | Schalter | „Aus" schaltet auch die Steckdose |
 | `input_select.radiosender_<p>` | Dropdown | Sender je Box (Optionen setzt die Automation „Senderlisten synchronisieren") |
 | `input_select.radiostream_preset_1..10` | Dropdown | Presets (ebenso) |
