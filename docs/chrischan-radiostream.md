@@ -44,12 +44,14 @@ das Einspielen.
 ## 2. Add-on
 
 - Installiert als lokal gebautes Add-on `1b3a7c56_bluetooth_audio_manager`
-  aus diesem Branch, Version `2.1.0-cc.15`. Das ursprüngliche scyto-Add-on
+  aus diesem Branch, Version `2.1.0-cc.16`. Das ursprüngliche scyto-Add-on
   (`d4261985`) wurde am 06.11.2026 deinstalliert; sein Repository ist noch
   eingetragen, falls ein Rückweg nötig ist.
 - **App Settings:** Adapter = Realtek-MAC, Auto-Reconnect an,
-  *Prefer 44.1 kHz Bluetooth audio* an. Die Lautstärke-Sperre setzt HA
-  (Abschnitt 5).
+  *Prefer 44.1 kHz Bluetooth audio* an. Lautstärke-Sperre und ihren Wert
+  (*Locked volume*) setzt HA (Abschnitt 4). Der Wert wirkt auf die
+  MPD-Lautstärke; Stream und Box bleiben auf 100 %. Unter 100 % hilft er,
+  wenn ein UKW-Sender bei vollem Pegel übersteuert.
 - **Pro Box:** eigener Name (z. B. „Radiostream 87.5"), *When Idle* =
   Standard, Lautstärke-Sperre an, AVRCP aus, MPD-Port wie oben.
 
@@ -72,6 +74,7 @@ das Einspielen.
 | cc.13 | 06.11. | 44,1 kHz bevorzugen: 48-kHz-Verbindungen, die eine Box selbst aufbaut, werden neu geöffnet |
 | cc.14 | 06.11. | Nach dem Neuöffnen das A2DP-Profil der Karte aktivieren (sonst fehlte der Sink) |
 | cc.15 | 07.11. | Eigene Anzeigenamen pro Box (*Name* in den Geräte-Einstellungen); aiohttp 3.14.4 (wie scyto#320) |
+| cc.16 | 07.11. | Lautstärke-Sperre mit einstellbarem Wert für alle Boxen (*Locked volume*, 10–100 %), statt fest 100 % |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
@@ -82,7 +85,7 @@ das Einspielen.
 | [Cayouche1989/ha-bluetooth-audio-manager](https://github.com/Cayouche1989/ha-bluetooth-audio-manager), Branch `cayouche/reconnect-2.1.1`, Commit [`2c38ea0`](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e) (23.08.2026) | „Fix auto-reconnect after speaker availability" | Nur der Teil für fehlgeschlagene explizite Verbindungen, neu umgesetzt in `fc313d0` (Hinweis im Commit); der Discovery-gesteuerte Teil nicht. Zusammen mit `84ad826` deckt das beide Vorschläge aus scyto#317 ab; seit cc.1 |
 
 Alles Übrige im Branch ist eigene Arbeit (Fixes für scyto#315–#319 und die
-Erweiterungen cc.2–cc.15).
+Erweiterungen cc.2–cc.16).
 
 ## 3. PulseAudio: Aussetzer-Fix (custom.pa)
 

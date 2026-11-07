@@ -32,11 +32,16 @@
 >   PulseAudio ([slawa19@0a5e806](https://github.com/slawa19/ha-bluetooth-audio-manager/commit/0a5e806cc7f978c91a354e10d01c70ced5d9e9c7),
 >   cherry-picked unchanged; complements #285).
 >
-> - **Lock volume at 100 %** (device settings → MPD section, for all devices
+> - **Lock volume** (device settings → MPD section, for all devices
 >   at once in App Settings, or `PUT /api/devices/<mac>/settings
 >   {"volume_lock": true}` / `PUT /api/settings {"volume_lock_all": true}`) — holds MPD
->   volume, the MPD stream and the speaker's own (AVRCP) volume at 100 %;
->   any change is undone within seconds (speaker resets at most 5× a minute).
+>   volume at the *Locked volume* level, and the MPD stream and the speaker's
+>   own (AVRCP) volume at 100 %; any change is undone within seconds (speaker
+>   resets at most 5× a minute). The level is one value for all devices
+>   (App Settings → *Locked volume*, 10–100 %, default 100, or
+>   `PUT /api/settings {"volume_lock_level": 85}`) and is applied at once. It
+>   sits in MPD because MPD scales the audio digitally before Bluetooth —
+>   lower it if a speaker or FM transmitter distorts at full level.
 >
 > - **Friendly names** (device settings → *Name*, or `PUT /api/devices/<mac>/settings
 >   {"friendly_name": "Kitchen"}`) — your own name for a speaker, shown instead
