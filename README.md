@@ -7,11 +7,24 @@
 > it runs in (three radio streams to Bluetooth FM transmitters) is documented in
 > [`docs/chrischan-radiostream.md`](docs/chrischan-radiostream.md), with the
 > Home Assistant configuration in [`docs/chrischan-ha/`](docs/chrischan-ha/).
-> Includes work from parallel forks:
-> [slawa19@0a5e806](https://github.com/slawa19/ha-bluetooth-audio-manager/commit/0a5e806cc7f978c91a354e10d01c70ced5d9e9c7)
-> (MPD stream volume, cherry-picked unchanged) and
-> [Cayouche1989@2c38ea0](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e)
-> (auto-reconnect after a failed connect, explicit-connect part adapted).
+>
+> **Base and work from parallel forks.**
+> - Base: [scyto/ha-bluetooth-audio-manager](https://github.com/scyto/ha-bluetooth-audio-manager),
+>   branch `dev` (2.1.0 plus the UI escaping fix).
+> - [slawa19/ha-bluetooth-audio-manager](https://github.com/slawa19/ha-bluetooth-audio-manager),
+>   branch `fix/normalize-mpd-stream-volume`, commit
+>   [`0a5e806`](https://github.com/slawa19/ha-bluetooth-audio-manager/commit/0a5e806cc7f978c91a354e10d01c70ced5d9e9c7)
+>   — every new MPD stream is set to 100 % in PulseAudio. Cherry-picked
+>   unchanged (here `5e73193`, original author kept).
+> - [Cayouche1989/ha-bluetooth-audio-manager](https://github.com/Cayouche1989/ha-bluetooth-audio-manager),
+>   branch `cayouche/reconnect-2.1.1`, commit
+>   [`2c38ea0`](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e)
+>   — auto-reconnect after a failed connect. Only the explicit-connect part,
+>   re-implemented here in `fc313d0`; together with `84ad826` it covers both
+>   suggestions in scyto#317. The discovery-driven part was not taken over.
+> - Everything else on this branch (fixes for scyto#315–#319, cc.2–cc.16) is
+>   this fork's own work; details in the
+>   [setup doc](docs/chrischan-radiostream.md#basis-und-%C3%BCbernommene-arbeit-aus-anderen-forks).
 >
 > **Known limitations (fork).**
 > - One Bluetooth adapter per app instance. Three A2DP streams on one
