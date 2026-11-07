@@ -38,6 +38,14 @@
 >   volume, the MPD stream and the speaker's own (AVRCP) volume at 100 %;
 >   any change is undone within seconds (speaker resets at most 5× a minute).
 >
+> - **Friendly names** (device settings → *Name*, or `PUT /api/devices/<mac>/settings
+>   {"friendly_name": "Kitchen"}`) — your own name for a speaker, shown instead
+>   of its Bluetooth name everywhere in the app (the Bluetooth name stays
+>   visible on the card), and used as the MPD output name from the next MPD
+>   start. Useful when several identical speakers report the same name. Kept
+>   per address, so it survives *Forget* and re-pairing; *Clear all devices*
+>   removes it. An empty name switches back to the Bluetooth name.
+>
 > - **Several speakers on one adapter: short dropout about once a minute** —
 >   after a Bluetooth overload PulseAudio drops a little audio and lowers the
 >   A2DP bitrate, then raises it again every 0.5 s and runs straight into the
@@ -249,6 +257,13 @@ immediately — no restart needed.
 Open a device's menu (**⋮**) and select **Settings** to configure per-device
 options. Settings are stored in `/config/paired_devices.json` (addon_config) and
 persist across restarts, HA backups, and add-on reinstalls.
+
+### Name
+
+Your own name for the speaker, shown instead of its Bluetooth name (which
+stays visible in small print on the card and in the settings dialog). Leave it
+empty to use the Bluetooth name. The name is kept when the device is forgotten
+and paired again.
 
 ### When Idle
 
