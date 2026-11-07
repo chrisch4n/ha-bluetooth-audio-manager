@@ -110,6 +110,24 @@
 >   data). `stall_clusters` groups stalls that hit several speakers at once
 >   (shared path) and gives the spacing between them.
 >
+> Known limitations of this build:
+>
+> - After the app restarts or updates, MPD does not resume playback by
+>   itself; something outside (e.g. a Home Assistant automation) has to
+>   start it again. Home Assistant's MPD players may go straight from
+>   *playing* to *off* without passing through *unavailable*.
+> - A changed friendly name reaches the MPD output name only at the next
+>   MPD start.
+> - *Locked volume* is one value for all locked devices and acts on MPD's
+>   software volume; the speaker's own volume stays at 100 %.
+> - One Bluetooth adapter per app instance. Three A2DP streams on one
+>   Realtek RTL8761B stick need the PulseAudio setting above; after an
+>   overload the SBC bitrate stays lower for up to a few hours.
+> - Signal strength is only measured during a scan, and a scan disturbs
+>   running streams on the same adapter.
+> - On HAOS the audio plugin's PulseAudio log is not available (see
+>   Diagnostics); use the gap monitor.
+>
 > Built locally by the Supervisor from this repository; no prebuilt image.
 
 # Bluetooth Audio Manager
