@@ -1,4 +1,4 @@
-# Radiostream-Setup mit diesem Fork (Stand 06.11.2026)
+# Radiostream-Setup mit diesem Fork (Stand 07.11.2026)
 
 Dieses Dokument beschreibt die Installation, für die der Branch `chrischan`
 gepflegt wird: drei Internetradio-Streams, die rund um die Uhr über Bluetooth
@@ -251,3 +251,71 @@ Wiederherstellen lässt sich alles über ein HA-Backup von vor dem 06.11.2026.
   HFP-Null-Handler (darf nur einmal registriert sein) und die HA-Skripte und
   REST-Befehle für diese Box.
 - Nicht den Intel AX210 dafür nehmen (gehört HA; trägt keine drei Streams).
+
+## 7. Bekannte Grenzen (Stand 07.11.2026)
+
+Beobachtet oder aus dem Aufbau abgeleitet; „möglich" heißt: denkbar, aber
+nicht nachgewiesen.
+
+**UKW-Boxen (ES-BT17)**
+
+- **Klang verschlechtert sich, Stromreset hilft.** Am 07.11.2026 war der
+  UKW-Klang schlecht und nach einem Stromreset der Boxen wieder in Ordnung.
+  Die Ursache liegt also in der Box (Zustand des Senders); welche, ist
+  unbekannt. Home Assistant merkt davon nichts: Es sieht nur Bluetooth und
+  MPD, nicht, was die Box auf UKW sendet. Abhilfe: Steckdose kurz aus
+  (Skript *Steckdosen-Zyklus*). Wird der Klang regelmäßig nach einiger Zeit
+  schlechter, wäre ein nächtlicher Zyklus pro Box möglich.
+- **Möglich: Übersteuerung bei vollem Pegel.** Kleine UKW-Sender verzerren
+  oft bei vollem Eingangspegel; Radio BOB ist laut gemastert. Gegenmittel ist
+  der Sperr-Wert unter 100 % (cc.16, Regler *Lautstärke alle Boxen*). Am
+  07.11. war es nicht die Ursache (Stromreset genügte).
+- **Pre-Emphasis unbekannt.** In Europa gelten 50 µs, viele solche Geräte
+  nutzen 75 µs (zu heller Klang); bei der ES-BT17 nicht einstellbar.
+- **Möglich: Mischprodukte.** Drei Sender auf 1–1,5 m Abstand können
+  rechnerisch Störungen auf etwa 88,1, 96,4 und 106,5 MHz erzeugen. Bei der
+  geringen Sendeleistung meist unhörbar; sonst hilft mehr Abstand.
+- **Keine Pairing-Taste.** Neu verbinden geht nur per Stromzyklus. Danach
+  baut die Box die Verbindung selbst mit 48 kHz auf; das Add-on öffnet sie
+  neu, damit 44,1 kHz laufen (MPD pausiert dabei einige Sekunden).
+
+**Bluetooth und PulseAudio**
+
+- **Drei Streams auf einem Realtek-Stick nur mit custom.pa** (Abschnitt 3).
+  Nach einer Überlast läuft die SBC-Bitrate niedriger und erholt sich nur in
+  60-Minuten-Schritten (bis zu ~5 h); nach jedem Neustart oder Neuverbinden
+  sind anfangs 1–2 kurze Aussetzer möglich. Hinter UKW ist die niedrigere
+  Bitrate praktisch nicht hörbar.
+- **custom.pa nur beim Start von PulseAudio.** Das Bluetooth-Modul zur
+  Laufzeit neu zu laden hat PulseAudio abstürzen lassen (cc.11).
+- **Ein Adapter pro Add-on-Instanz** (Abschnitt 6).
+- **Signalstärke nur mit Scan.** BlueZ liefert die Signalstärke nur während
+  eines Scans, und der stört auf demselben Chip alle laufenden Streams. Im
+  Betrieb gibt es deshalb keine Messung mehr.
+- **Keine PulseAudio-Logs.** Das Audio-Plugin von HAOS schreibt nicht ins
+  Journal; Aussetzer lassen sich nur mit dem Gap-Monitor des Add-ons messen.
+
+**Add-on**
+
+- **Nach einem Neustart oder Update des Add-ons spielt MPD nicht von selbst
+  weiter.** Die Player gehen dabei teils direkt von *spielt* auf *aus*, ohne
+  *nicht verfügbar* zu sein. Wieder gestartet werden sie von „Radiostream
+  permanent" (Auslöser *Rückkehr* und *Stopp*, nach ~20–30 s).
+- **Anzeigenamen:** Der MPD-Ausgabename übernimmt einen geänderten Namen erst
+  beim nächsten Start von MPD. *Clear all devices* löscht die Namen.
+- **Sperr-Wert:** Ein Wert für alle gesperrten Boxen, kein Wert pro Box. Er
+  wirkt auf die MPD-Lautstärke (digital, vor Bluetooth); Stream und Box
+  bleiben auf 100 %, die Lautstärketasten der Box werden zurückgesetzt.
+
+**Home Assistant**
+
+- **Stopp am MPD-Player wird rückgängig gemacht.** Ist der Aktiv-Schalter an,
+  startet „Radiostream permanent" einen gestoppten Player nach 20 s neu.
+  Absichtlich aus geht eine Box nur über den Aktiv-Schalter bzw. Power.
+- **REST-Befehl `bt_audio_put_settings`:** Die Automation übergibt das JSON
+  als Text-Vorlage. Home Assistant wandelt es dabei in ein Objekt um, gibt
+  aber beim Einsetzen wieder den Originaltext aus – funktioniert (getestet
+  am 07.11.2026), hängt aber an diesem Verhalten von HA.
+- **Keine Stufe für „Box braucht Pairing-Modus".** Die Eskalationskette endet
+  mit einer Meldung; bei der ES-BT17 entspricht das dem Steckdosen-Zyklus,
+  der schon Stufe 2 ist.
