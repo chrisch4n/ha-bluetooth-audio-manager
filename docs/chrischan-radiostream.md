@@ -153,6 +153,8 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 - `input_boolean.radiostream_ausfall_gemeldet_<p>` – für diese Box wurde ein
   Ausfall gemeldet (nur dann gibt es eine Entwarnung).
 - `input_boolean.radiostream_lautstarke_fest_100` – Lautstärke-Sperre aller Boxen.
+- `input_number.radiostream_lautstarke_alle_boxen` – Wert, auf dem die Sperre die
+  Boxen hält (10–100 %, Standard 100).
 - `input_boolean.radiostream_power_schaltet_steckdosen` – ob „Aus" auch die
   Steckdose schaltet.
 - `input_select.radiosender_<p>`, `input_select.radiostream_preset_1..10`,
@@ -174,7 +176,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 | **Bug-Watch** (Player unavailable) | Player 5/10/20/30 Min `unavailable` | Eskalationskette, siehe unten. Nur für aktive Boxen mit Strom. |
 | **Wieder verfügbar** | Player kommt aus `unavailable` zurück (20 s) | Entwarnung mit Ausfalldauer, ersetzt die Ausfallmeldung (gleicher Tag). |
 | **Nach HA-Start prüfen** | 3 Min nach HA-Start | Box seit dem Start weg: Diagnose, bei getrennter Bluetooth-Verbindung einmal Steckdosen-Zyklus. Holt verpasste Entwarnungen nach. |
-| **Lautstärke-Sperre an Add-on übertragen** | Schalter `lautstarke_fest_100`, HA-Start | Setzt `volume_lock` für alle Boxen per REST. |
+| **Lautstärke-Sperre an Add-on übertragen** | Schalter `lautstarke_fest_100`, Wert `lautstarke_alle_boxen`, HA-Start | Gibt den Sperr-Wert (10–100 %) als `volume_lock_level` ans Add-on und setzt `volume_lock` für alle Boxen per REST (bei reiner Wert-Änderung nur den Wert). |
 | **Sender-Auswahl persistieren** | Änderung eines Sender-/Preset-Selects | Schreibt die Auswahl in `letzter_sender_*` / `letzter_preset_*`. |
 | **Senderlisten synchronisieren** | HA-Start, Änderung von `sensor.radiostream_senderliste` | Aktualisiert die Optionen aller 13 Selects und stellt die gemerkte Auswahl wieder her. |
 
