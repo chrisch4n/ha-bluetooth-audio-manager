@@ -547,7 +547,14 @@
     s stabil). Bearbeitet wird nur dieser eine Player und nur, wenn er aktiv ist:
     laeuft er nicht, steht er oder spielt den falschen Sender, wird er neu gestartet.
     Die anderen Boxen bleiben unberuehrt. Vorher spielte eine zurueckgekehrte Box
-    erst beim naechsten 5-Min-Watchdog wieder.]'
+    erst beim naechsten 5-Min-Watchdog wieder.] [07.11.2026 Claude, auf Wunsch des
+    Nutzers: zusaetzliche Ausloeser ''gestoppt_<player>'' (Player geht von playing
+    auf off/idle/paused und bleibt 20 s so). Fall: nach einem Add-on-Update sprangen
+    105.9 und 97.0 direkt von playing auf off, ohne unavailable zu sein - ''zurueck''
+    griff nicht, erst der 5-Min-Watchdog startete sie neu. Behandelt wie ''zurueck'':
+    nur dieser Player, nur wenn er aktiv ist; ein absichtlicher Stopp ueber den Aktiv-Schalter
+    bleibt deshalb aus. Ein Stopp direkt am MPD-Player bei aktivem Schalter wird nach
+    20 s rueckgaengig gemacht (vorher spaetestens nach 5 Min durch den Watchdog).]'
   triggers:
   - event: start
     id: ha_start
@@ -630,6 +637,51 @@
     note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur,
       Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft
       und bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
+  - trigger: state
+    entity_id:
+    - media_player.musik_radiostream_97_0
+    from: playing
+    to:
+    - 'off'
+    - idle
+    - paused
+    for:
+      seconds: 20
+    id: gestoppt_97_0
+    note: '07.11.2026 (Claude): Player hoert von selbst auf zu spielen, ohne vorher
+      unavailable zu sein (z.B. Add-on-Neustart oder -Update, MPD neu gestartet) -
+      nur DIESER Player wird geprueft und, wenn er aktiv ist, nach 20 s neu gestartet
+      statt erst beim naechsten 5-Min-Watchdog'
+  - trigger: state
+    entity_id:
+    - media_player.musik_radiostream_105_9
+    from: playing
+    to:
+    - 'off'
+    - idle
+    - paused
+    for:
+      seconds: 20
+    id: gestoppt_105_9
+    note: '07.11.2026 (Claude): Player hoert von selbst auf zu spielen, ohne vorher
+      unavailable zu sein (z.B. Add-on-Neustart oder -Update, MPD neu gestartet) -
+      nur DIESER Player wird geprueft und, wenn er aktiv ist, nach 20 s neu gestartet
+      statt erst beim naechsten 5-Min-Watchdog'
+  - trigger: state
+    entity_id:
+    - media_player.musik_radiostream_87_5
+    from: playing
+    to:
+    - 'off'
+    - idle
+    - paused
+    for:
+      seconds: 20
+    id: gestoppt_87_5
+    note: '07.11.2026 (Claude): Player hoert von selbst auf zu spielen, ohne vorher
+      unavailable zu sein (z.B. Add-on-Neustart oder -Update, MPD neu gestartet) -
+      nur DIESER Player wird geprueft und, wenn er aktiv ist, nach 20 s neu gestartet
+      statt erst beim naechsten 5-Min-Watchdog'
   conditions: []
   actions:
   - repeat:
@@ -642,10 +694,11 @@
         - condition: template
           value_template: '{% set tid = trigger.id if (trigger is defined and trigger.id
             is defined and trigger.id is string) else '''' %}{% set einzel = tid.startswith(''sender_gewechselt_'')
-            or tid.startswith(''aktiviert_'') or tid.startswith(''zurueck_'') %}{%
-            set aktiv = is_state(''input_boolean.radiostream_'' ~ repeat.item ~ ''_aktiv'',
-            ''on'') %}{{ (einzel and tid.endswith(''_'' ~ repeat.item) and (aktiv
-            or not tid.startswith(''zurueck_''))) or ((not einzel) and aktiv) }}'
+            or tid.startswith(''aktiviert_'') or tid.startswith(''zurueck_'') or tid.startswith(''gestoppt_'')
+            %}{% set aktiv = is_state(''input_boolean.radiostream_'' ~ repeat.item
+            ~ ''_aktiv'', ''on'') %}{{ (einzel and tid.endswith(''_'' ~ repeat.item)
+            and (aktiv or not (tid.startswith(''zurueck_'') or tid.startswith(''gestoppt_''))))
+            or ((not einzel) and aktiv) }}'
         then:
         - if:
           - condition: template
@@ -768,10 +821,10 @@
               falscher Sender laeuft (media_content_id != URL des gewaehlten Senders
               - z.B. nach Mixing-Rueckfall, 23.09.2026 real beobachtet: 87.5 spielte
               den Stream von 97.0)'
-        note: Senderwechsel/Reaktivierung/Rueckkehr eines Players -> NUR dieser Player
-          wird bearbeitet (schnelle Reaktion; bei Rueckkehr nur, wenn er aktiv ist).
-          HA-Start, 5-Min-Takt und manuelles Ausloesen -> alle aktiven Player (Gesamtpruefung
-          inkl. Stall- und Falscher-Sender-Erkennung).
+        note: Senderwechsel/Reaktivierung/Rueckkehr/Stopp eines Players -> NUR dieser
+          Player wird bearbeitet (schnelle Reaktion; bei Rueckkehr oder Stopp nur,
+          wenn er aktiv ist). HA-Start, 5-Min-Takt und manuelles Ausloesen -> alle
+          aktiven Player (Gesamtpruefung inkl. Stall- und Falscher-Sender-Erkennung).
     note: 'Konsolidiert 31.08.2026: ersetzt 3 fast identische Top-Level-if-Bloecke
       (97.0/105.9/87.5) durch einen repeat: for_each ueber die 3 Player-Suffixe.'
   mode: queued

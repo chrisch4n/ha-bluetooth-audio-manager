@@ -171,7 +171,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 
 | Automation | Auslöser | Aufgabe |
 |------------|----------|---------|
-| **Radiostream permanent** | HA-Start, alle 5 Min, Senderwechsel, Aktiv-Schalter an, Rückkehr eines Players (20 s stabil) | Spielt den gewählten Sender. Watchdog startet neu, wenn ein aktiver Player nicht spielt, seine Position steht oder ein falscher Sender läuft. Senderwechsel, Aktivierung und Rückkehr betreffen nur die eine Box. Zwischen Starts verschiedener Boxen 3 s Abstand (Mixing-Schutz). Modus `queued`. |
+| **Radiostream permanent** | HA-Start, alle 5 Min, Senderwechsel, Aktiv-Schalter an, Rückkehr eines Players (20 s stabil), Player hört von selbst auf zu spielen (20 s) | Spielt den gewählten Sender. Watchdog startet neu, wenn ein aktiver Player nicht spielt, seine Position steht oder ein falscher Sender läuft. Senderwechsel, Aktivierung, Rückkehr und Stopp betreffen nur die eine Box; Rückkehr und Stopp nur, wenn sie aktiv ist. Zwischen Starts verschiedener Boxen 3 s Abstand (Mixing-Schutz). Modus `queued`. |
 | **Radiostream stoppen** | Aktiv-Schalter aus | `media_stop` am Player. |
 | **Bug-Watch** (Player unavailable) | Player 5/10/20/30 Min `unavailable` | Eskalationskette, siehe unten. Nur für aktive Boxen mit Strom. |
 | **Wieder verfügbar** | Player kommt aus `unavailable` zurück (20 s) | Entwarnung mit Ausfalldauer, ersetzt die Ausfallmeldung (gleicher Tag). |
