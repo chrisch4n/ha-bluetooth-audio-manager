@@ -8,6 +8,11 @@
 > [`docs/chrischan-radiostream.md`](docs/chrischan-radiostream.md), with the
 > Home Assistant configuration in [`docs/chrischan-ha/`](docs/chrischan-ha/).
 >
+> **Submitted upstream:** [scyto#324](https://github.com/scyto/ha-bluetooth-audio-manager/pull/324)
+> (fixes for #315–#319) and [scyto#325](https://github.com/scyto/ha-bluetooth-audio-manager/pull/325)
+> (volume lock, friendly names, 44.1 kHz preference, live-radio robustness,
+> diagnostics; builds on #324). Both carry only `src/` and `tests/` of this branch.
+>
 > **Base and work from parallel forks.**
 > - Base: [scyto/ha-bluetooth-audio-manager](https://github.com/scyto/ha-bluetooth-audio-manager),
 >   branch `dev` (2.1.0 plus the UI escaping fix).

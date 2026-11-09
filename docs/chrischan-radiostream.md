@@ -87,6 +87,11 @@ das Einspielen.
 Alles Übrige im Branch ist eigene Arbeit (Fixes für scyto#315–#319 und die
 Erweiterungen cc.2–cc.16).
 
+Bei scyto eingereicht (09.11.2026), nur `src/` und `tests/`:
+[#324](https://github.com/scyto/ha-bluetooth-audio-manager/pull/324) mit den Fixes für
+#315–#319 und [#325](https://github.com/scyto/ha-bluetooth-audio-manager/pull/325) mit den
+Erweiterungen (Lautstärke-Sperre, Anzeigenamen, 44,1 kHz, Live-Radio, Diagnose; baut auf #324 auf).
+
 ## 3. PulseAudio: Aussetzer-Fix (custom.pa)
 
 **Symptom:** Mit drei gleichzeitigen Streams alle 50–70 Sekunden ein kurzer
