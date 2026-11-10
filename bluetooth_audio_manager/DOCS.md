@@ -93,6 +93,17 @@
 >   speaker off as usual.
 > - **Fewer D-Bus signals** — only ObjectManager signals and the own
 >   adapter's subtree are subscribed (all BlueZ signals with log_level debug).
+> - **PulseAudio watchdog** — the connection to PulseAudio is checked with
+>   every sink poll (5 s). If PulseAudio was not up yet when the app started,
+>   or the audio service is restarted later, the app reconnects by itself
+>   (one attempt every 10 s, `PulseAudio is reachable again ...` in the log)
+>   and sets up the speakers that are still connected; before, this needed
+>   an app restart. `pactl` calls are limited to 10 s.
+> - **Configured adapter missing at startup** — the app waits for the
+>   adapter configured by MAC instead of binding to the first powered one
+>   (which on a host with two adapters is usually Home Assistant's own, and
+>   the app never switched back). The UI stays reachable; choosing another
+>   adapter there ends the wait.
 >
 > Diagnostics:
 >
@@ -123,6 +134,10 @@
 > - One Bluetooth adapter per app instance. Three A2DP streams on one
 >   Realtek RTL8761B stick need the PulseAudio setting above; after an
 >   overload the SBC bitrate stays lower for up to a few hours.
+> - Without the adapter configured by MAC the app does not play: it waits
+>   for that adapter and no longer falls back to another one.
+> - After PulseAudio was restarted, the app restores sinks and MPD, but as
+>   after any reconnect MPD does not resume playback by itself.
 > - Signal strength is only measured during a scan, and a scan disturbs
 >   running streams on the same adapter.
 > - On HAOS the audio plugin's PulseAudio log is not available (see

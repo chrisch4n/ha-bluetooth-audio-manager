@@ -27,7 +27,7 @@
 >   — auto-reconnect after a failed connect. Only the explicit-connect part,
 >   re-implemented here in `fc313d0`; together with `84ad826` it covers both
 >   suggestions in scyto#317. The discovery-driven part was not taken over.
-> - Everything else on this branch (fixes for scyto#315–#319, cc.2–cc.16) is
+> - Everything else on this branch (fixes for scyto#315–#319, cc.2–cc.17) is
 >   this fork's own work; details in the
 >   [setup doc](docs/chrischan-radiostream.md#basis-und-%C3%BCbernommene-arbeit-aus-anderen-forks).
 >
@@ -36,6 +36,9 @@
 >   Realtek RTL8761B stick only run without dropouts with the PulseAudio
 >   setting described in DOCS.md; after an overload the SBC bitrate stays
 >   lower for up to a few hours.
+> - If the adapter configured by MAC is missing at startup, the app waits
+>   for it (status line, log warning) instead of using another adapter;
+>   choose a different adapter in the settings to continue without it.
 > - After the app restarts or updates, MPD does not resume playback by itself:
 >   a Home Assistant automation has to start it again.
 > - Signal strength is only measured during a scan, and a scan disturbs
