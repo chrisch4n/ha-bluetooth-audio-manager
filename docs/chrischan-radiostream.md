@@ -44,7 +44,7 @@ das Einspielen.
 ## 2. Add-on
 
 - Installiert als lokal gebautes Add-on `1b3a7c56_bluetooth_audio_manager`
-  aus diesem Branch, Version `2.1.0-cc.16`. Das ursprüngliche scyto-Add-on
+  aus diesem Branch, Version `2.1.0-cc.17`. Das ursprüngliche scyto-Add-on
   (`d4261985`) wurde am 06.11.2026 deinstalliert; sein Repository ist noch
   eingetragen, falls ein Rückweg nötig ist.
 - **App Settings:** Adapter = Realtek-MAC, Auto-Reconnect an,
@@ -75,6 +75,7 @@ das Einspielen.
 | cc.14 | 06.11. | Nach dem Neuöffnen das A2DP-Profil der Karte aktivieren (sonst fehlte der Sink) |
 | cc.15 | 07.11. | Eigene Anzeigenamen pro Box (*Name* in den Geräte-Einstellungen); aiohttp 3.14.4 (wie scyto#320) |
 | cc.16 | 07.11. | Lautstärke-Sperre mit einstellbarem Wert für alle Boxen (*Locked volume*, 10–100 %), statt fest 100 % |
+| cc.17 | 10.11. | Härtung: PulseAudio-Verbindung wird überwacht und neu aufgebaut (Neustart des Audio-Dienstes, PulseAudio beim Start noch nicht da); fehlt der eingestellte Adapter beim Start, wird auf ihn gewartet statt auf einen fremden auszuweichen; `pactl` mit Zeitlimit; MPD-Log-Leser und MPD-Wächter überstehen Fehler |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
@@ -85,12 +86,13 @@ das Einspielen.
 | [Cayouche1989/ha-bluetooth-audio-manager](https://github.com/Cayouche1989/ha-bluetooth-audio-manager), Branch `cayouche/reconnect-2.1.1`, Commit [`2c38ea0`](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e) (23.08.2026) | „Fix auto-reconnect after speaker availability" | Nur der Teil für fehlgeschlagene explizite Verbindungen, neu umgesetzt in `fc313d0` (Hinweis im Commit); der Discovery-gesteuerte Teil nicht. Zusammen mit `84ad826` deckt das beide Vorschläge aus scyto#317 ab; seit cc.1 |
 
 Alles Übrige im Branch ist eigene Arbeit (Fixes für scyto#315–#319 und die
-Erweiterungen cc.2–cc.16).
+Erweiterungen cc.2–cc.17).
 
 Bei scyto eingereicht (09.11.2026), nur `src/` und `tests/`:
 [#324](https://github.com/scyto/ha-bluetooth-audio-manager/pull/324) mit den Fixes für
 #315–#319 und [#325](https://github.com/scyto/ha-bluetooth-audio-manager/pull/325) mit den
 Erweiterungen (Lautstärke-Sperre, Anzeigenamen, 44,1 kHz, Live-Radio, Diagnose; baut auf #324 auf).
+Die Härtung aus cc.17 ist dort noch nicht eingereicht.
 
 ## 3. PulseAudio: Aussetzer-Fix (custom.pa)
 
@@ -257,7 +259,7 @@ Wiederherstellen lässt sich alles über ein HA-Backup von vor dem 06.11.2026.
   REST-Befehle für diese Box.
 - Nicht den Intel AX210 dafür nehmen (gehört HA; trägt keine drei Streams).
 
-## 7. Bekannte Grenzen (Stand 07.11.2026)
+## 7. Bekannte Grenzen (Stand 10.11.2026)
 
 Beobachtet oder aus dem Aufbau abgeleitet; „möglich" heißt: denkbar, aber
 nicht nachgewiesen.
@@ -294,6 +296,16 @@ nicht nachgewiesen.
 - **custom.pa nur beim Start von PulseAudio.** Das Bluetooth-Modul zur
   Laufzeit neu zu laden hat PulseAudio abstürzen lassen (cc.11).
 - **Ein Adapter pro Add-on-Instanz** (Abschnitt 6).
+- **Fehlt der eingestellte Adapter beim Start, wartet das Add-on auf ihn**
+  (seit cc.17; Statuszeile in der Oberfläche, Warnung im Log, alle 5 Minuten
+  wiederholt). Es weicht nicht mehr auf den Intel-Adapter aus. Ohne den
+  Realtek-Stick gibt es also keinen Ton, bis er wieder da ist oder in den
+  App Settings ein anderer Adapter gewählt wird (wirkt dann sofort).
+- **Neustart des Audio-Dienstes (PulseAudio).** Seit cc.17 verbindet sich das
+  Add-on von selbst neu (innerhalb von ~10–15 s nach Rückkehr) und richtet
+  die Boxen wieder ein; die Wiedergabe startet danach „Radiostream
+  permanent". Vorher half nur ein Neustart des Add-ons. Live getestet ist
+  das noch nicht (ein Test unterbricht alle drei Sender für etwa eine Minute).
 - **Signalstärke nur mit Scan.** BlueZ liefert die Signalstärke nur während
   eines Scans, und der stört auf demselben Chip alle laufenden Streams. Im
   Betrieb gibt es deshalb keine Messung mehr.
