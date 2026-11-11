@@ -20,8 +20,8 @@ views:
   - type: grid
     cards:
     - type: heading
-      heading: Status · spielt nicht
-      icon: m3o:volume-off
+      heading: Wiedergabe
+      icon: m3o:speaker
     - type: grid
       columns: 3
       square: false
@@ -29,18 +29,27 @@ views:
       - type: tile
         entity: binary_sensor.radiostream_87_5_spielt_nicht
         name: '87.5'
-        icon: m3o:volume-off
+        icon: m3o:speaker
         vertical: true
+        state_content:
+        - state
+        - last_changed
       - type: tile
         entity: binary_sensor.radiostream_97_0_spielt_nicht
         name: '97.0'
-        icon: m3o:volume-off
+        icon: m3o:speaker
         vertical: true
+        state_content:
+        - state
+        - last_changed
       - type: tile
         entity: binary_sensor.radiostream_105_9_spielt_nicht
         name: '105.9'
-        icon: m3o:volume-off
+        icon: m3o:speaker
         vertical: true
+        state_content:
+        - state
+        - last_changed
     - type: heading
       heading: Stufe 1 · Diagnose
       icon: mdi:magnify-scan
