@@ -180,7 +180,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 |------------|----------|---------|
 | **Radiostream permanent** | HA-Start, alle 5 Min, Senderwechsel, Aktiv-Schalter an, Rückkehr eines Players (20 s stabil), Player hört von selbst auf zu spielen (20 s) | Spielt den gewählten Sender. Watchdog startet neu, wenn ein aktiver Player nicht spielt, seine Position steht oder ein falscher Sender läuft. Senderwechsel, Aktivierung, Rückkehr und Stopp betreffen nur die eine Box; Rückkehr und Stopp nur, wenn sie aktiv ist. Zwischen Starts verschiedener Boxen 3 s Abstand (Mixing-Schutz). Modus `queued`. |
 | **Radiostream stoppen** | Aktiv-Schalter aus | `media_stop` am Player. |
-| **Bug-Watch** (Player unavailable) | Player 5/10/20/30 Min `unavailable` **oder** 15/20/30/40 Min erreichbar, aber stumm (`binary_sensor.radiostream_<p>_spielt_nicht`) | Eskalationskette, siehe unten. Nur für aktive Boxen mit Strom. |
+| **Bug-Watch** (Player unavailable) | Player 3/5/20/30 Min `unavailable` **oder** 15/20/30/40 Min erreichbar, aber stumm (`binary_sensor.radiostream_<p>_spielt_nicht`) | Eskalationskette, siehe unten. Nur für aktive Boxen mit Strom. |
 | **Wieder verfügbar** | Player kommt aus `unavailable` zurück (20 s) oder „spielt nicht" geht aus (Player spielt 90 s durchgehend) | Entwarnung mit Ausfalldauer, ersetzt die Ausfallmeldung (gleicher Tag). Nur wenn vorher eine Meldung verschickt wurde. |
 | **Nach HA-Start prüfen** | 3 Min nach HA-Start | Box seit dem Start weg: Diagnose, bei getrennter Bluetooth-Verbindung einmal Steckdosen-Zyklus. Holt verpasste Entwarnungen nach. |
 | **Lautstärke-Sperre an Add-on übertragen** | Schalter `lautstarke_fest_100`, Wert `lautstarke_alle_boxen`, HA-Start | Gibt den Sperr-Wert (10–100 %) als `volume_lock_level` ans Add-on und setzt `volume_lock` für alle Boxen per REST (bei reiner Wert-Änderung nur den Wert). |
@@ -191,13 +191,16 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 
 | Stufe | Nach | Aktion |
 |-------|------|--------|
-| 1 diagnose | 5 Min | `script.radiostream_reparieren_ultralight`: prüft per API, ob Bluetooth gesund ist; lädt ggf. nur die MPD-Integration neu oder macht einen Force-Reconnect. |
-| 2 steckdosen_zyklus | 10 Min | Nur die betroffene Steckdose 30 s aus, danach 60 s warten und Nachdiagnose. Stört die anderen Boxen nicht. |
+| 1 diagnose | 3 Min | `script.radiostream_reparieren_ultralight`: prüft per API, ob Bluetooth gesund ist; lädt ggf. nur die MPD-Integration neu oder macht einen Force-Reconnect. |
+| 2 steckdosen_zyklus | 5 Min | Nur die betroffene Steckdose 30 s aus, danach 60 s warten und Nachdiagnose. Stört die anderen Boxen nicht. |
 | 3 addon_neustart | 20 Min | `script.radiostream_reparieren`: Steckdose aus, Add-on-Neustart, Steckdose an, MPD sicherstellen. Betrifft kurz alle Boxen, höchstens alle 30 Min. |
 | 4 manuell_pruefen | 30 Min | Nur Meldung „bitte manuell prüfen". |
 
-Die 5/10 Minuten sind bewusst länger als früher, damit die Selbstheilung des
-Add-ons (Auto-Reconnect, #316-Self-Heal) zuerst greift. Alle Meldungen einer Box
+Diagnose nach 3 und Steckdosen-Zyklus nach 5 Minuten (bis 11.11.2026: 5 und
+10): Die Selbstheilung des Add-ons (Auto-Reconnect nach 10 s, 32 s, 63 s,
+130 s; #316-Self-Heal) greift zuerst. Nimmt eine ES-BT17 danach keine
+Verbindung mehr an – so nach dem Absturz des Realtek-Sticks am 11.11. –, hilft
+nur der Stromzyklus, und der kommt jetzt nach 5 statt 10 Minuten. Alle Meldungen einer Box
 laufen über `script.benachrichtigung_alle_geraete` mit Tag `radiostream_<p>` und
 ersetzen sich gegenseitig auf dem Handy.
 
