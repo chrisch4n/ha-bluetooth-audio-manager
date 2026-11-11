@@ -231,6 +231,7 @@ Meldung „bitte manuell prüfen" nach 40.
 | `radiostream_reparieren_ultralight` („Diagnose") | Stufe 1, auch per Button. |
 | `radiostream_reparieren_light` („BT-Reconnect") | Force-Reconnect einer Box über das Add-on. |
 | `radiostream_steckdose_zyklieren` | Steckdose einer Box 30 s aus und wieder an. |
+| `radiostream_steckdosen_alle_zyklieren` | Alle eingeschalteten Steckdosen 30 s aus, dann nacheinander mit 20 s Abstand wieder an; ohne Add-on-Neustart (ab 11.11.2026, Button in Stufe 2). Daneben gibt es den Gruppenschalter `switch.radiostream_steckdosen_alle` für alle drei Steckdosen. |
 | `radiostream_reparieren` („Voll-Reparatur") | Steckdose(n) aus, Add-on-Neustart, Steckdose(n) an, MPD-Integrationen neu laden, MPD sicherstellen. |
 | `radiostream_mpd_sicherstellen` | Startet einen fehlenden MPD-Dienst einer verbundenen Box. |
 | `radiostream_notfall_forget_pair` | Box entfernen, neu pairen, MPD zuweisen. |
