@@ -15,7 +15,7 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 |-------|-------|--------|
 | [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 8 Radiostream-Automationen |
 | [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 8 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
-| [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver, Reparatur, Presets, Radio, Radiostreams |
+| [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver, Reparatur (oben: Status „spielt nicht" je Box), Presets, Radio, Radiostreams |
 | [`configuration_yaml/rest_command.yaml`](configuration_yaml/rest_command.yaml) | `rest_command: !include …` | `rest_command.bt_audio_*` für die REST-API des Add-ons |
 | [`configuration_yaml/media_player.yaml`](configuration_yaml/media_player.yaml) | `media_player: !include …` | Universal-Media-Player `media_player.radiostream_<p>_sender` |
 | [`configuration_yaml/template_radiostream_senderliste.yaml`](configuration_yaml/template_radiostream_senderliste.yaml) | Ausschnitt aus `template: !include …` | `sensor.radiostream_senderliste` (Sendername → Stream-URL) |

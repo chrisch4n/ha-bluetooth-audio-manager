@@ -1,5 +1,5 @@
 # Dashboard "radio-streams" (Receiver, Reparatur, Presets, Radio, Radiostreams),
-# Export der Rohkonfiguration aus Home Assistant, Stand 07.11.2026.
+# Export der Rohkonfiguration aus Home Assistant, Stand 11.11.2026.
 # Einfuegen ueber Dashboard > Bearbeiten > Rohkonfigurations-Editor.
 # Enthaelt keine MACs, IPs, Benutzer- oder Geraete-IDs. Braucht card-mod/UIX;
 # die Ansicht "Receiver" nutzt die eigene Karte custom:radiostream-receiver-card.
@@ -19,6 +19,28 @@ views:
   sections:
   - type: grid
     cards:
+    - type: heading
+      heading: Status · spielt nicht
+      icon: m3o:music-off
+    - type: grid
+      columns: 3
+      square: false
+      cards:
+      - type: tile
+        entity: binary_sensor.radiostream_87_5_spielt_nicht
+        name: '87.5'
+        icon: m3o:music-off
+        vertical: true
+      - type: tile
+        entity: binary_sensor.radiostream_97_0_spielt_nicht
+        name: '97.0'
+        icon: m3o:music-off
+        vertical: true
+      - type: tile
+        entity: binary_sensor.radiostream_105_9_spielt_nicht
+        name: '105.9'
+        icon: m3o:music-off
+        vertical: true
     - type: heading
       heading: Stufe 1 · Diagnose
       icon: mdi:magnify-scan
