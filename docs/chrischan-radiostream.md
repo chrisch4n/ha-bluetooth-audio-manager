@@ -329,6 +329,20 @@ nicht nachgewiesen.
   60-Minuten-Schritten (bis zu ~5 h); nach jedem Neustart oder Neuverbinden
   sind anfangs 1–2 kurze Aussetzer möglich. Hinter UKW ist die niedrigere
   Bitrate praktisch nicht hörbar.
+- **Der Realtek-Stick kann abstürzen.** Am 11.11.2026 um 18:20 meldete der
+  Kernel `Bluetooth: hci1: RTL: hw err, trigger devcoredump (51)`: Die
+  Firmware des Sticks setzte sich selbst zurück, alle drei Verbindungen fielen
+  gleichzeitig weg. Schon gut zehn Minuten vorher stockte die Übertragung
+  (erst nur 105.9 etwa einmal pro Sekunde, dann 87.5 und 97.0 im Gleichtakt
+  alle halbe Sekunde), am Radio war es unsauber, fiepte und rauschte zuletzt
+  nur noch. Vorausgegangen waren ein Internetausfall (17:09–17:46, viele
+  Stream-Neustarts) und Verbindungsversuche zu einer nicht antwortenden Box.
+  Die Ursache im Chip ist unbekannt (Realtek dokumentiert den Code nicht);
+  Doppelzugriff durch HA, Prozessorlast und USB-Fehler waren es nicht. Nach
+  dem Absturz liefen 97.0 und 105.9 sofort wieder sauber; 87.5 und vorher
+  105.9 nahmen bis zu einem Steckdosen-Zyklus keine Verbindung mehr an. Die
+  Messung dafür ist der Gap-Monitor des Add-ons
+  (`POST /api/diagnostics/gap-monitor`).
 - **custom.pa nur beim Start von PulseAudio.** Das Bluetooth-Modul zur
   Laufzeit neu zu laden hat PulseAudio abstürzen lassen (cc.11).
 - **Ein Adapter pro Add-on-Instanz** (Abschnitt 6).
