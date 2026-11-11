@@ -160,6 +160,22 @@ views:
           target:
             entity_id: script.radiostream_steckdose_zyklieren
         show_state: false
+    - type: tile
+      entity: script.radiostream_steckdosen_alle_zyklieren
+      name: Alle drei (gestaffelt wieder an)
+      icon: 'm3o:power-settings-new'
+      grid_options:
+        columns: full
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_steckdosen_alle_zyklieren
+        confirmation:
+          text: 'Stufe 2 · Steckdosen-Zyklus für ALLE DREI: alle eingeschalteten Steckdosen 30
+            s stromlos, danach nacheinander mit 20 s Abstand wieder an. Kein Add-on-Neustart.
+            Unterbricht alle Sender für etwa 1,5 bis 2 Minuten; ausgeschaltete Boxen bleiben aus.
+            Fortfahren?'
     - type: heading
       heading: Stufe 3 · Voll-Reparatur
       icon: mdi:wrench
@@ -266,6 +282,18 @@ views:
           action: toggle
           confirmation:
             text: Steckdose 105.9 wirklich schalten? Beim Ausschalten verliert die Box sofort den Strom.
+    - type: tile
+      entity: switch.radiostream_steckdosen_alle
+      name: Alle drei
+      icon: 'm3o:power-plug'
+      grid_options:
+        columns: full
+      icon_tap_action:
+        action: toggle
+        confirmation:
+          text: Alle drei Steckdosen schalten? Beim Ausschalten verlieren alle Boxen sofort den
+            Strom; beim Einschalten gehen alle gleichzeitig an (für einen schonenden Neustart
+            besser Stufe 2 · Alle drei).
     - type: heading
       heading: Einstellungen & Status
       icon: mdi:cog

@@ -14,7 +14,7 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 | Datei | In HA | Inhalt |
 |-------|-------|--------|
 | [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 8 Radiostream-Automationen |
-| [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 8 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
+| [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 9 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
 | [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver, Reparatur (oben: „Wiedergabe" je Box, OK/Problem), Presets, Radio, Radiostreams |
 | [`configuration_yaml/rest_command.yaml`](configuration_yaml/rest_command.yaml) | `rest_command: !include …` | `rest_command.bt_audio_*` für die REST-API des Add-ons |
 | [`configuration_yaml/media_player.yaml`](configuration_yaml/media_player.yaml) | `media_player: !include …` | Universal-Media-Player `media_player.radiostream_<p>_sender` |
@@ -74,6 +74,7 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_number.radiostream_<p>_letzte_position` | Zahl | Stall-Erkennung (muss −1 und die Spielzeit in Sekunden aufnehmen können) |
 | `input_datetime.radiostream_letzte_automatische_voll_reparatur` | Datum + Zeit | Sperrzeit der Voll-Reparatur |
 | `binary_sensor.radiostream_<p>_spielt_nicht` (Anzeigename „Radiostream <p> Wiedergabe": *OK* / *Problem*) | Template-Binärsensor (Helfer), Geräteklasse *Problem*, **Ausschaltverzögerung 1:30 min** | `{{ is_state('input_boolean.radiostream_<p>_aktiv', 'on') and is_state('switch.dose_bt_<p>', 'on') and not is_state('media_player.musik_radiostream_<p>', 'playing') }}` – an, solange die Box spielen soll, es aber nicht tut; geht erst aus, wenn der Player 90 s durchgehend spielt (ab 11.11.2026) |
+| `switch.radiostream_steckdosen_alle` | Gruppe (Schalter), „Alle Mitglieder" an | Die drei `switch.dose_bt_*`; an, wenn alle drei an sind; Schalten wirkt auf alle drei (ab 11.11.2026) |
 | `switch.<p>_schalter` | Template-Schalter (Helfer) | leitet an die in `input_select.radiostream_<p>_steckdose` gewählte Steckdose weiter |
 
 ## Einspielen
