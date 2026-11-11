@@ -294,6 +294,15 @@ nicht nachgewiesen.
   MPD, nicht, was die Box auf UKW sendet. Abhilfe: Steckdose kurz aus
   (Skript *Steckdosen-Zyklus*). Wird der Klang regelmäßig nach einiger Zeit
   schlechter, wäre ein nächtlicher Zyklus pro Box möglich.
+  Am 10.11.2026 erneut, wieder behoben durch Stromreset aller drei Boxen.
+  Beide Male kam der Stromreset 2–4 Minuten nach einem Update des Add-ons
+  (07.11. cc.15, 10.11. cc.17). Verdacht, nicht nachgewiesen: Beim Start des
+  Add-ons beginnen alle drei Streams in derselben Sekunde, der Stick kommt
+  kurz nicht nach und PulseAudio senkt bei jedem Überlauf die
+  Bluetooth-Bitrate (SBC-Bitpool) um eine Stufe; mit `custom.pa` steigt sie
+  nur um eine Stufe pro Stunde wieder. Nach einem Stromreset verbinden sich
+  die Boxen einzeln neu und starten mit voller Bitrate. Kann auch Zufall
+  sein (nach einem Update wird genauer hingehört).
 - **Möglich: Übersteuerung bei vollem Pegel.** Kleine UKW-Sender verzerren
   oft bei vollem Eingangspegel; Radio BOB ist laut gemastert. Gegenmittel ist
   der Sperr-Wert unter 100 % (cc.16, Regler *Lautstärke alle Boxen*). Am
