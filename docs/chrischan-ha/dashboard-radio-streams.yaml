@@ -21,7 +21,7 @@ views:
     cards:
     - type: heading
       heading: Status · spielt nicht
-      icon: m3o:music-off
+      icon: m3o:volume-off
     - type: grid
       columns: 3
       square: false
@@ -29,17 +29,17 @@ views:
       - type: tile
         entity: binary_sensor.radiostream_87_5_spielt_nicht
         name: '87.5'
-        icon: m3o:music-off
+        icon: m3o:volume-off
         vertical: true
       - type: tile
         entity: binary_sensor.radiostream_97_0_spielt_nicht
         name: '97.0'
-        icon: m3o:music-off
+        icon: m3o:volume-off
         vertical: true
       - type: tile
         entity: binary_sensor.radiostream_105_9_spielt_nicht
         name: '105.9'
-        icon: m3o:music-off
+        icon: m3o:volume-off
         vertical: true
     - type: heading
       heading: Stufe 1 · Diagnose
