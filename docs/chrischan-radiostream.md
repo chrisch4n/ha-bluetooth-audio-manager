@@ -219,8 +219,10 @@ Meldung „bitte manuell prüfen" nach 40.
   `unavailable` ist (dann läuft bereits die Leiter für Ausfälle) und solange
   `binary_sensor.internet` aus ist oder erst seit weniger als 5 Minuten wieder an:
   ohne Internet kann kein Stream spielen, eine Reparatur würde nichts beheben.
-- Die Helfer zeigen im Verlauf auch, wann eine Box stumm war – der Zustand der
-  MPD-Player selbst wird nicht aufgezeichnet.
+- Die Helfer heißen in der Oberfläche „Radiostream <p> Wiedergabe" und zeigen
+  *OK* oder *Problem* (oben in der Ansicht *Reparatur*, mit Zeitpunkt der
+  letzten Änderung). Im Verlauf sieht man auch, wann eine Box stumm war – der
+  Zustand der MPD-Player selbst wird nicht aufgezeichnet.
 
 ### Skripte
 
