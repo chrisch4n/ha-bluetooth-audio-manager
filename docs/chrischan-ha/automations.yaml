@@ -138,11 +138,11 @@
 - id: '1786256754488'
   alias: Radiostream Player unavailable (BT Audio Manager Bug-Watch)
   description: 'AKTUELLER STAND (11.11.2026): Meldet, wenn einer der drei Radiostream-Player
-    laenger als 5 Minuten unavailable ist ODER erreichbar ist, aber seit 15 Minuten
+    laenger als 3 Minuten unavailable ist ODER erreichbar ist, aber seit 15 Minuten
     nicht spielt (binary_sensor.radiostream_<p>_spielt_nicht; Stufen dann nach 15/20/30/40
-    Min statt 5/10/20/30), und eskaliert in 4 Stufen - nur fuer Boxen, die laut radiostream_aktiv_map
+    Min statt 3/5/20/30), und eskaliert in 4 Stufen - nur fuer Boxen, die laut radiostream_aktiv_map
     aktiv und laut radiostream_dose_switch_map mit Strom versorgt sind: 1 ''diagnose''
-    (5 Min, script.radiostream_reparieren_ultralight), 2 ''steckdosen_zyklus'' (10
+    (3 Min, script.radiostream_reparieren_ultralight), 2 ''steckdosen_zyklus'' (5
     Min, nur die betroffene Steckdose, danach Nachdiagnose), 3 ''addon_neustart''
     (20 Min, script.radiostream_reparieren inkl. Add-on-Neustart, hoechstens alle
     30 Min), 4 ''manuell_pruefen'' (30 Min, nur Meldung ''bitte manuell pruefen'').
@@ -218,14 +218,22 @@
     erst seit weniger als 5 Min wieder an: ohne Internet kann kein Stream spielen,
     eine Reparatur wuerde nichts beheben. Dafuer Variablen p/player/spielt_nicht/box_name/stoerung
     eingefuehrt; alle Schritte nutzen sie statt trigger.entity_id. Entwarnung: neuer
-    Ausloeser ''spielt_wieder'' in automation.radiostream_player_wieder_verfugbar_benachrichtigung_loschen.]'
+    Ausloeser ''spielt_wieder'' in automation.radiostream_player_wieder_verfugbar_benachrichtigung_loschen.]
+    [11.11.2026 abends Claude, auf Wunsch des Nutzers: fuer ''unavailable'' Diagnose
+    von 5 auf 3 Min und Steckdosen-Zyklus von 10 auf 5 Min vorgezogen. Anlass: Firmware-Absturz
+    des Realtek-Sticks 18:20 (RTL hw err, alle drei Verbindungen gleichzeitig weg);
+    87.5 und vorher 105.9 nahmen danach keine Verbindung mehr an, bis ihre Steckdose
+    kurz aus war - die ES-BT17 verbindet sich nur nach einem Stromzyklus neu. Die
+    Selbstheilung des Add-ons (Reconnect nach 10 s, 32 s, 63 s, 130 s) hat bis 3 Min
+    trotzdem Vorrang. Stufen 3/4 (20/30 Min) und der Einstieg ''spielt nicht'' (15/20/30/40
+    Min) unveraendert.]'
   triggers:
   - entity_id:
     - media_player.musik_radiostream_87_5
     - media_player.musik_radiostream_97_0
     - media_player.musik_radiostream_105_9
     for:
-      minutes: 5
+      minutes: 3
     id: diagnose
     to: unavailable
     trigger: state
@@ -234,7 +242,7 @@
     - media_player.musik_radiostream_97_0
     - media_player.musik_radiostream_105_9
     for:
-      minutes: 10
+      minutes: 5
     id: steckdosen_zyklus
     to: unavailable
     trigger: state
@@ -467,7 +475,7 @@
     player: media_player.musik_radiostream_{{ p }}
     spielt_nicht: '{{ trigger.entity_id.startswith(''binary_sensor.'') }}'
     box_name: '{{ state_attr(player, ''friendly_name'') or player }}'
-    stoerung: '{% set m = {''diagnose'': [5, 15], ''steckdosen_zyklus'': [10, 20],
+    stoerung: '{% set m = {''diagnose'': [3, 15], ''steckdosen_zyklus'': [5, 20],
       ''addon_neustart'': [20, 30], ''manuell_pruefen'': [30, 40]}[trigger.id] %}{{
       (''spielt seit über '' ~ m[1] ~ '' Minuten nicht'') if spielt_nicht else (''ist
       seit über '' ~ m[0] ~ '' Minuten unavailable'') }}'
