@@ -1,4 +1,4 @@
-# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 07.11.2026.
+# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 11.11.2026.
 # Anonymisiert: Box-MACs -> <MAC_87_5>/<MAC_105_9>/<MAC_97_0>, Mobilgeraete -> geraet_1..3.
 # Beschreibung des Systems: ../chrischan-radiostream.md
 - id: '1785450992212'
@@ -137,16 +137,18 @@
   mode: restart
 - id: '1786256754488'
   alias: Radiostream Player unavailable (BT Audio Manager Bug-Watch)
-  description: 'AKTUELLER STAND (06.11.2026): Meldet, wenn einer der drei Radiostream-Player
-    laenger als 5 Minuten unavailable ist, und eskaliert in 4 Stufen - nur fuer Boxen,
-    die laut radiostream_aktiv_map aktiv und laut radiostream_dose_switch_map mit
-    Strom versorgt sind: 1 ''diagnose'' (5 Min, script.radiostream_reparieren_ultralight),
-    2 ''steckdosen_zyklus'' (10 Min, nur die betroffene Steckdose, danach Nachdiagnose),
-    3 ''addon_neustart'' (20 Min, script.radiostream_reparieren inkl. Add-on-Neustart,
-    hoechstens alle 30 Min), 4 ''manuell_pruefen'' (30 Min, nur Meldung ''bitte manuell
-    pruefen''). Alle Meldungen einer Box laufen ueber script.benachrichtigung_alle_geraete
-    mit tag radiostream_<player> und ersetzen sich gegenseitig; die Entwarnung kommt
-    von automation.radiostream_player_wieder_verfugbar_benachrichtigung_loschen. HISTORIE:
+  description: 'AKTUELLER STAND (11.11.2026): Meldet, wenn einer der drei Radiostream-Player
+    laenger als 5 Minuten unavailable ist ODER erreichbar ist, aber seit 15 Minuten
+    nicht spielt (binary_sensor.radiostream_<p>_spielt_nicht; Stufen dann nach 15/20/30/40
+    Min statt 5/10/20/30), und eskaliert in 4 Stufen - nur fuer Boxen, die laut radiostream_aktiv_map
+    aktiv und laut radiostream_dose_switch_map mit Strom versorgt sind: 1 ''diagnose''
+    (5 Min, script.radiostream_reparieren_ultralight), 2 ''steckdosen_zyklus'' (10
+    Min, nur die betroffene Steckdose, danach Nachdiagnose), 3 ''addon_neustart''
+    (20 Min, script.radiostream_reparieren inkl. Add-on-Neustart, hoechstens alle
+    30 Min), 4 ''manuell_pruefen'' (30 Min, nur Meldung ''bitte manuell pruefen'').
+    Alle Meldungen einer Box laufen ueber script.benachrichtigung_alle_geraete mit
+    tag radiostream_<player> und ersetzen sich gegenseitig; die Entwarnung kommt von
+    automation.radiostream_player_wieder_verfugbar_benachrichtigung_loschen. HISTORIE:
     VEREINFACHUNG 12.09.2026: die vorherige eigenstaendige ''leicht''-Stufe (10 Min,
     reiner BT-Force-Reconnect) wurde ENTFERNT, da seit der Ultralight-Erweiterung
     vom 12.09.2026 funktional redundant - Ultralight/Diagnose deckt den BT-Force-Reconnect-Fall
@@ -202,7 +204,21 @@
     jetzt dauerhaft, damit die Selbstheilung des gepatchten Add-ons zuerst greift.]
     [06.11.2026 Claude: Stand-Zusammenfassung vorangestellt; Meldung ''Eskalation
     gesperrt'' in Stufe 3 von notify.send_message auf script.benachrichtigung_alle_geraete
-    mit tag umgestellt.]'
+    mit tag umgestellt.] [11.11.2026 Claude, auf Wunsch des Nutzers (Haertung): zweiter
+    Einstieg in dieselbe Stufenleiter - eine aktive Box mit eingeschalteter Steckdose,
+    deren Player erreichbar ist, aber nicht spielt. Bisher blieb das unbemerkt, weil
+    nur ''unavailable'' eskalierte (z.B. PulseAudio neu gestartet: Player ''off''
+    statt ''unavailable''). Erkennung ueber die Template-Helfer binary_sensor.radiostream_<p>_spielt_nicht
+    (an = aktiv UND Steckdose an UND Player nicht ''playing''; geht erst aus, wenn
+    der Player 90 s durchgehend spielt - kurze Startversuche setzen die Zeit also
+    nicht zurueck). Stufen: 15 Min Diagnose, 20 Min Steckdosen-Zyklus, 30 Min Voll-Reparatur
+    (gleiche 30-Min-Sperre), 40 Min ''bitte manuell pruefen''. Dieser Einstieg entfaellt,
+    wenn (a) der Player seit mindestens 5 Min durchgehend unavailable ist - dann laeuft
+    bereits die Leiter fuer Ausfaelle -, oder (b) binary_sensor.internet aus ist bzw.
+    erst seit weniger als 5 Min wieder an: ohne Internet kann kein Stream spielen,
+    eine Reparatur wuerde nichts beheben. Dafuer Variablen p/player/spielt_nicht/box_name/stoerung
+    eingefuehrt; alle Schritte nutzen sie statt trigger.entity_id. Entwarnung: neuer
+    Ausloeser ''spielt_wieder'' in automation.radiostream_player_wieder_verfugbar_benachrichtigung_loschen.]'
   triggers:
   - entity_id:
     - media_player.musik_radiostream_87_5
@@ -240,20 +256,85 @@
     id: manuell_pruefen
     to: unavailable
     trigger: state
+  - trigger: state
+    entity_id:
+    - binary_sensor.radiostream_87_5_spielt_nicht
+    - binary_sensor.radiostream_97_0_spielt_nicht
+    - binary_sensor.radiostream_105_9_spielt_nicht
+    to: 'on'
+    for:
+      minutes: 15
+    id: diagnose
+    note: '11.11.2026 (Claude): Einstieg ''spielt nicht'' - Box aktiv, Steckdose an,
+      Player seit 15 Min nicht (stabil) ''playing''. Gleiche id wie die Stufe fuer
+      Ausfaelle, damit dieselben Schritte laufen; unterschieden wird ueber die Variable
+      spielt_nicht'
+  - trigger: state
+    entity_id:
+    - binary_sensor.radiostream_87_5_spielt_nicht
+    - binary_sensor.radiostream_97_0_spielt_nicht
+    - binary_sensor.radiostream_105_9_spielt_nicht
+    to: 'on'
+    for:
+      minutes: 20
+    id: steckdosen_zyklus
+    note: '11.11.2026 (Claude): Einstieg ''spielt nicht'' - Box aktiv, Steckdose an,
+      Player seit 20 Min nicht (stabil) ''playing''. Gleiche id wie die Stufe fuer
+      Ausfaelle, damit dieselben Schritte laufen; unterschieden wird ueber die Variable
+      spielt_nicht'
+  - trigger: state
+    entity_id:
+    - binary_sensor.radiostream_87_5_spielt_nicht
+    - binary_sensor.radiostream_97_0_spielt_nicht
+    - binary_sensor.radiostream_105_9_spielt_nicht
+    to: 'on'
+    for:
+      minutes: 30
+    id: addon_neustart
+    note: '11.11.2026 (Claude): Einstieg ''spielt nicht'' - Box aktiv, Steckdose an,
+      Player seit 30 Min nicht (stabil) ''playing''. Gleiche id wie die Stufe fuer
+      Ausfaelle, damit dieselben Schritte laufen; unterschieden wird ueber die Variable
+      spielt_nicht'
+  - trigger: state
+    entity_id:
+    - binary_sensor.radiostream_87_5_spielt_nicht
+    - binary_sensor.radiostream_97_0_spielt_nicht
+    - binary_sensor.radiostream_105_9_spielt_nicht
+    to: 'on'
+    for:
+      minutes: 40
+    id: manuell_pruefen
+    note: '11.11.2026 (Claude): Einstieg ''spielt nicht'' - Box aktiv, Steckdose an,
+      Player seit 40 Min nicht (stabil) ''playing''. Gleiche id wie die Stufe fuer
+      Ausfaelle, damit dieselben Schritte laufen; unterschieden wird ueber die Variable
+      spielt_nicht'
   conditions:
   - condition: template
-    value_template: '{% set p = trigger.entity_id.split(''.'')[1].replace(''musik_radiostream_'',
-      '''') %}{{ is_state((states(''input_text.radiostream_aktiv_map'') | from_json)[p],
+    value_template: '{{ is_state((states(''input_text.radiostream_aktiv_map'') | from_json)[p],
       ''on'') and is_state((states(''input_text.radiostream_dose_switch_map'') | from_json)[p],
       ''on'') }}'
     note: Nur eingreifen, wenn die Box aktiv ist UND ihre Steckdose an ist - eine
       absichtlich ausgeschaltete Box (Power-Button, Stopp-Schalter) ist kein Ausfall
       und darf weder repariert noch wieder eingeschaltet werden
+  - condition: template
+    value_template: '{{ not (spielt_nicht and is_state(player, ''unavailable'') and
+      (now() - states[player].last_changed).total_seconds() >= 300) }}'
+    note: '11.11.2026 (Claude): Einstieg ''spielt nicht'' ueberspringen, solange der
+      Player seit mindestens 5 Min durchgehend unavailable ist - dann laeuft bereits
+      die Stufenleiter fuer Ausfaelle, zwei Reparaturen gleichzeitig sollen nicht
+      konkurrieren'
+  - condition: template
+    value_template: '{{ not spielt_nicht or (not is_state(''binary_sensor.internet'',
+      ''off'') and not (is_state(''binary_sensor.internet'', ''on'') and (now() -
+      states[''binary_sensor.internet''].last_changed).total_seconds() < 300)) }}'
+    note: '11.11.2026 (Claude): Einstieg ''spielt nicht'' nur mit Internet (binary_sensor.internet
+      an, und zwar seit mindestens 5 Min) - ohne Internet kann kein Stream spielen,
+      Diagnose/Steckdosen-Zyklus/Add-on-Neustart wuerden nichts beheben. Ist der Sensor
+      unbekannt, wird nicht gesperrt'
   actions:
   - action: input_boolean.turn_on
     target:
-      entity_id: input_boolean.radiostream_ausfall_gemeldet_{{ trigger.entity_id.split('.')[1].replace('musik_radiostream_',
-        '') }}
+      entity_id: input_boolean.radiostream_ausfall_gemeldet_{{ p }}
     note: 'Merker: fuer diese Box wurde eine Ausfall-Meldung verschickt - nur dann
       gibt es spaeter eine Entwarnung'
   - note: 'Push pro Geraet ueber die Mobile-App-Dienste mit tag radiostream_<player>:
@@ -263,10 +344,8 @@
     action: script.benachrichtigung_alle_geraete
     data:
       message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
-        ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ trigger.to_state.name
-        }} ({{ trigger.entity_id }}) ist seit über {{ {''diagnose'': ''5'', ''steckdosen_zyklus'':
-        ''10'', ''addon_neustart'': ''20'', ''manuell_pruefen'': ''30''}[trigger.id]
-        }} Minuten unavailable. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund
+        ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player
+        }}) {{ stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund
         ist - reiche ggf. nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'',
         ''steckdosen_zyklus'': ''Diagnose hat nicht geholfen, zyklisiere gezielt nur
         die betroffene Steckdose (ohne Add-on-Neustart) und pruefe danach erneut.'',
@@ -274,21 +353,20 @@
         volle Reparatur (Steckdosen-Zyklus + Add-on-Neustart, betrifft kurz alle drei
         Boxen).'', ''manuell_pruefen'': ''Auch die volle Reparatur hat nicht geholfen.
         Bitte manuell pruefen (Strom, Box, Adapter).''}[trigger.id] }}'
-      title: Radiostream ausgefallen
+      title: '{{ ''Radiostream spielt nicht'' if spielt_nicht else ''Radiostream ausgefallen''
+        }}'
       daten:
-        tag: radiostream_{{ trigger.entity_id.split('.')[1].replace('musik_radiostream_',
-          '') }}
+        tag: radiostream_{{ p }}
     continue_on_error: true
   - action: persistent_notification.create
     continue_on_error: true
     data:
       message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
-        ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ trigger.to_state.name
-        }} ({{ trigger.entity_id }}) ist seit über {{ {''diagnose'': ''5'', ''steckdosen_zyklus'':
-        ''10'', ''addon_neustart'': ''20'', ''manuell_pruefen'': ''30''}[trigger.id]
-        }} Minuten unavailable.'
-      notification_id: radiostream_ausfall_{{ trigger.entity_id.split('.')[1] }}
-      title: Radiostream ausgefallen
+        ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player
+        }}) {{ stoerung }}.'
+      notification_id: radiostream_ausfall_musik_radiostream_{{ p }}
+      title: '{{ ''Radiostream spielt nicht'' if spielt_nicht else ''Radiostream ausgefallen''
+        }}'
   - choose:
     - conditions:
       - condition: trigger
@@ -298,8 +376,7 @@
       - action: script.turn_on
         data:
           variables:
-            player: '{{ trigger.entity_id.split(''.'')[1].replace(''musik_radiostream_'',
-              '''') }}'
+            player: '{{ p }}'
         note: 'Schnellste Stufe: prueft per API ob BT gesund ist, reicht ggf. nur
           die MPD-Integration neu ein oder delegiert intern an Force-Reconnect'
         target:
@@ -312,8 +389,7 @@
       - action: script.turn_on
         data:
           variables:
-            player: '{{ trigger.entity_id.split(''.'')[1].replace(''musik_radiostream_'',
-              '''') }}'
+            player: '{{ p }}'
         note: Reiner Steckdosen-Zyklus OHNE Add-on-Neustart - stoert die anderen beiden
           Boxen nicht
         target:
@@ -331,15 +407,15 @@
         note: Der Box Zeit zum Booten und Neuverbinden geben
       - if:
         - condition: template
-          value_template: '{{ is_state(trigger.entity_id, ''unavailable'') }}'
+          value_template: '{{ (not is_state(player, ''playing'')) if spielt_nicht
+            else is_state(player, ''unavailable'') }}'
         then:
         - action: script.turn_on
           target:
             entity_id: script.radiostream_reparieren_ultralight
           data:
             variables:
-              player: '{{ trigger.entity_id.split(''.'')[1].replace(''musik_radiostream_'',
-                '''') }}'
+              player: '{{ p }}'
         note: 'Nachdiagnose: Ist die Box nach dem Steckdosen-Zyklus wieder per Bluetooth
           da, fehlt oft nur der MPD-Dienst (Add-on startet ihn nach verzoegertem Reconnect
           nicht mit, 25.09.2026 bei 87.5 beobachtet). Die Diagnose behebt das in Sekunden
@@ -364,8 +440,7 @@
         - action: script.turn_on
           data:
             variables:
-              player: '{{ trigger.entity_id.split(''.'')[1].replace(''musik_radiostream_'',
-                '''') }}'
+              player: '{{ p }}'
           note: 'Eskalation: Steckdosen-Zyklus hat nicht geholfen - volle Reparatur
             inkl. Add-on-Neustart'
           target:
@@ -375,12 +450,11 @@
           continue_on_error: true
           data:
             title: 'Radiostream: Eskalation gesperrt'
-            message: 'Stufe 3/4: {{ trigger.to_state.name }}: automatische Voll-Reparatur
-              uebersprungen - innerhalb der letzten 30 Minuten lief bereits eine.
-              Bitte manuell pruefen.'
+            message: 'Stufe 3/4: {{ box_name }}: automatische Voll-Reparatur uebersprungen
+              - innerhalb der letzten 30 Minuten lief bereits eine. Bitte manuell
+              pruefen.'
             daten:
-              tag: radiostream_{{ trigger.entity_id.split('.')[1].replace('musik_radiostream_',
-                '') }}
+              tag: radiostream_{{ p }}
           note: '06.11.2026 (Claude): wie die uebrigen Meldungen ueber script.benachrichtigung_alle_geraete
             mit tag radiostream_<player> - ersetzt die Stufe-3-Meldung und wird spaeter
             von der Entwarnung ersetzt'
@@ -388,6 +462,15 @@
           Reconnect -> Mixing -> erneute Voll-Reparatur'
   max: 10
   mode: parallel
+  variables:
+    p: '{{ trigger.entity_id | regex_findall_index(''[0-9]+_[0-9]+'') }}'
+    player: media_player.musik_radiostream_{{ p }}
+    spielt_nicht: '{{ trigger.entity_id.startswith(''binary_sensor.'') }}'
+    box_name: '{{ state_attr(player, ''friendly_name'') or player }}'
+    stoerung: '{% set m = {''diagnose'': [5, 15], ''steckdosen_zyklus'': [10, 20],
+      ''addon_neustart'': [20, 30], ''manuell_pruefen'': [30, 40]}[trigger.id] %}{{
+      (''spielt seit über '' ~ m[1] ~ '' Minuten nicht'') if spielt_nicht else (''ist
+      seit über '' ~ m[0] ~ '' Minuten unavailable'') }}'
 - id: '1786706796964'
   alias: Radiostream Player wieder verfügbar (Benachrichtigung löschen)
   description: 'Entwarnung nach einem gemeldeten Ausfall (neu aufgebaut 25.09.2026).
@@ -402,7 +485,13 @@
     an die drei Geraete - ersetzt auf dem Handy die Ausfall-Meldung inkl. Ausfalldauer.
     Kurze Aussetzer ohne vorherige Ausfall-Meldung loesen nichts aus. [02.10.2026:
     Push-Meldungen laufen jetzt ueber script.benachrichtigung_alle_geraete (gleiche
-    drei Geraete, gleicher Tag).]'
+    drei Geraete, gleicher Tag).] [11.11.2026 Claude, auf Wunsch des Nutzers (Haertung):
+    zweiter Ausloeser ''spielt_wieder'' (binary_sensor.radiostream_<p>_spielt_nicht
+    geht von an auf aus) fuer Stoerungen, bei denen der Player erreichbar war, aber
+    nicht spielte - dafuer gab es bisher weder Meldung noch Entwarnung. Die Dauer
+    ist dann die Zeit, die der Helfer an war. Box-Kuerzel wird jetzt per Regex aus
+    der Entity-ID gelesen (passt fuer Player und Helfer); die ID der persistenten
+    Meldung bleibt radiostream_ausfall_musik_radiostream_<p>.]'
   triggers:
   - entity_id:
     - media_player.musik_radiostream_87_5
@@ -415,16 +504,27 @@
     - unavailable
     - unknown
     trigger: state
+  - trigger: state
+    entity_id:
+    - binary_sensor.radiostream_87_5_spielt_nicht
+    - binary_sensor.radiostream_97_0_spielt_nicht
+    - binary_sensor.radiostream_105_9_spielt_nicht
+    from: 'on'
+    to: 'off'
+    id: spielt_wieder
+    note: '11.11.2026 (Claude): Entwarnung fuer den Einstieg ''spielt nicht'' des
+      Bug-Watch - der Helfer geht aus, sobald der Player 90 s durchgehend spielt.
+      Ohne gesetzten Merker passiert nichts (z.B. wenn die Entwarnung nach einem Ausfall
+      schon ueber den ersten Ausloeser lief)'
   actions:
   - variables:
       dauer: '{{ ((as_timestamp(trigger.to_state.last_changed) - as_timestamp(trigger.from_state.last_changed))
         / 60) | round(0) | int }}'
-      label: '{{ trigger.entity_id.split(''.'')[1].replace(''musik_radiostream_'',
-        '''').replace(''_'', ''.'') }}'
-      merker: '{{ ''input_boolean.radiostream_ausfall_gemeldet_'' ~ trigger.entity_id.split(''.'')[1].replace(''musik_radiostream_'',
-        '''') }}'
-      p: '{{ trigger.entity_id.split(''.'')[1].replace(''musik_radiostream_'', '''')
-        }}'
+      label: '{{ (trigger.entity_id | regex_findall_index(''[0-9]+_[0-9]+'')).replace(''_'',
+        ''.'') }}'
+      merker: '{{ ''input_boolean.radiostream_ausfall_gemeldet_'' ~ (trigger.entity_id
+        | regex_findall_index(''[0-9]+_[0-9]+'')) }}'
+      p: '{{ (trigger.entity_id | regex_findall_index(''[0-9]+_[0-9]+'')) }}'
   - condition: template
     note: Nur wenn fuer diese Box wirklich eine Ausfall-Meldung verschickt wurde -
       sonst keine Entwarnung (kein Spam bei kurzen Aussetzern)
@@ -435,7 +535,14 @@
   - action: persistent_notification.dismiss
     continue_on_error: true
     data:
-      notification_id: radiostream_ausfall_{{ trigger.entity_id.split('.')[1] }}
+      notification_id: radiostream_ausfall_musik_radiostream_{{ p }}
+  - condition: template
+    value_template: '{{ trigger.id != ''spielt_wieder'' or is_state(''media_player.musik_radiostream_''
+      ~ p, ''playing'') }}'
+    note: '11.11.2026 (Claude): Beim Ausloeser ''spielt_wieder'' nur dann ''laeuft
+      wieder'' melden, wenn der Player wirklich spielt. Geht der Helfer aus, weil
+      die Box ausgeschaltet oder deaktiviert wurde, sind Merker und persistente Meldung
+      bereits zurueckgesetzt, eine Entwarnung waere aber falsch'
   - note: Gleiche Markierung wie die Ausfall-Meldung des Watchdogs - ersetzt sie auf
       dem Handy, statt eine weitere Meldung hinzuzufuegen
     action: script.benachrichtigung_alle_geraete

@@ -1,4 +1,4 @@
-# Home-Assistant-Konfiguration „Radiostream" (Export, Stand 07.11.2026)
+# Home-Assistant-Konfiguration „Radiostream" (Export, Stand 11.11.2026)
 
 Anonymisierter Export der Home-Assistant-Teile, mit denen drei Internetradio-Streams
 über dieses Add-on dauerhaft an drei Bluetooth-UKW-Sender (ES-BT17) gehen. Was das
@@ -46,6 +46,8 @@ anpassen (siehe [`../api.md`](../api.md)).
 - Pro Box eine MPD-Integration (Host = Add-on, Port wie oben), die Player heißen
   `media_player.musik_radiostream_<p>`.
 - Companion-App auf den Geräten, die Meldungen bekommen sollen.
+- `binary_sensor.internet` (Ping-Integration auf eine Adresse im Internet): ohne
+  Internet eskaliert der Bug-Watch eine stumme, aber erreichbare Box nicht.
 - Für das Dashboard: card-mod bzw. UIX; die Ansicht *Receiver* nutzt die eigene Karte
   `custom:radiostream-receiver-card`, die nicht in diesem Export liegt.
 
@@ -71,6 +73,7 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_select.radiostream_<p>_steckdose` | Dropdown | Optionen: die drei `switch.dose_bt_*` |
 | `input_number.radiostream_<p>_letzte_position` | Zahl | Stall-Erkennung (muss −1 und die Spielzeit in Sekunden aufnehmen können) |
 | `input_datetime.radiostream_letzte_automatische_voll_reparatur` | Datum + Zeit | Sperrzeit der Voll-Reparatur |
+| `binary_sensor.radiostream_<p>_spielt_nicht` | Template-Binärsensor (Helfer), Geräteklasse *Problem*, **Ausschaltverzögerung 1:30 min** | `{{ is_state('input_boolean.radiostream_<p>_aktiv', 'on') and is_state('switch.dose_bt_<p>', 'on') and not is_state('media_player.musik_radiostream_<p>', 'playing') }}` – an, solange die Box spielen soll, es aber nicht tut; geht erst aus, wenn der Player 90 s durchgehend spielt (ab 11.11.2026) |
 | `switch.<p>_schalter` | Template-Schalter (Helfer) | leitet an die in `input_select.radiostream_<p>_steckdose` gewählte Steckdose weiter |
 
 ## Einspielen

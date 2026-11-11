@@ -1,4 +1,4 @@
-# Radiostream-Setup mit diesem Fork (Stand 07.11.2026)
+# Radiostream-Setup mit diesem Fork (Stand 11.11.2026)
 
 Dieses Dokument beschreibt die Installation, für die der Branch `chrischan`
 gepflegt wird: drei Internetradio-Streams, die rund um die Uhr über Bluetooth
@@ -180,8 +180,8 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 |------------|----------|---------|
 | **Radiostream permanent** | HA-Start, alle 5 Min, Senderwechsel, Aktiv-Schalter an, Rückkehr eines Players (20 s stabil), Player hört von selbst auf zu spielen (20 s) | Spielt den gewählten Sender. Watchdog startet neu, wenn ein aktiver Player nicht spielt, seine Position steht oder ein falscher Sender läuft. Senderwechsel, Aktivierung, Rückkehr und Stopp betreffen nur die eine Box; Rückkehr und Stopp nur, wenn sie aktiv ist. Zwischen Starts verschiedener Boxen 3 s Abstand (Mixing-Schutz). Modus `queued`. |
 | **Radiostream stoppen** | Aktiv-Schalter aus | `media_stop` am Player. |
-| **Bug-Watch** (Player unavailable) | Player 5/10/20/30 Min `unavailable` | Eskalationskette, siehe unten. Nur für aktive Boxen mit Strom. |
-| **Wieder verfügbar** | Player kommt aus `unavailable` zurück (20 s) | Entwarnung mit Ausfalldauer, ersetzt die Ausfallmeldung (gleicher Tag). |
+| **Bug-Watch** (Player unavailable) | Player 5/10/20/30 Min `unavailable` **oder** 15/20/30/40 Min erreichbar, aber stumm (`binary_sensor.radiostream_<p>_spielt_nicht`) | Eskalationskette, siehe unten. Nur für aktive Boxen mit Strom. |
+| **Wieder verfügbar** | Player kommt aus `unavailable` zurück (20 s) oder „spielt nicht" geht aus (Player spielt 90 s durchgehend) | Entwarnung mit Ausfalldauer, ersetzt die Ausfallmeldung (gleicher Tag). Nur wenn vorher eine Meldung verschickt wurde. |
 | **Nach HA-Start prüfen** | 3 Min nach HA-Start | Box seit dem Start weg: Diagnose, bei getrennter Bluetooth-Verbindung einmal Steckdosen-Zyklus. Holt verpasste Entwarnungen nach. |
 | **Lautstärke-Sperre an Add-on übertragen** | Schalter `lautstarke_fest_100`, Wert `lautstarke_alle_boxen`, HA-Start | Gibt den Sperr-Wert (10–100 %) als `volume_lock_level` ans Add-on und setzt `volume_lock` für alle Boxen per REST (bei reiner Wert-Änderung nur den Wert). |
 | **Sender-Auswahl persistieren** | Änderung eines Sender-/Preset-Selects | Schreibt die Auswahl in `letzter_sender_*` / `letzter_preset_*`. |
@@ -200,6 +200,27 @@ Die 5/10 Minuten sind bewusst länger als früher, damit die Selbstheilung des
 Add-ons (Auto-Reconnect, #316-Self-Heal) zuerst greift. Alle Meldungen einer Box
 laufen über `script.benachrichtigung_alle_geraete` mit Tag `radiostream_<p>` und
 ersetzen sich gegenseitig auf dem Handy.
+
+**Zweiter Einstieg „spielt nicht" (seit 11.11.2026).** Bis dahin eskalierte nur
+`unavailable`. Eine Box, deren Player erreichbar ist, aber nicht spielt (Zustand
+*aus* oder *pausiert*, z. B. wenn MPD keinen Ton ausgeben kann), blieb stumm, ohne
+dass etwas reparierte oder meldete – „Radiostream permanent" startete sie nur immer
+wieder neu. Jetzt läuft dafür dieselbe Leiter mit denselben Schritten, zehn Minuten
+später: Diagnose nach 15, Steckdosen-Zyklus nach 20, Voll-Reparatur nach 30 Minuten,
+Meldung „bitte manuell prüfen" nach 40.
+
+- Erkannt wird das über drei Template-Helfer
+  `binary_sensor.radiostream_<p>_spielt_nicht`: an, wenn die Box aktiv ist, ihre
+  Steckdose an ist und der Player nicht `playing` meldet. Aus geht der Helfer erst,
+  wenn der Player 90 s durchgehend spielt. Die kurzen Startversuche, die im
+  Fehlerfall alle halbe Minute kommen, setzen die Zeit deshalb nicht zurück (ein
+  einfaches „seit 15 Minuten aus" würde so nie erreicht).
+- Der Einstieg entfällt, solange der Player seit mindestens 5 Minuten durchgehend
+  `unavailable` ist (dann läuft bereits die Leiter für Ausfälle) und solange
+  `binary_sensor.internet` aus ist oder erst seit weniger als 5 Minuten wieder an:
+  ohne Internet kann kein Stream spielen, eine Reparatur würde nichts beheben.
+- Die Helfer zeigen im Verlauf auch, wann eine Box stumm war – der Zustand der
+  MPD-Player selbst wird nicht aufgezeichnet.
 
 ### Skripte
 
@@ -259,7 +280,7 @@ Wiederherstellen lässt sich alles über ein HA-Backup von vor dem 06.11.2026.
   REST-Befehle für diese Box.
 - Nicht den Intel AX210 dafür nehmen (gehört HA; trägt keine drei Streams).
 
-## 7. Bekannte Grenzen (Stand 10.11.2026)
+## 7. Bekannte Grenzen (Stand 11.11.2026)
 
 Beobachtet oder aus dem Aufbau abgeleitet; „möglich" heißt: denkbar, aber
 nicht nachgewiesen.
@@ -284,7 +305,10 @@ nicht nachgewiesen.
   geringen Sendeleistung meist unhörbar; sonst hilft mehr Abstand.
 - **Keine Pairing-Taste.** Neu verbinden geht nur per Stromzyklus. Danach
   baut die Box die Verbindung selbst mit 48 kHz auf; das Add-on öffnet sie
-  neu, damit 44,1 kHz laufen (MPD pausiert dabei einige Sekunden).
+  neu, damit 44,1 kHz laufen (MPD pausiert dabei einige Sekunden). So
+  beobachtet am 10.11.2026 nach einem Stromreset aller drei Boxen von Hand:
+  nach 40–70 s spielten alle drei wieder, 105.9 kam mit 48 kHz und lief nach
+  dem Neuöffnen mit 44,1 kHz.
 
 **Bluetooth und PulseAudio**
 
@@ -306,6 +330,8 @@ nicht nachgewiesen.
   die Boxen wieder ein; die Wiedergabe startet danach „Radiostream
   permanent". Vorher half nur ein Neustart des Add-ons. Live getestet ist
   das noch nicht (ein Test unterbricht alle drei Sender für etwa eine Minute).
+  Bleibt eine Box danach trotzdem stumm, meldet und repariert das seit dem
+  11.11.2026 der Bug-Watch (Einstieg „spielt nicht", Abschnitt 4).
 - **Signalstärke nur mit Scan.** BlueZ liefert die Signalstärke nur während
   eines Scans, und der stört auf demselben Chip alle laufenden Streams. Im
   Betrieb gibt es deshalb keine Messung mehr.
@@ -333,6 +359,13 @@ nicht nachgewiesen.
   als Text-Vorlage. Home Assistant wandelt es dabei in ein Objekt um, gibt
   aber beim Einsetzen wieder den Originaltext aus – funktioniert (getestet
   am 07.11.2026), hängt aber an diesem Verhalten von HA.
+- **„Spielt nicht" heißt: der Player meldet nicht `playing`.** Meldet MPD
+  *spielt*, obwohl nichts ankommt (Position steht), greift weiter nur der
+  5-Minuten-Watchdog von „Radiostream permanent" mit einem Neustart des Streams;
+  eine Eskalation gibt es dafür nicht. Fällt nur der Sender aus (Internet da,
+  Stream nicht), laufen die Stufen einmal ins Leere. Der neue Einstieg ist mit
+  nachgestellten Auslösern geprüft, aber noch nicht in einem echten Fall
+  gelaufen (dafür müsste eine Box 15 Minuten stumm bleiben).
 - **Keine Stufe für „Box braucht Pairing-Modus".** Die Eskalationskette endet
   mit einer Meldung; bei der ES-BT17 entspricht das dem Steckdosen-Zyklus,
   der schon Stufe 2 ist.
