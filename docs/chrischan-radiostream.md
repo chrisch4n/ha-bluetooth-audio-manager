@@ -346,6 +346,18 @@ nicht nachgewiesen.
   105.9 nahmen bis zu einem Steckdosen-Zyklus keine Verbindung mehr an. Die
   Messung dafür ist der Gap-Monitor des Add-ons
   (`POST /api/diagnostics/gap-monitor`).
+  Am 13.11.2026 um 06:56 erneut, diesmal ohne Absturzmeldung: Alle drei
+  Boxen waren verbunden, die Messung zeigte keinerlei Stocken, trotzdem
+  sendeten die Boxen nur einen stummen Träger (am Radio Rauschen, daneben
+  Stille). Ein Steckdosen-Zyklus aller Boxen half nicht; der Kernel meldete
+  `link tx timeout, killing stalled connection`, Pakete für unbekannte
+  Verbindungen und doppelte Verbindungsmeldungen. Erst Abziehen und
+  Wiedereinstecken des Sticks (Firmware wird neu geladen, das Add-on startet
+  sich danach selbst neu) brachte den Ton zurück. Folgerung: Der Stick nimmt
+  nach ein bis drei Tagen Dauerbetrieb mit drei Streams Daten an, sendet sie
+  aber nicht mehr zuverlässig. Wahrscheinlich steckt dasselbe hinter dem
+  schlechten Klang am 07.11. und 10.11. (damals half der Stromreset der
+  Boxen, weil dabei alle Verbindungen neu aufgebaut wurden).
 - **custom.pa nur beim Start von PulseAudio.** Das Bluetooth-Modul zur
   Laufzeit neu zu laden hat PulseAudio abstürzen lassen (cc.11).
 - **Ein Adapter pro Add-on-Instanz** (Abschnitt 6).
