@@ -1,5 +1,5 @@
 # Dashboard "radio-streams" (Receiver, Reparatur, Presets, Radio, Radiostreams),
-# Export der Rohkonfiguration aus Home Assistant, Stand 11.11.2026.
+# Export der Rohkonfiguration aus Home Assistant, Stand 13.11.2026.
 # Einfuegen ueber Dashboard > Bearbeiten > Rohkonfigurations-Editor.
 # Enthaelt keine MACs, IPs, Benutzer- oder Geraete-IDs. Braucht card-mod/UIX;
 # die Ansicht "Receiver" nutzt die eigene Karte custom:radiostream-receiver-card.
@@ -162,7 +162,7 @@ views:
         show_state: false
     - type: tile
       entity: script.radiostream_steckdosen_alle_zyklieren
-      name: Alle drei (gestaffelt wieder an)
+      name: Alle drei (nacheinander, ca. 6 Min)
       icon: 'm3o:power-settings-new'
       grid_options:
         columns: full
@@ -172,10 +172,10 @@ views:
         target:
           entity_id: script.radiostream_steckdosen_alle_zyklieren
         confirmation:
-          text: 'Stufe 2 · Steckdosen-Zyklus für ALLE DREI: alle eingeschalteten Steckdosen 30
-            s stromlos, danach nacheinander mit 20 s Abstand wieder an. Kein Add-on-Neustart.
-            Unterbricht alle Sender für etwa 1,5 bis 2 Minuten; ausgeschaltete Boxen bleiben aus.
-            Fortfahren?'
+          text: 'Stufe 2 · Steckdosen-Zyklus für ALLE DREI, nacheinander: jede eingeschaltete Box 30
+            s stromlos, dann wieder an, 90 s später die nächste. Es ist immer nur ein Sender still;
+            dauert etwa 6 Minuten. Kein Add-on-Neustart, ausgeschaltete Boxen bleiben aus. Läuft auch
+            jede Nacht um 04:30. Fortfahren?'
     - type: heading
       heading: Stufe 3 · Voll-Reparatur
       icon: mdi:wrench
@@ -346,6 +346,12 @@ views:
         entity: input_datetime.radiostream_letzte_automatische_voll_reparatur
         name: Letzte Auto-Reparatur
         icon: mdi:wrench-clock
+      - type: tile
+        entity: automation.radiostream_nachtlicher_steckdosen_zyklus
+        name: Nachts zyklieren (04:30)
+        icon: m3o:bedtime
+        features:
+        - type: toggle
 - path: presets
   title: Presets
   type: sections
