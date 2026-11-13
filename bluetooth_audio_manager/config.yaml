@@ -1,5 +1,5 @@
 name: "Bluetooth Audio Manager (Chrischan)"
-version: "2.1.0-cc.17"
+version: "2.1.0-cc.18"
 slug: bluetooth_audio_manager
 description: "Patched build of scyto's add-on (fixes for #315-#319 plus MPD stream volume). Manage Bluetooth audio device connections (A2DP) with persistent pairing, auto-reconnect, and AppArmor security."
 url: "https://github.com/chrisch4n/ha-bluetooth-audio-manager/tree/chrischan"
@@ -19,6 +19,8 @@ hassio_api: true
 hassio_role: manager
 homeassistant_api: true
 audio: true
+# USB access: only for resetting the Bluetooth stick (POST /api/adapter/reset, mode usb)
+usb: true
 privileged:
   - NET_ADMIN
   - NET_RAW

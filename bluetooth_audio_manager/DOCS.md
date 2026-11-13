@@ -465,6 +465,15 @@ temporarily suppresses auto-reconnect to avoid hammering a potentially
 unstable adapter. Reconnection resumes automatically after the suppression
 window. Check the Logs view for "adapter disruption" messages.
 
+**Adapter stuck — several speakers drop and won't come back**: A USB stick's
+firmware can get into a state only a reset clears (kernel messages such as
+`hw err`, `link tx timeout`, or packets for unknown connection handles).
+`POST /api/adapter/reset` resets it without touching the stick:
+`{"mode": "soft"}` powers the adapter off and on through BlueZ and reconnects
+the speakers one by one; `{"mode": "usb"}` resets the USB device — like
+unplugging it, firmware reload included — and restarts the add-on. Try `soft`
+first. The add-on asks for USB access (`usb: true`) only for this reset.
+
 **Devices reappeared after reinstall with default settings**: After a fresh
 install or data wipe, the add-on automatically imports any devices that are
 still paired in BlueZ. These devices are restored with default settings

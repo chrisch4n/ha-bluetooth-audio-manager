@@ -27,7 +27,7 @@
 >   — auto-reconnect after a failed connect. Only the explicit-connect part,
 >   re-implemented here in `fc313d0`; together with `84ad826` it covers both
 >   suggestions in scyto#317. The discovery-driven part was not taken over.
-> - Everything else on this branch (fixes for scyto#315–#319, cc.2–cc.17) is
+> - Everything else on this branch (fixes for scyto#315–#319, cc.2–cc.18) is
 >   this fork's own work; details in the
 >   [setup doc](docs/chrischan-radiostream.md#basis-und-%C3%BCbernommene-arbeit-aus-anderen-forks).
 >
