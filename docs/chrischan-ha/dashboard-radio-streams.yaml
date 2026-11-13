@@ -163,7 +163,7 @@ views:
     - type: tile
       entity: script.radiostream_steckdosen_alle_zyklieren
       name: Alle drei (nacheinander, ca. 6 Min)
-      icon: 'm3o:power-settings-new'
+      icon: m3o:power-settings-new
       grid_options:
         columns: full
       tap_action:
@@ -172,10 +172,39 @@ views:
         target:
           entity_id: script.radiostream_steckdosen_alle_zyklieren
         confirmation:
-          text: 'Stufe 2 · Steckdosen-Zyklus für ALLE DREI, nacheinander: jede eingeschaltete Box 30
-            s stromlos, dann wieder an, 90 s später die nächste. Es ist immer nur ein Sender still;
-            dauert etwa 6 Minuten. Kein Add-on-Neustart, ausgeschaltete Boxen bleiben aus. Läuft auch
-            jede Nacht um 04:30. Fortfahren?'
+          text: 'Stufe 2 · Steckdosen-Zyklus für ALLE DREI, nacheinander: jede eingeschaltete Box 30 s
+            stromlos, dann wieder an, 90 s später die nächste. Es ist immer nur ein Sender still; dauert
+            etwa 6 Minuten. Kein Add-on-Neustart, ausgeschaltete Boxen bleiben aus. Läuft auch jede Nacht
+            um 04:30. Fortfahren?'
+    - type: heading
+      heading: Bluetooth-Stick
+      icon: m3o:developer-board
+    - type: tile
+      entity: script.radiostream_stick_zuruecksetzen
+      name: Stick zurücksetzen
+      icon: m3o:developer-board
+      grid_options:
+        columns: 6
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_stick_zuruecksetzen
+        data:
+          variables:
+            stufe: auto
+            ausloeser: Dashboard
+        confirmation:
+          text: 'Bluetooth-Stick zurücksetzen, ohne ihn abzuziehen: erst Adapter aus und wieder an; sind
+            danach noch zwei oder mehr Boxen ohne Verbindung, folgt der USB-Reset (wie Abziehen und Einstecken,
+            das Add-on startet neu). Alle drei Sender sind dabei 1–2 Minuten still. Läuft bei 2+ Boxen
+            ohne Verbindung nach 4 Minuten auch automatisch. Fortfahren?'
+    - type: tile
+      entity: sensor.radiostream_boxen_ohne_verbindung
+      name: Boxen ohne Verbindung
+      icon: m3o:sync-problem
+      grid_options:
+        columns: 6
     - type: heading
       heading: Stufe 3 · Voll-Reparatur
       icon: mdi:wrench
@@ -285,15 +314,15 @@ views:
     - type: tile
       entity: switch.radiostream_steckdosen_alle
       name: Alle drei
-      icon: 'm3o:power-plug'
+      icon: m3o:power-plug
       grid_options:
         columns: full
       icon_tap_action:
         action: toggle
         confirmation:
-          text: Alle drei Steckdosen schalten? Beim Ausschalten verlieren alle Boxen sofort den
-            Strom; beim Einschalten gehen alle gleichzeitig an (für einen schonenden Neustart
-            besser Stufe 2 · Alle drei).
+          text: Alle drei Steckdosen schalten? Beim Ausschalten verlieren alle Boxen sofort den Strom;
+            beim Einschalten gehen alle gleichzeitig an (für einen schonenden Neustart besser Stufe 2
+            · Alle drei).
     - type: heading
       heading: Einstellungen & Status
       icon: mdi:cog

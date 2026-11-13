@@ -226,7 +226,12 @@
     kurz aus war - die ES-BT17 verbindet sich nur nach einem Stromzyklus neu. Die
     Selbstheilung des Add-ons (Reconnect nach 10 s, 32 s, 63 s, 130 s) hat bis 3 Min
     trotzdem Vorrang. Stufen 3/4 (20/30 Min) und der Einstieg ''spielt nicht'' (15/20/30/40
-    Min) unveraendert.]'
+    Min) unveraendert.] [13.11.2026 Claude, auf Wunsch des Nutzers: Stufe 2 (Steckdosen-Zyklus)
+    wartet, solange script.radiostream_stick_zuruecksetzen laeuft (neu: automation.radiostream_stick_reset_bei_mehrfachausfall
+    startet es, wenn 2+ Boxen seit 4 Min ohne Verbindung sind), und entfaellt, wenn
+    die Box danach wieder da ist. Grund: Der Realtek-Stick hing am 11.11. und 13.11.;
+    ein Steckdosen-Zyklus hilft dann nicht und stoert das einzelne Neuverbinden nach
+    dem Stick-Reset.]'
   triggers:
   - entity_id:
     - media_player.musik_radiostream_87_5
@@ -394,6 +399,29 @@
         id:
         - steckdosen_zyklus
       sequence:
+      - if:
+        - condition: state
+          entity_id: script.radiostream_stick_zuruecksetzen
+          state: 'on'
+        then:
+        - wait_template: '{{ is_state(''script.radiostream_stick_zuruecksetzen'',
+            ''off'') }}'
+          timeout:
+            minutes: 8
+          continue_on_timeout: true
+        - delay:
+            seconds: 30
+        - if:
+          - condition: template
+            value_template: '{{ is_state(player, ''playing'') if spielt_nicht else
+              not is_state(player, ''unavailable'') }}'
+          then:
+          - stop: Box ist nach dem Stick-Reset wieder da - kein Steckdosen-Zyklus
+              noetig
+        note: '13.11.2026 (Claude): Laeuft gerade der Stick-Reset (script.radiostream_stick_zuruecksetzen,
+          startet bei 2+ Boxen ohne Verbindung nach 4 Min), erst dessen Ende abwarten
+          - ein Steckdosen-Zyklus mitten im einzelnen Neuverbinden der Boxen wuerde
+          stoeren. Ist die Box danach wieder da, entfaellt der Zyklus.'
       - action: script.turn_on
         data:
           variables:
@@ -1273,3 +1301,47 @@
     target:
       entity_id: script.radiostream_steckdosen_alle_zyklieren
   mode: single
+- id: '1794552641256'
+  alias: Radiostream Stick-Reset bei Mehrfachausfall
+  description: '13.11.2026 (Claude, auf Wunsch des Nutzers): Sind mindestens zwei
+    aktive Boxen mit eingeschalteter Steckdose seit 4 Minuten ohne Bluetooth-Verbindung
+    (sensor.radiostream_boxen_ohne_verbindung >= 2), liegt es eher am Realtek-Stick
+    als an den Boxen - dann startet script.radiostream_stick_zuruecksetzen mit Stufe
+    ''auto'' (erst Adapter aus/an, bei Bedarf USB-Reset wie Abziehen und Einstecken).
+    Laeuft vor dem Steckdosen-Zyklus des Bug-Watch (5 Min); der wartet, bis der Stick-Reset
+    fertig ist, und zykliert nur Boxen, die danach noch fehlen. Nicht waehrend einer
+    Voll-Reparatur, eines Steckdosen-Zyklus aller Boxen oder des Stick-Resets selbst;
+    hoechstens einmal in 30 Minuten (letzter Lauf des Skripts). Anlass: Der Stick
+    hing am 11.11. und 13.11.2026, nur Abziehen half; der Software-Reset ist seit
+    dem 13.11. getestet.'
+  mode: single
+  max_exceeded: silent
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.radiostream_boxen_ohne_verbindung
+    above: 1
+    for:
+      minutes: 4
+  conditions:
+  - condition: state
+    entity_id:
+    - script.radiostream_stick_zuruecksetzen
+    - script.radiostream_reparieren
+    - script.radiostream_steckdosen_alle_zyklieren
+    state: 'off'
+    note: Nicht in eine laufende Reparatur oder einen laufenden Zyklus hinein
+  - condition: template
+    value_template: '{{ now() - (state_attr(''script.radiostream_stick_zuruecksetzen'',
+      ''last_triggered'') or (now() - timedelta(days=1))) > timedelta(minutes=30)
+      }}'
+    note: Hoechstens ein Stick-Reset in 30 Minuten (auch ein manueller zaehlt) - verhindert
+      eine Schleife, wenn es nicht am Stick liegt
+  actions:
+  - action: script.turn_on
+    target:
+      entity_id: script.radiostream_stick_zuruecksetzen
+    data:
+      variables:
+        stufe: auto
+        ausloeser: automatisch, {{ states('sensor.radiostream_boxen_ohne_verbindung')
+          }} Boxen seit 4 Min ohne Verbindung
