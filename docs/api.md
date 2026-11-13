@@ -201,6 +201,24 @@ rest_command:
     payload: '{"address": "{{ address }}"}'
 ```
 
+### Reset a stuck adapter
+
+When several speakers drop at once and will not come back, the adapter itself may be stuck
+(a USB stick's firmware, for example). `POST /api/adapter/reset` resets it:
+
+```yaml
+rest_command:
+  bt_audio_adapter_reset:
+    url: "http://YOUR-HOSTNAME:8099/api/adapter/reset"
+    method: post
+    content_type: "application/json"
+    payload: '{"mode": "{{ mode | default(''soft'') }}"}'
+```
+
+`soft` powers the adapter off and on through BlueZ and then reconnects the speakers one by one.
+`usb` resets the USB device behind it — like unplugging the stick, firmware reload included — and
+restarts the add-on. Try `soft` first; at most one reset per minute is accepted (HTTP 409 otherwise).
+
 ### Check whether it actually worked
 
 `POST /api/connect` returns HTTP 200 even when the speaker did not come up — the JSON body tells
@@ -372,7 +390,7 @@ add-on's own **API Reference** (`/api/docs`). A summary of what is available:
 | Devices | List, scan, pair, connect, disconnect, force-reconnect, forget |
 | Device settings | Idle mode, keep-alive, MPD instance and port, AVRCP toggle |
 | App settings | Auto Reconnect, reconnect interval and backoff, scan duration |
-| Adapters | List adapters, switch the active one, restart the add-on |
+| Adapters | List adapters, switch the active one, reset a stuck adapter, restart the add-on |
 | Audio | List Bluetooth PulseAudio sinks with volume, sample rate, codec info |
 | Status | Health, version, adapter info, combined state for polling |
 | Diagnostics | Recent logs, MPRIS/AVRCP diagnostic dump |
