@@ -44,7 +44,7 @@ das Einspielen.
 ## 2. Add-on
 
 - Installiert als lokal gebautes Add-on `1b3a7c56_bluetooth_audio_manager`
-  aus diesem Branch, Version `2.1.0-cc.18`. Das ursprüngliche scyto-Add-on
+  aus diesem Branch, Version `2.1.0-cc.19`. Das ursprüngliche scyto-Add-on
   (`d4261985`) wurde am 06.11.2026 deinstalliert; sein Repository ist noch
   eingetragen, falls ein Rückweg nötig ist.
 - **App Settings:** Adapter = Realtek-MAC, Auto-Reconnect an,
@@ -77,6 +77,7 @@ das Einspielen.
 | cc.16 | 07.11. | Lautstärke-Sperre mit einstellbarem Wert für alle Boxen (*Locked volume*, 10–100 %), statt fest 100 % |
 | cc.17 | 10.11. | Härtung: PulseAudio-Verbindung wird überwacht und neu aufgebaut (Neustart des Audio-Dienstes, PulseAudio beim Start noch nicht da); fehlt der eingestellte Adapter beim Start, wird auf ihn gewartet statt auf einen fremden auszuweichen; `pactl` mit Zeitlimit; MPD-Log-Leser und MPD-Wächter überstehen Fehler |
 | cc.18 | 13.11. | Stick zurücksetzen per API (`POST /api/adapter/reset`): *soft* schaltet den Adapter über BlueZ aus und wieder ein und verbindet die Boxen danach einzeln im Abstand von 20 s; *usb* setzt den USB-Stick zurück wie Abziehen und Einstecken (Firmware wird neu geladen), danach startet das Add-on neu. Dafür USB-Zugriff (`usb: true`) |
+| cc.19 | 13.11. | Boxen verbinden sich auch beim Start des Add-ons einzeln im Abstand von 20 s (nur die, die nicht schon verbunden sind); ein MPD-Stream, den PulseAudio auf eine andere Box geschoben hatte, wird nach dem Zurückschieben neu geöffnet – am 13.11. blieb 97.0 danach stumm, obwohl HA *spielt* zeigte |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
@@ -87,13 +88,13 @@ das Einspielen.
 | [Cayouche1989/ha-bluetooth-audio-manager](https://github.com/Cayouche1989/ha-bluetooth-audio-manager), Branch `cayouche/reconnect-2.1.1`, Commit [`2c38ea0`](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e) (23.08.2026) | „Fix auto-reconnect after speaker availability" | Nur der Teil für fehlgeschlagene explizite Verbindungen, neu umgesetzt in `fc313d0` (Hinweis im Commit); der Discovery-gesteuerte Teil nicht. Zusammen mit `84ad826` deckt das beide Vorschläge aus scyto#317 ab; seit cc.1 |
 
 Alles Übrige im Branch ist eigene Arbeit (Fixes für scyto#315–#319 und die
-Erweiterungen cc.2–cc.18).
+Erweiterungen cc.2–cc.19).
 
 Bei scyto eingereicht (09.11.2026), nur `src/` und `tests/`:
 [#324](https://github.com/scyto/ha-bluetooth-audio-manager/pull/324) mit den Fixes für
 #315–#319 und [#325](https://github.com/scyto/ha-bluetooth-audio-manager/pull/325) mit den
 Erweiterungen (Lautstärke-Sperre, Anzeigenamen, 44,1 kHz, Live-Radio, Diagnose; baut auf #324 auf).
-Die Härtung aus cc.17 und der Stick-Reset aus cc.18 sind dort noch nicht eingereicht.
+Die Härtung aus cc.17 und der Stick-Reset aus cc.18/cc.19 sind dort noch nicht eingereicht.
 
 ## 3. PulseAudio: Aussetzer-Fix (custom.pa)
 
