@@ -184,6 +184,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 | **Wieder verfügbar** | Player kommt aus `unavailable` zurück (20 s) oder „spielt nicht" geht aus (Player spielt 90 s durchgehend) | Entwarnung mit Ausfalldauer, ersetzt die Ausfallmeldung (gleicher Tag). Nur wenn vorher eine Meldung verschickt wurde. |
 | **Nach HA-Start prüfen** | 3 Min nach HA-Start | Box seit dem Start weg: Diagnose, bei getrennter Bluetooth-Verbindung einmal Steckdosen-Zyklus. Holt verpasste Entwarnungen nach. |
 | **Lautstärke-Sperre an Add-on übertragen** | Schalter `lautstarke_fest_100`, Wert `lautstarke_alle_boxen`, HA-Start | Gibt den Sperr-Wert (10–100 %) als `volume_lock_level` ans Add-on und setzt `volume_lock` für alle Boxen per REST (bei reiner Wert-Änderung nur den Wert). |
+| **Nächtlicher Steckdosen-Zyklus** | täglich 04:30 | Startet `radiostream_steckdosen_alle_zyklieren` (nicht während einer Voll-Reparatur oder eines Einzel-Zyklus). Vorbeugend gegen verrauschten UKW-Klang nach 1–3 Tagen Dauerbetrieb (ab 13.11.2026). |
 | **Sender-Auswahl persistieren** | Änderung eines Sender-/Preset-Selects | Schreibt die Auswahl in `letzter_sender_*` / `letzter_preset_*`. |
 | **Senderlisten synchronisieren** | HA-Start, Änderung von `sensor.radiostream_senderliste` | Aktualisiert die Optionen aller 13 Selects und stellt die gemerkte Auswahl wieder her. |
 
@@ -234,7 +235,7 @@ Meldung „bitte manuell prüfen" nach 40.
 | `radiostream_reparieren_ultralight` („Diagnose") | Stufe 1, auch per Button. |
 | `radiostream_reparieren_light` („BT-Reconnect") | Force-Reconnect einer Box über das Add-on. |
 | `radiostream_steckdose_zyklieren` | Steckdose einer Box 30 s aus und wieder an. |
-| `radiostream_steckdosen_alle_zyklieren` | Alle eingeschalteten Steckdosen 30 s aus, dann nacheinander mit 20 s Abstand wieder an; ohne Add-on-Neustart (ab 11.11.2026, Button in Stufe 2). Daneben gibt es den Gruppenschalter `switch.radiostream_steckdosen_alle` für alle drei Steckdosen. |
+| `radiostream_steckdosen_alle_zyklieren` | Alle eingeschalteten Boxen nacheinander zurücksetzen: jede 30 s stromlos, dann wieder an, 90 s später die nächste (dauert etwa 6 Minuten, nie mehr als ein Sender still); ohne Add-on-Neustart. Button in Stufe 2, läuft außerdem jede Nacht um 04:30. Bis 13.11.2026 gingen alle gleichzeitig aus und mit 20 s Abstand wieder an – dabei kamen die Boxen fast gleichzeitig zurück, und der Realtek-Stick geriet zweimal durcheinander. Daneben gibt es den Gruppenschalter `switch.radiostream_steckdosen_alle` für alle drei Steckdosen. |
 | `radiostream_reparieren` („Voll-Reparatur") | Steckdose(n) aus, Add-on-Neustart, Steckdose(n) an, MPD-Integrationen neu laden, MPD sicherstellen. |
 | `radiostream_mpd_sicherstellen` | Startet einen fehlenden MPD-Dienst einer verbundenen Box. |
 | `radiostream_notfall_forget_pair` | Box entfernen, neu pairen, MPD zuweisen. |
@@ -346,18 +347,24 @@ nicht nachgewiesen.
   105.9 nahmen bis zu einem Steckdosen-Zyklus keine Verbindung mehr an. Die
   Messung dafür ist der Gap-Monitor des Add-ons
   (`POST /api/diagnostics/gap-monitor`).
-  Am 13.11.2026 um 06:56 erneut, diesmal ohne Absturzmeldung: Alle drei
-  Boxen waren verbunden, die Messung zeigte keinerlei Stocken, trotzdem
-  sendeten die Boxen nur einen stummen Träger (am Radio Rauschen, daneben
-  Stille). Ein Steckdosen-Zyklus aller Boxen half nicht; der Kernel meldete
-  `link tx timeout, killing stalled connection`, Pakete für unbekannte
-  Verbindungen und doppelte Verbindungsmeldungen. Erst Abziehen und
+  Am 13.11.2026 kippte der Stick erneut – diesmal direkt nach einem
+  Steckdosen-Zyklus aller Boxen, als sich alle drei fast gleichzeitig neu
+  verbanden: `link tx timeout, killing stalled connection`, Pakete für
+  unbekannte Verbindungen, doppelte Verbindungsmeldungen. Erst Abziehen und
   Wiedereinstecken des Sticks (Firmware wird neu geladen, das Add-on startet
-  sich danach selbst neu) brachte den Ton zurück. Folgerung: Der Stick nimmt
-  nach ein bis drei Tagen Dauerbetrieb mit drei Streams Daten an, sendet sie
-  aber nicht mehr zuverlässig. Wahrscheinlich steckt dasselbe hinter dem
-  schlechten Klang am 07.11. und 10.11. (damals half der Stromreset der
-  Boxen, weil dabei alle Verbindungen neu aufgebaut wurden).
+  sich danach selbst neu) half. Auch am 11.11. kam der Absturz beim
+  gleichzeitigen Neuverbinden. Seitdem setzt der Zyklus die Boxen
+  nacheinander mit 90 s Abstand zurück.
+- **UKW wird nach 1–3 Tagen verrauscht (alle drei Boxen).** Am 07.11.,
+  10.11., 11.11. und 13.11.2026 klangen alle drei Sender verrauscht bzw.
+  unsauber; ein Stromreset der Boxen behob es jedes Mal. Am 13.11. um 06:56
+  war Bluetooth nachweislich nicht beteiligt (alle drei Boxen bekamen den Ton
+  lückenlos, Messung über eine Minute, keine Fehler vom Stick) – das Rauschen
+  entsteht im UKW-Teil der Boxen. Ursache unbekannt (Wärme, Alterung,
+  Stromversorgung über die USB-Dosen?). Gegenmittel seit 13.11.2026: Jede
+  Nacht um 04:30 werden die Boxen nacheinander zurückgesetzt. Zur
+  Eingrenzung beim nächsten Mal: vor dem Reset fühlen, ob die Boxen warm
+  sind, und zuerst nur eine Box zurücksetzen.
 - **custom.pa nur beim Start von PulseAudio.** Das Bluetooth-Modul zur
   Laufzeit neu zu laden hat PulseAudio abstürzen lassen (cc.11).
 - **Ein Adapter pro Add-on-Instanz** (Abschnitt 6).

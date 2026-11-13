@@ -1,4 +1,4 @@
-# Home-Assistant-Konfiguration „Radiostream" (Export, Stand 11.11.2026)
+# Home-Assistant-Konfiguration „Radiostream" (Export, Stand 13.11.2026)
 
 Anonymisierter Export der Home-Assistant-Teile, mit denen drei Internetradio-Streams
 über dieses Add-on dauerhaft an drei Bluetooth-UKW-Sender (ES-BT17) gehen. Was das
@@ -13,7 +13,7 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 
 | Datei | In HA | Inhalt |
 |-------|-------|--------|
-| [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 8 Radiostream-Automationen |
+| [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 9 Radiostream-Automationen |
 | [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 9 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
 | [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver, Reparatur (oben: „Wiedergabe" je Box, OK/Problem), Presets, Radio, Radiostreams |
 | [`configuration_yaml/rest_command.yaml`](configuration_yaml/rest_command.yaml) | `rest_command: !include …` | `rest_command.bt_audio_*` für die REST-API des Add-ons |
