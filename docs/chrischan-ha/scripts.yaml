@@ -297,6 +297,141 @@ radiostream_steckdosen_alle_zyklieren:
           entity_id: '{{ switch_map[repeat.item] }}'
       - delay:
           seconds: 90
+radiostream_stick_zuruecksetzen:
+  alias: Radiostream Stick zurücksetzen
+  description: '13.11.2026 (Claude, auf Wunsch des Nutzers): Setzt den Realtek-Bluetooth-Stick
+    des Add-ons zurueck, ohne ihn abzuziehen (rest_command.bt_audio_adapter_reset,
+    Add-on ab 2.1.0-cc.18). Stufe ''auto'' (Standard): erst sanft - der Adapter wird
+    ueber BlueZ aus- und eingeschaltet, die Boxen verbinden sich einzeln im 20-s-Abstand
+    neu. Sind danach nach gut 2 Minuten noch mindestens zwei aktive Boxen mit eingeschalteter
+    Steckdose ohne Verbindung (sensor.radiostream_boxen_ohne_verbindung), folgt der
+    USB-Reset - wie Abziehen und Einstecken, die Firmware wird neu geladen, das Add-on
+    startet danach neu und verbindet die Boxen ebenfalls einzeln. Stufe ''sanft''
+    oder ''usb'' fuehrt nur diese Stufe aus. Das Ergebnis kommt als Push mit tag radiostream_stick.
+    Anlass: Der Stick hing am 11.11. (Firmware-Absturz) und am 13.11.2026 (link tx
+    timeout); nur Abziehen half. Aufruf aus Skripten/Automationen per script.turn_on
+    mit data.variables {stufe, ausloeser}. Live getestet 13.11.2026.'
+  fields:
+    stufe:
+      name: Stufe
+      description: auto = erst sanft, bei Bedarf USB; sanft = nur Adapter aus/an;
+        usb = nur USB-Reset
+      default: auto
+      selector:
+        select:
+          options:
+          - auto
+          - sanft
+          - usb
+    ausloeser:
+      name: Auslöser
+      description: Nur fuer den Text der Meldung, z. B. 'Dashboard' oder 'automatisch'
+      default: manuell
+      selector:
+        text: {}
+  icon: m3o:developer-board
+  mode: single
+  max_exceeded: silent
+  sequence:
+  - variables:
+      stufe: '{{ stufe | default(''auto'') }}'
+      ausloeser: '{{ ausloeser | default(''manuell'') }}'
+      vorher: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0) }}'
+  - if:
+    - condition: template
+      value_template: '{{ stufe in [''auto'', ''sanft''] }}'
+    then:
+    - action: rest_command.bt_audio_adapter_reset
+      data:
+        mode: soft
+      response_variable: antwort_sanft
+      continue_on_error: true
+    - if:
+      - condition: template
+        value_template: '{{ (antwort_sanft.status | default(0)) != 200 }}'
+      then:
+      - action: script.turn_on
+        target:
+          entity_id: script.benachrichtigung_alle_geraete
+        data:
+          variables:
+            title: 'Radiostream: Stick-Reset nicht moeglich'
+            message: 'Sanfter Stick-Reset ({{ ausloeser }}) abgelehnt oder fehlgeschlagen
+              (HTTP {{ antwort_sanft.status | default(''-'') }}): {{ (antwort_sanft.content.error
+              if antwort_sanft.content is mapping else antwort_sanft.content) | default(''keine
+              Antwort'') }}'
+            daten:
+              tag: radiostream_stick
+      - stop: Sanfter Reset nicht ausgefuehrt
+    - delay:
+        seconds: 20
+      note: Die Player werden erst ein paar Sekunden nach dem Reset unavailable -
+        sonst waere die Wartebedingung sofort erfuellt
+    - wait_template: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0)
+        == 0 }}'
+      timeout:
+        seconds: 120
+      continue_on_timeout: true
+      note: Boxen verbinden sich einzeln im 20-s-Abstand (Add-on); mit Neustart des
+        MPD und der HA-Integration dauert das bis zu ~90 s
+  - variables:
+      nach_sanft: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0)
+        }}'
+  - if:
+    - condition: template
+      value_template: '{{ stufe == ''usb'' or (stufe == ''auto'' and nach_sanft |
+        int >= 2) }}'
+    then:
+    - delay:
+        seconds: '{{ 60 if stufe == ''auto'' else 0 }}'
+      note: Das Add-on nimmt hoechstens einen Reset pro 60 s an (sonst HTTP 409)
+    - action: rest_command.bt_audio_adapter_reset
+      data:
+        mode: usb
+      response_variable: antwort_usb
+      continue_on_error: true
+    - if:
+      - condition: template
+        value_template: '{{ (antwort_usb.status | default(0)) != 200 }}'
+      then:
+      - action: script.turn_on
+        target:
+          entity_id: script.benachrichtigung_alle_geraete
+        data:
+          variables:
+            title: 'Radiostream: Stick-Reset nicht moeglich'
+            message: 'USB-Reset des Sticks ({{ ausloeser }}) abgelehnt oder fehlgeschlagen
+              (HTTP {{ antwort_usb.status | default(''-'') }}): {{ (antwort_usb.content.error
+              if antwort_usb.content is mapping else antwort_usb.content) | default(''keine
+              Antwort'') }}. Bitte den Stick von Hand abziehen und wieder einstecken.'
+            daten:
+              tag: radiostream_stick
+      - stop: USB-Reset nicht ausgefuehrt
+    - delay:
+        seconds: 40
+      note: Stick meldet sich ab und wieder an, das Add-on startet neu
+    - wait_template: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0)
+        == 0 }}'
+      timeout:
+        seconds: 150
+      continue_on_timeout: true
+  - variables:
+      danach: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0) }}'
+      usb_gelaufen: '{{ stufe == ''usb'' or (stufe == ''auto'' and nach_sanft | int
+        >= 2) }}'
+  - action: script.turn_on
+    target:
+      entity_id: script.benachrichtigung_alle_geraete
+    data:
+      variables:
+        title: 'Radiostream: Stick zurückgesetzt'
+        message: '{{ ''USB-Reset'' if usb_gelaufen else ''Sanfter Reset'' }} des Bluetooth-Sticks
+          ({{ ausloeser }}, vorher {{ vorher }} Box(en) ohne Verbindung): {{ ''alle
+          aktiven Boxen sind wieder verbunden.'' if danach | int == 0 else (danach
+          ~ '' Box(en) noch ohne Verbindung - der Bug-Watch kuemmert sich weiter (Steckdosen-Zyklus).'')
+          }}'
+        daten:
+          tag: radiostream_stick
 radiostream_reparieren_ultralight:
   alias: Radiostream Diagnose
   description: 'Schnellste, unaufdringlichste Reparaturstufe (Stand 19.09.2026, jetzt
