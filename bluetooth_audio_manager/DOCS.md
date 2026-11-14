@@ -60,7 +60,7 @@
 >   of the *Advanced SSH & Web Terminal* app temporarily off, run
 >
 >   ```
->   docker exec hassio_audio sh -c 'printf "%s\n" "unload-module module-bluetooth-discover" "load-module module-bluetooth-discover output_rate_refresh_interval_ms=3600000" > /data/custom.pa'
+>   docker exec hassio_audio sh -c 'printf "%s\n" "unload-module module-bluetooth-discover" "load-module module-bluetooth-discover output_rate_refresh_interval_ms=1800000" > /data/custom.pa'
 >   ```
 >
 >   then restart the audio plugin (`ha audio restart`; speakers reconnect).
@@ -68,9 +68,17 @@
 >   `GET /api/diagnostics/pulse-bluetooth`; undo with
 >   `docker exec hassio_audio rm /data/custom.pa` and an audio restart.
 >   With three speakers on one Realtek RTL8761B stick, 10 minutes cut the
->   output stalls from about 44 a minute to two in 20 minutes; 60 minutes
->   (`3600000`, as above) also avoids the occasional dropout when the
->   bitrate steps up again. Measurements and the full setup this build is
+>   output stalls from about 44 a minute to two in 20 minutes. **Do not go
+>   much longer:** every overload lowers the SBC bitpool by 5 and each
+>   interval raises it by only 1, so with 60 minutes one overload costs five
+>   hours of lower quality. After a few overloads (they cluster in the first
+>   minutes after a reconnect) the bitpool reached the speakers' minimum and
+>   three FM transmitters behind the speakers sounded very noisy while
+>   Bluetooth delivered without gaps. 30 minutes (`1800000`, as above) is the
+>   compromise in use. `GET /api/diagnostics/pulse-bluetooth` shows how far
+>   each speaker's bitrate is down (`sbc_frames_per_packet`: 7 = full,
+>   bitpool 53, at 44.1 kHz; 15 = bitpool about 22 or lower); a reconnect
+>   restores full bitrate. Measurements and the full setup this build is
 >   used with: [docs/chrischan-radiostream.md](https://github.com/chrisch4n/ha-bluetooth-audio-manager/blob/chrischan/docs/chrischan-radiostream.md).
 >
 > - **Prefer 44.1 kHz** (App Settings, on by default) — whoever sets up an
@@ -133,7 +141,8 @@
 >   software volume; the speaker's own volume stays at 100 %.
 > - One Bluetooth adapter per app instance. Three A2DP streams on one
 >   Realtek RTL8761B stick need the PulseAudio setting above; after an
->   overload the SBC bitrate stays lower for up to a few hours.
+>   overload the SBC bitrate stays lower for a while (5 × the interval per
+>   overload).
 > - Without the adapter configured by MAC the app does not play: it waits
 >   for that adapter and no longer falls back to another one.
 > - After PulseAudio was restarted, the app restores sinks and MPD, but as
