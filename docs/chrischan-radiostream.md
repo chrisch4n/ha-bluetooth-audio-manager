@@ -44,7 +44,7 @@ das Einspielen.
 ## 2. Add-on
 
 - Installiert als lokal gebautes Add-on `1b3a7c56_bluetooth_audio_manager`
-  aus diesem Branch, Version `2.1.0-cc.20`. Das ursprüngliche scyto-Add-on
+  aus diesem Branch, Version `2.1.0-cc.21`. Das ursprüngliche scyto-Add-on
   (`d4261985`) wurde am 06.11.2026 deinstalliert; sein Repository ist noch
   eingetragen, falls ein Rückweg nötig ist.
 - **App Settings:** Adapter = Realtek-MAC, Auto-Reconnect an,
@@ -79,6 +79,7 @@ das Einspielen.
 | cc.18 | 13.11. | Stick zurücksetzen per API (`POST /api/adapter/reset`): *soft* schaltet den Adapter über BlueZ aus und wieder ein und verbindet die Boxen danach einzeln im Abstand von 20 s; *usb* setzt den USB-Stick zurück wie Abziehen und Einstecken (Firmware wird neu geladen), danach startet das Add-on neu. Dafür USB-Zugriff (`usb: true`) |
 | cc.19 | 13.11. | Boxen verbinden sich auch beim Start des Add-ons einzeln im Abstand von 20 s (nur die, die nicht schon verbunden sind); ein MPD-Stream, den PulseAudio auf eine andere Box geschoben hatte, wird nach dem Zurückschieben neu geöffnet – am 13.11. blieb 97.0 danach stumm, obwohl HA *spielt* zeigte |
 | cc.20 | 14.11. | Diagnose: `GET /api/diagnostics/pulse-bluetooth` zeigt pro Box, wie weit PulseAudio die SBC-Bitrate abgesenkt hat (SBC-Frames pro Bluetooth-Paket, aus der festen Latenz des Sinks: 7 = volle Qualität, 15 = Bitpool ≤ ~22) |
+| cc.21 | 14.11. | Mehrere Bluetooth-Adapter in einer Instanz: Einstellung *Bluetooth adapter* pro Box, Koppeln auf einem bestimmten Adapter (`POST /api/pair` mit `adapter`, sperrt die Box währenddessen am alten Adapter und löscht dort danach die Kopplung), Scan und Stick-Reset pro Adapter, Überwachung jedes Adapters |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
@@ -89,7 +90,7 @@ das Einspielen.
 | [Cayouche1989/ha-bluetooth-audio-manager](https://github.com/Cayouche1989/ha-bluetooth-audio-manager), Branch `cayouche/reconnect-2.1.1`, Commit [`2c38ea0`](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e) (23.08.2026) | „Fix auto-reconnect after speaker availability" | Nur der Teil für fehlgeschlagene explizite Verbindungen, neu umgesetzt in `fc313d0` (Hinweis im Commit); der Discovery-gesteuerte Teil nicht. Zusammen mit `84ad826` deckt das beide Vorschläge aus scyto#317 ab; seit cc.1 |
 
 Alles Übrige im Branch ist eigene Arbeit (Fixes für scyto#315–#319 und die
-Erweiterungen cc.2–cc.20).
+Erweiterungen cc.2–cc.21).
 
 Bei scyto eingereicht (09.11.2026), nur `src/` und `tests/`:
 [#324](https://github.com/scyto/ha-bluetooth-audio-manager/pull/324) mit den Fixes für
@@ -308,15 +309,57 @@ Mit dem gepatchten Add-on waren diese Teile überflüssig oder störend:
 
 Wiederherstellen lässt sich alles über ein HA-Backup von vor dem 06.11.2026.
 
-## 6. Falls die Aussetzer zurückkommen
+## 6. Zweiter Bluetooth-Stick (bestellt 14.11.2026)
 
-- Zweiter USB-Bluetooth-Stick für eine Box (z. B. 97.0); der Realtek trägt
-  dann nur noch zwei Streams, was im Test aussetzerfrei war.
-- Das Add-on verwaltet nur einen Adapter. Dafür eine zweite Instanz dieses
-  Add-ons mit eigenem Slug und Namen bauen, mit eigenem Adapter und
-  dem gleichen MPD-Port für die umgezogene Box. Anzupassen sind u. a. der
-  HFP-Null-Handler (darf nur einmal registriert sein) und die HA-Skripte und
-  REST-Befehle für diese Box.
+Drei Streams auf einem Realtek-Stick überlasten ihn ab und zu, und jede
+Überlast senkt die SBC-Bitrate für lange Zeit (Abschnitt 3). Mit zwei Streams
+pro Stick gab es im Test keine Überlast. Deshalb kommt ein zweiter, gleicher
+Stick (RTL8761B) dazu, und **87.5** zieht um – 87.5 hatte am 14.11. fünf der
+sechs Überlasten.
+
+Seit cc.21 kann eine Add-on-Instanz mehrere Adapter: Jede Box hat die
+Einstellung *Bluetooth adapter* (leer = Hauptadapter, also der bisherige
+Realtek). Keine zweite Instanz, keine Änderung an MPD-Ports, Skripten oder
+REST-Befehlen nötig.
+
+**Umzug von 87.5, wenn der Stick da ist**
+
+1. Stick einstecken – nicht direkt neben den ersten Stick und nicht neben
+   einen blauen USB-3-Anschluss (stört 2,4 GHz); am besten an ein kurzes
+   Verlängerungskabel.
+2. Home Assistant → Einstellungen → Geräte & Dienste → **Bluetooth**: Der neue
+   Adapter wird als „entdeckt" angeboten → **Ignorieren**. Sonst nutzt HA ihn
+   für BLE, und das Add-on lehnt ihn ab.
+3. Add-on-Oberfläche → *Settings → Bluetooth Adapters*: Der neue Stick steht
+   in der Liste (MAC notieren). **Nicht** auf *Select* drücken – das würde den
+   Hauptadapter wechseln und alle Kopplungen löschen.
+4. Bei 87.5 *Settings* öffnen → *Bluetooth adapter* = neuer Stick → **Pair on
+   this adapter**. Das Add-on sperrt 87.5 am Realtek (die Box wird getrennt und
+   kann sich dort nicht neu verbinden) und sucht sie 40 s lang am neuen Stick.
+   Falls sie nicht gefunden wird: Box in den Kopplungsmodus bringen (Taste
+   bzw. wie beim Notfall-Neukoppeln) und erneut drücken. Schlägt es fehl, wird
+   die Sperre am Realtek wieder aufgehoben; 87.5 verbindet sich dann wieder
+   dort.
+5. Nach dem Koppeln verbindet sich 87.5 über den neuen Stick, die Kopplung am
+   Realtek wird gelöscht, MPD läuft weiter auf Port 6600. „Radiostream
+   permanent" startet die Wiedergabe.
+6. Prüfen: `GET /api/diagnostics/pulse-bluetooth` – alle drei sollten auf
+   Dauer bei 7 SBC-Frames pro Paket bleiben (volle Bitrate).
+
+Per API statt Oberfläche: `PUT /api/devices/<MAC_87_5>/settings
+{"adapter": "<MAC neuer Stick>"}` und `POST /api/pair {"address": "<MAC_87_5>",
+"adapter": "<MAC neuer Stick>"}`.
+
+**Was danach anders ist**
+
+- *Stick zurücksetzen* (Skript, Button, Automatik) setzt beide Sticks zurück;
+  `POST /api/adapter/reset` nimmt optional `adapter` für nur einen.
+- Fehlt ein Stick, startet das Add-on trotzdem (nur der Hauptadapter wird
+  abgewartet); die Box am fehlenden Stick bleibt aus, bis er wieder da ist.
+- Die Automatik „Stick-Reset bei Mehrfachausfall" reagiert auf zwei Boxen
+  ohne Verbindung – hängt nur der neue Stick (eine Box), greift stattdessen der
+  Bug-Watch (Steckdosen-Zyklus, dann Voll-Reparatur). Offen: eigener
+  Auslöser pro Stick.
 - Nicht den Intel AX210 dafür nehmen (gehört HA; trägt keine drei Streams).
 
 ## 7. Bekannte Grenzen (Stand 14.11.2026)
@@ -401,7 +444,7 @@ nicht nachgewiesen.
   (kurzer Aussetzer nur auf diesem Sender).
 - **custom.pa nur beim Start von PulseAudio.** Das Bluetooth-Modul zur
   Laufzeit neu zu laden hat PulseAudio abstürzen lassen (cc.11).
-- **Ein Adapter pro Add-on-Instanz** (Abschnitt 6).
+- **Mehrere Adapter erst ab cc.21** (Abschnitt 6); vorher ein Adapter pro Add-on-Instanz.
 - **Fehlt der eingestellte Adapter beim Start, wartet das Add-on auf ihn**
   (seit cc.17; Statuszeile in der Oberfläche, Warnung im Log, alle 5 Minuten
   wiederholt). Es weicht nicht mehr auf den Intel-Adapter aus. Ohne den

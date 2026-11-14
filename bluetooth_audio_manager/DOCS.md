@@ -139,10 +139,10 @@
 >   MPD start.
 > - *Locked volume* is one value for all locked devices and acts on MPD's
 >   software volume; the speaker's own volume stays at 100 %.
-> - One Bluetooth adapter per app instance. Three A2DP streams on one
->   Realtek RTL8761B stick need the PulseAudio setting above; after an
->   overload the SBC bitrate stays lower for a while (5 × the interval per
->   overload).
+> - Three A2DP streams on one Realtek RTL8761B stick need the PulseAudio
+>   setting above; after an overload the SBC bitrate stays lower for a while
+>   (5 × the interval per overload). Speakers can be spread over several
+>   adapters (see *Bluetooth Adapters*).
 > - Without the adapter configured by MAC the app does not play: it waits
 >   for that adapter and no longer falls back to another one.
 > - After PulseAudio was restarted, the app restores sinks and MPD, but as
@@ -373,8 +373,9 @@ Lists all Bluetooth adapters detected on the system. Each adapter shows:
 - Friendly name (resolved from USB hardware model when available)
 - HCI name and modalias
 - MAC address
-- Status badges: *Powered* / *Off*, *In Use*, *HA Bluetooth* (if managed by
-  HA's Bluetooth integration), *HA BLE Scanning* (if active BLE scanning)
+- Status badges: *Powered* / *Off*, *Main adapter*, *In use · N speakers*
+  (an additional adapter, see below), *HA Bluetooth* (if managed by HA's
+  Bluetooth integration), *HA BLE Scanning* (if active BLE scanning)
 
 **Recommendation:** Use a dedicated USB Bluetooth adapter that is **not**
 configured in Home Assistant's Bluetooth integration.
@@ -383,6 +384,32 @@ configured in Home Assistant's Bluetooth integration.
 dialog warns that all current device pairings will be cleared. The add-on
 restarts with the new adapter. The adapter selection is stored by MAC address
 so it survives reboots.
+
+**Several adapters (this build):** one app instance can drive speakers on
+more than one adapter — useful when one adapter cannot carry all streams
+(three A2DP streams on one Realtek RTL8761B stick overload it now and then,
+and every overload lowers the SBC bitrate for a long time). The adapter
+chosen above stays the *main adapter*; each speaker can be moved to another
+one:
+
+1. Plug in the adapter. If Home Assistant's Bluetooth integration offers it,
+   set it to **Ignore** there (an adapter HA uses cannot be chosen).
+2. Open the speaker's **Settings**, choose the adapter under *Bluetooth
+   adapter*, put the speaker in pairing mode and press **Pair on this
+   adapter**. The app searches for the speaker on that adapter (up to 40 s),
+   pairs and connects it there, removes its pairing on the other adapter and
+   stores the choice. While it searches, the speaker is blocked on its old
+   adapter so it cannot reconnect there; if the move fails, that is undone. Via the API: `POST /api/pair
+   {"address": "<speaker>", "adapter": "<adapter MAC>"}`.
+
+Everything else follows: connects and reconnects use the speaker's adapter,
+the adapter is watched like the main one (unplugged and back → the app
+restarts), `POST /api/adapter/reset` resets all adapters or the one given as
+`adapter`, and `POST /api/scan` takes an `adapter` too. If an additional
+adapter is missing at startup the app does not wait for it — its speakers are
+unavailable until it appears, then it is used without a restart. Changing the
+setting alone does not move a speaker; it keeps its old pairing until it is
+paired on the new adapter.
 
 ## Usage
 
