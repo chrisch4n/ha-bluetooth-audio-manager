@@ -44,7 +44,7 @@ das Einspielen.
 ## 2. Add-on
 
 - Installiert als lokal gebautes Add-on `1b3a7c56_bluetooth_audio_manager`
-  aus diesem Branch, Version `2.1.0-cc.22`. Das ursprüngliche scyto-Add-on
+  aus diesem Branch, Version `2.1.0-cc.23`. Das ursprüngliche scyto-Add-on
   (`d4261985`) wurde am 06.11.2026 deinstalliert; sein Repository ist noch
   eingetragen, falls ein Rückweg nötig ist.
 - **App Settings:** Adapter = Realtek-MAC, Auto-Reconnect an,
@@ -81,6 +81,7 @@ das Einspielen.
 | cc.20 | 14.11. | Diagnose: `GET /api/diagnostics/pulse-bluetooth` zeigt pro Box, wie weit PulseAudio die SBC-Bitrate abgesenkt hat (SBC-Frames pro Bluetooth-Paket, aus der festen Latenz des Sinks: 7 = volle Qualität, 15 = Bitpool ≤ ~22) |
 | cc.21 | 14.11. | Mehrere Bluetooth-Adapter in einer Instanz: Einstellung *Bluetooth adapter* pro Box, Koppeln auf einem bestimmten Adapter (`POST /api/pair` mit `adapter`, sperrt die Box währenddessen am alten Adapter und löscht dort danach die Kopplung), Scan und Stick-Reset pro Adapter, Überwachung jedes Adapters |
 | cc.22 | 15.11. | Eigene Namen für Bluetooth-Adapter (Stift-Knopf in *Bluetooth Adapters*, `PUT /api/adapters/<MAC>/name`), angezeigt in der Adapterliste, den Box-Einstellungen und auf den Gerätekarten |
+| cc.23 | 15.11. | Adapter-Namen werden in einem eigenen Dialog der App vergeben statt im Eingabefenster des Browsers |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
@@ -91,7 +92,7 @@ das Einspielen.
 | [Cayouche1989/ha-bluetooth-audio-manager](https://github.com/Cayouche1989/ha-bluetooth-audio-manager), Branch `cayouche/reconnect-2.1.1`, Commit [`2c38ea0`](https://github.com/Cayouche1989/ha-bluetooth-audio-manager/commit/2c38ea08619c045e380ab11fddc51a52a329e82e) (23.08.2026) | „Fix auto-reconnect after speaker availability" | Nur der Teil für fehlgeschlagene explizite Verbindungen, neu umgesetzt in `fc313d0` (Hinweis im Commit); der Discovery-gesteuerte Teil nicht. Zusammen mit `84ad826` deckt das beide Vorschläge aus scyto#317 ab; seit cc.1 |
 
 Alles Übrige im Branch ist eigene Arbeit (Fixes für scyto#315–#319 und die
-Erweiterungen cc.2–cc.22).
+Erweiterungen cc.2–cc.23).
 
 Bei scyto eingereicht (09.11.2026), nur `src/` und `tests/`:
 [#324](https://github.com/scyto/ha-bluetooth-audio-manager/pull/324) mit den Fixes für
