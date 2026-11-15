@@ -390,7 +390,7 @@ add-on's own **API Reference** (`/api/docs`). A summary of what is available:
 | Devices | List, scan, pair, connect, disconnect, force-reconnect, forget |
 | Device settings | Idle mode, keep-alive, MPD instance and port, AVRCP toggle |
 | App settings | Auto Reconnect, reconnect interval and backoff, scan duration |
-| Adapters | List adapters, switch the active one, reset a stuck adapter, restart the add-on |
+| Adapters | List adapters, name them, switch the active one, reset a stuck adapter, restart the add-on |
 | Audio | List Bluetooth PulseAudio sinks with volume, sample rate, codec info |
 | Status | Health, version, adapter info, combined state for polling |
 | Diagnostics | Recent logs, MPRIS/AVRCP diagnostic dump |

@@ -377,6 +377,13 @@ Lists all Bluetooth adapters detected on the system. Each adapter shows:
   (an additional adapter, see below), *HA Bluetooth* (if managed by HA's
   Bluetooth integration), *HA BLE Scanning* (if active BLE scanning)
 
+**Names:** the pencil button gives an adapter a name of your own (e.g.
+"Stick 87.5"). It is shown in this list, in the speaker settings and on the
+device cards ("on Stick 87.5" instead of "on hci2"), and kept by MAC — also
+when the adapter is unplugged or the devices are cleared. API:
+`PUT /api/adapters/<MAC>/name {"name": "Stick 87.5"}`; an empty name clears
+it.
+
 **Recommendation:** Use a dedicated USB Bluetooth adapter that is **not**
 configured in Home Assistant's Bluetooth integration.
 
