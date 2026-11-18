@@ -57,7 +57,8 @@ anpassen (siehe [`../api.md`](../api.md)).
 |--------|-----|--------|
 | `input_text.radiostream_address_map` | Text | `{"97_0":"<MAC_97_0>","105_9":"<MAC_105_9>","87_5":"<MAC_87_5>"}` |
 | `input_text.radiostream_port_map` | Text | `{"87_5": 6600, "105_9": 6601, "97_0": 6602}` |
-| `input_text.radiostream_stick_map` | Text | `{"97_0": "Logilink alt", "105_9": "Logilink alt", "87_5": "Logilink neu"}` (Bluetooth-Stick je Box, für die Statustabelle; seit 18.11.2026) |
+| `input_text.radiostream_stick_map` | Text | `{"97_0": "Logilink alt", "105_9": "Logilink alt", "87_5": "Logilink neu"}` (Bluetooth-Stick je Box, für die Statustabelle und den Stick-Reset; seit 18.11.2026) |
+| `input_text.radiostream_stick_mac_map` | Text | `{"Logilink alt": "<MAC_STICK_ALT>", "Logilink neu": "<MAC_STICK_NEU>"}` (Adapter-MAC je Stick-Name, für `radiostream_stick_zuruecksetzen`; seit 18.11.2026) |
 | `sensor.radiostream_bt_signal` | command_line (`configuration_yaml/command_line.yaml`, Skript `cli/bt_link_quality.py` → `/config/cli/`) | Verbindungsqualität je Box ohne Scan, alle 2 Min; Attribute `87_5`/`97_0`/`105_9` mit `rssi`, `tx`, `tx_max`, `adapter` (seit 18.11.2026) |
 | `input_text.radiostream_dose_switch_map` | Text | `{"97_0":"switch.dose_bt_97_0","105_9":"switch.dose_bt_105_9","87_5":"switch.dose_bt_87_5"}` |
 | `input_text.radiostream_schalter_map` | Text | `{"97_0":"switch.97_0_schalter","105_9":"switch.105_9_schalter","87_5":"switch.87_5_schalter"}` |
@@ -77,7 +78,8 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_datetime.radiostream_letzte_automatische_voll_reparatur` | Datum + Zeit | Sperrzeit der Voll-Reparatur |
 | `binary_sensor.radiostream_<p>_spielt_nicht` (Anzeigename „Radiostream <p> Wiedergabe": *OK* / *Problem*) | Template-Binärsensor (Helfer), Geräteklasse *Problem*, **Ausschaltverzögerung 1:30 min** | `{{ is_state('input_boolean.radiostream_<p>_aktiv', 'on') and is_state('switch.dose_bt_<p>', 'on') and not is_state('media_player.musik_radiostream_<p>', 'playing') }}` – an, solange die Box spielen soll, es aber nicht tut; geht erst aus, wenn der Player 90 s durchgehend spielt (ab 11.11.2026) |
 | `switch.radiostream_steckdosen_alle` | Gruppe (Schalter), „Alle Mitglieder" an | Die drei `switch.dose_bt_*`; an, wenn alle drei an sind; Schalten wirkt auf alle drei (ab 11.11.2026) |
-| `sensor.radiostream_boxen_ohne_verbindung` | Template-Sensor (Helfer) | Anzahl der Boxen, die aktiv sind, deren Steckdose an ist und deren Player `unavailable` ist (aus `input_text.radiostream_aktiv_map` und `input_text.radiostream_dose_switch_map`); ab 2 für 4 Min startet der Stick-Reset (ab 13.11.2026) |
+| `sensor.radiostream_boxen_ohne_verbindung` | Template-Sensor (Helfer) | Anzahl der Boxen, die aktiv sind, deren Steckdose an ist und deren Player `unavailable` ist (aus `input_text.radiostream_aktiv_map` und `input_text.radiostream_dose_switch_map`); Anzeige im Dashboard; bis 18.11.2026 Auslöser des Stick-Resets (ab 2 für 4 Min) |
+| `sensor.radiostream_sticks_ohne_verbindung` | Template-Sensor (Helfer) | Sticks, an denen alle aktiven Boxen mit eingeschalteter Steckdose `unavailable` sind, kommagetrennt (z. B. `Logilink neu`), sonst `keine` (aus `input_text.radiostream_stick_map`, `…_aktiv_map`, `…_dose_switch_map`); für 4 Min ≠ `keine` startet die Automatik „Stick-Reset je Stick“ (seit 18.11.2026) |
 | `switch.<p>_schalter` | Template-Schalter (Helfer) | leitet an die in `input_select.radiostream_<p>_steckdose` gewählte Steckdose weiter |
 
 ## Einspielen

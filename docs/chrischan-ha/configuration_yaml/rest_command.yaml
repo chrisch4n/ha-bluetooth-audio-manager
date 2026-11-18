@@ -93,11 +93,12 @@
   # Bluetooth-Stick zuruecksetzen (gepatchtes Add-on, ab 2.1.0-cc.18). Angelegt 13.11.2026 von Claude.
   # Aufruf: rest_command.bt_audio_adapter_reset mit mode 'soft' (Adapter ueber BlueZ aus/an)
   # oder 'usb' (wie Abziehen und Einstecken, danach startet das Add-on neu). Antwort 409 = zu frueh.
+  # 18.11.2026 (Claude): optional adapter = MAC eines Sticks (nur dieser), leer/fehlend = alle.
   bt_audio_adapter_reset:
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/adapter/reset"
     method: POST
     content_type: "application/json"
-    payload: '{"mode": "{{ mode | default(''soft'') }}"}'
+    payload: '{"mode": "{{ mode | default(''soft'') }}"{% if adapter | default('''') %}, "adapter": "{{ adapter }}"{% endif %}}'
     timeout: 30
 
   bt_audio_get_settings:

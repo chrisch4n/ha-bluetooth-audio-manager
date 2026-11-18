@@ -230,7 +230,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 | **Nach HA-Start prüfen** | 3 Min nach HA-Start | Box seit dem Start weg: Diagnose, bei getrennter Bluetooth-Verbindung einmal Steckdosen-Zyklus. Holt verpasste Entwarnungen nach. |
 | **Lautstärke-Sperre an Add-on übertragen** | Schalter `lautstarke_fest_100`, Wert `lautstarke_alle_boxen`, HA-Start | Gibt den Sperr-Wert (10–100 %) als `volume_lock_level` ans Add-on und setzt `volume_lock` für alle Boxen per REST (bei reiner Wert-Änderung nur den Wert). |
 | **Nächtlicher Steckdosen-Zyklus** (deaktiviert) | täglich 04:30 | Startet `radiostream_steckdosen_alle_zyklieren`. Am 13.11.2026 gegen das Rauschen eingerichtet, am 14.11. abgeschaltet: Das Rauschen kam von der abgesenkten Bluetooth-Bitrate (Abschnitt 3), und das Neuverbinden der Boxen senkt sie selbst ab. |
-| **Stick-Reset bei Mehrfachausfall** | `sensor.radiostream_boxen_ohne_verbindung` ≥ 2 seit 4 Min (aktive Boxen mit Strom, Player `unavailable`) | Startet `radiostream_stick_zuruecksetzen` mit Stufe *auto*. Nicht während Voll-Reparatur, Zyklus aller Boxen oder eines laufenden Stick-Resets; höchstens einmal in 30 Min (ab 13.11.2026). |
+| **Stick-Reset je Stick** (Entity `automation.radiostream_stick_reset_bei_mehrfachausfall`) | `sensor.radiostream_sticks_ohne_verbindung` nennt seit 4 Min einen oder mehrere Sticks (alle aktiven Boxen mit Strom an diesem Stick: Player `unavailable`) | Startet `radiostream_stick_zuruecksetzen` mit Stufe *auto* nur für den genannten Stick (bei mehreren für alle). Nicht während Voll-Reparatur, Zyklus aller Boxen oder eines laufenden Stick-Resets; höchstens einmal in 30 Min (ab 13.11.2026, je Stick seit 18.11.2026; vorher: zwei Boxen ohne Verbindung). |
 | **Sender-Auswahl persistieren** | Änderung eines Sender-/Preset-Selects | Schreibt die Auswahl in `letzter_sender_*` / `letzter_preset_*`. |
 | **Senderlisten synchronisieren** | HA-Start, Änderung von `sensor.radiostream_senderliste` | Aktualisiert die Optionen aller 13 Selects und stellt die gemerkte Auswahl wieder her. |
 
@@ -243,10 +243,11 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 | 3 addon_neustart | 20 Min | `script.radiostream_reparieren`: Steckdose aus, Add-on-Neustart, Steckdose an, MPD sicherstellen. Betrifft kurz alle Boxen, höchstens alle 30 Min. |
 | 4 manuell_pruefen | 30 Min | Nur Meldung „bitte manuell prüfen". |
 
-**Stick zuerst (seit 13.11.2026).** Fehlen zwei oder mehr Boxen gleichzeitig
-seit 4 Minuten, liegt es eher am Realtek-Stick als an den Boxen: Dann setzt
-„Stick-Reset bei Mehrfachausfall" den Stick zurück (erst sanft, bei Bedarf per USB,
-siehe Skripte). Stufe 2 wartet, solange der Stick-Reset läuft, und entfällt für
+**Stick zuerst (seit 13.11.2026, je Stick seit 18.11.2026).** Fehlen alle
+Boxen eines Sticks seit 4 Minuten, liegt es eher am Realtek-Stick als an den
+Boxen: Dann setzt „Stick-Reset je Stick" diesen Stick zurück (erst sanft, bei
+Bedarf per USB, siehe Skripte). Am Stick „Logilink neu" hängt nur 87.5, dort
+reicht also eine Box; am „Logilink alt" müssen 105.9 und 97.0 beide fehlen. Stufe 2 wartet, solange der Stick-Reset läuft, und entfällt für
 Boxen, die danach wieder da sind.
 
 Diagnose nach 3 und Steckdosen-Zyklus nach 5 Minuten (bis 11.11.2026: 5 und
@@ -288,7 +289,7 @@ Meldung „bitte manuell prüfen" nach 40.
 | `radiostream_reparieren_light` („BT-Reconnect") | Force-Reconnect einer Box über das Add-on. |
 | `radiostream_steckdose_zyklieren` | Steckdose einer Box 30 s aus und wieder an. |
 | `radiostream_steckdosen_alle_zyklieren` | Alle eingeschalteten Boxen nacheinander zurücksetzen: jede 30 s stromlos, dann wieder an, 90 s später die nächste (dauert etwa 6 Minuten, nie mehr als ein Sender still); ohne Add-on-Neustart. Button in Stufe 2 (lief vom 13. bis 14.11.2026 auch jede Nacht um 04:30). Bis 13.11.2026 gingen alle gleichzeitig aus und mit 20 s Abstand wieder an – dabei kamen die Boxen fast gleichzeitig zurück, und der Realtek-Stick geriet zweimal durcheinander. Daneben gibt es den Gruppenschalter `switch.radiostream_steckdosen_alle` für alle drei Steckdosen. |
-| `radiostream_stick_zuruecksetzen` | Bluetooth-Stick zurücksetzen, ohne ihn abzuziehen (`rest_command.bt_audio_adapter_reset`, Add-on ab cc.18). Stufe *auto*: erst sanft (Adapter über BlueZ aus/an, Boxen verbinden sich einzeln im 20-s-Abstand), sind nach gut 2 Minuten noch zwei oder mehr Boxen ohne Verbindung, folgt der USB-Reset (wie Abziehen und Einstecken: Firmware wird neu geladen, das Add-on startet neu). *sanft* / *usb* nur die jeweilige Stufe. Ergebnis als Push (Tag `radiostream_stick`). Button „Stick zurücksetzen" in der Ansicht *Reparatur*; läuft automatisch bei Mehrfachausfall. Live getestet am 13.11.2026: sanft ~1 Min Pause, USB ~40 s (die Boxen verbanden sich danach von selbst). |
+| `radiostream_stick_zuruecksetzen` | Bluetooth-Stick zurücksetzen, ohne ihn abzuziehen (`rest_command.bt_audio_adapter_reset`, Add-on ab cc.18). Feld *sticks*: `alle` (Standard, Button) oder Stick-Namen aus `input_text.radiostream_stick_mac_map`, kommagetrennt – bei genau einem Namen nur dieser Stick (seit 18.11.2026). Stufe *auto*: erst sanft (Adapter über BlueZ aus/an, Boxen verbinden sich einzeln), ist ein Ziel-Stick nach gut 2 Minuten weiter ganz ohne Verbindung, folgt der USB-Reset (wie Abziehen und Einstecken: Firmware wird neu geladen; beim Hauptadapter startet das Add-on neu). *sanft* / *usb* nur die jeweilige Stufe. Ergebnis als Push (Tag `radiostream_stick`). Button „Stick zurücksetzen" in der Ansicht *Reparatur*; läuft automatisch je Stick. Live getestet am 13.11.2026: sanft ~1 Min Pause, USB ~40 s (die Boxen verbanden sich danach von selbst). |
 | `radiostream_reparieren` („Voll-Reparatur") | Steckdose(n) aus, Add-on-Neustart, Steckdose(n) an, MPD-Integrationen neu laden, MPD sicherstellen. |
 | `radiostream_mpd_sicherstellen` | Startet einen fehlenden MPD-Dienst einer verbundenen Box. |
 | `radiostream_notfall_forget_pair` | Box entfernen, neu pairen, MPD zuweisen. |
@@ -306,8 +307,10 @@ Konvention: Ein Skript ruft ein anderes immer mit `script.turn_on` +
 `configuration.yaml` eingebunden wird, und sprechen die REST-API des Add-ons
 an. `bt_audio_scan` wird derzeit von nichts aufgerufen, bleibt aber für den
 Bedarfsfall stehen.
-`bt_audio_adapter_reset` (seit 13.11.2026) setzt den Bluetooth-Stick zurück
-(`mode` *soft* oder *usb*, siehe `radiostream_stick_zuruecksetzen`).
+`bt_audio_adapter_reset` (seit 13.11.2026) setzt Bluetooth-Sticks zurück
+(`mode` *soft* oder *usb*, optional `adapter` = MAC eines Sticks, sonst alle;
+siehe `radiostream_stick_zuruecksetzen`). `bt_audio_put_settings` nimmt
+`payload` als Text oder Objekt (Objekte gehen per `to_json` raus).
 
 ### Dashboard `radio-streams`
 
@@ -378,14 +381,12 @@ Per API statt Oberfläche: `PUT /api/devices/<MAC_87_5>/settings
 
 **Was danach anders ist**
 
-- *Stick zurücksetzen* (Skript, Button, Automatik) setzt beide Sticks zurück;
-  `POST /api/adapter/reset` nimmt optional `adapter` für nur einen.
+- *Stick zurücksetzen*: Der Button setzt beide Sticks zurück, die Automatik
+  nur den Stick, an dem alle Boxen fehlen (seit 18.11.2026).
 - Fehlt ein Stick, startet das Add-on trotzdem (nur der Hauptadapter wird
   abgewartet); die Box am fehlenden Stick bleibt aus, bis er wieder da ist.
-- Die Automatik „Stick-Reset bei Mehrfachausfall" reagiert auf zwei Boxen
-  ohne Verbindung – hängt nur der neue Stick (eine Box), greift stattdessen der
-  Bug-Watch (Steckdosen-Zyklus, dann Voll-Reparatur). Offen: eigener
-  Auslöser pro Stick.
+- Die 30-Minuten-Sperre der Automatik gilt für beide Sticks gemeinsam: Fällt
+  kurz nach einem Reset der andere Stick aus, greift dort zuerst der Bug-Watch.
 - Nicht den Intel AX210 dafür nehmen (gehört HA; trägt keine drei Streams).
 
 **Umzug am 18.11.2026 (erledigt)**

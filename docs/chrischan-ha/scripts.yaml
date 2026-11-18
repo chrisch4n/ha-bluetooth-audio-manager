@@ -1,4 +1,4 @@
-# Export aus Home Assistant (scripts.yaml), nur Radiostream-Teile, Stand 13.11.2026.
+# Export aus Home Assistant (scripts.yaml), nur Radiostream-Teile, Stand 18.11.2026.
 # Anonymisiert: Box-MACs -> <MAC_87_5>/<MAC_105_9>/<MAC_97_0>, Mobilgeraete -> geraet_1..3.
 # Beschreibung des Systems: ../chrischan-radiostream.md
 radiostream_preset_abspielen:
@@ -299,139 +299,181 @@ radiostream_steckdosen_alle_zyklieren:
           seconds: 90
 radiostream_stick_zuruecksetzen:
   alias: Radiostream Stick zurücksetzen
-  description: '13.11.2026 (Claude, auf Wunsch des Nutzers): Setzt den Realtek-Bluetooth-Stick
-    des Add-ons zurueck, ohne ihn abzuziehen (rest_command.bt_audio_adapter_reset,
-    Add-on ab 2.1.0-cc.18). Stufe ''auto'' (Standard): erst sanft - der Adapter wird
-    ueber BlueZ aus- und eingeschaltet, die Boxen verbinden sich einzeln im 20-s-Abstand
-    neu. Sind danach nach gut 2 Minuten noch mindestens zwei aktive Boxen mit eingeschalteter
-    Steckdose ohne Verbindung (sensor.radiostream_boxen_ohne_verbindung), folgt der
-    USB-Reset - wie Abziehen und Einstecken, die Firmware wird neu geladen, das Add-on
-    startet danach neu und verbindet die Boxen ebenfalls einzeln. Stufe ''sanft''
-    oder ''usb'' fuehrt nur diese Stufe aus. Das Ergebnis kommt als Push mit tag radiostream_stick.
-    Anlass: Der Stick hing am 11.11. (Firmware-Absturz) und am 13.11.2026 (link tx
-    timeout); nur Abziehen half. Aufruf aus Skripten/Automationen per script.turn_on
-    mit data.variables {stufe, ausloeser}. Live getestet 13.11.2026.'
+  description: '13.11.2026 (Claude, auf Wunsch des Nutzers): Setzt Bluetooth-Sticks des Add-ons
+    zurueck, ohne sie abzuziehen (rest_command.bt_audio_adapter_reset, Add-on ab 2.1.0-cc.18).
+    Stufe ''auto'' (Standard): erst sanft - der Adapter wird ueber BlueZ aus- und eingeschaltet,
+    die Boxen verbinden sich einzeln neu. Ist danach nach gut 2 Minuten ein Ziel-Stick weiter
+    ganz ohne Verbindung (sensor.radiostream_sticks_ohne_verbindung), folgt der USB-Reset
+    - wie Abziehen und Einstecken, die Firmware wird neu geladen. Stufe ''sanft'' oder ''usb''
+    fuehrt nur diese Stufe aus. 18.11.2026 (Claude, auf Wunsch des Nutzers): Feld ''sticks''
+    - ''alle'' (Standard, z. B. Dashboard) oder Stick-Namen aus input_text.radiostream_stick_mac_map,
+    kommagetrennt; bei genau einem Namen wird nur dieser Stick zurueckgesetzt (Add-on ab cc.21,
+    rest_command mit adapter), sonst alle. Das Ergebnis kommt als Push mit tag radiostream_stick.
+    Aufruf aus Skripten/Automationen per script.turn_on mit data.variables {stufe, sticks,
+    ausloeser}.'
   fields:
+    ausloeser:
+      default: manuell
+      description: Nur fuer den Text der Meldung, z. B. 'Dashboard' oder 'automatisch'
+      name: Auslöser
+      selector:
+        text: {}
+    sticks:
+      default: alle
+      description: alle = alle Sticks; sonst Stick-Name(n) wie in input_text.radiostream_stick_mac_map,
+        kommagetrennt (ein Name = nur dieser Stick)
+      name: Sticks
+      selector:
+        text: {}
     stufe:
-      name: Stufe
-      description: auto = erst sanft, bei Bedarf USB; sanft = nur Adapter aus/an;
-        usb = nur USB-Reset
       default: auto
+      description: auto = erst sanft, bei Bedarf USB; sanft = nur Adapter aus/an; usb = nur
+        USB-Reset
+      name: Stufe
       selector:
         select:
           options:
           - auto
           - sanft
           - usb
-    ausloeser:
-      name: Auslöser
-      description: Nur fuer den Text der Meldung, z. B. 'Dashboard' oder 'automatisch'
-      default: manuell
-      selector:
-        text: {}
   icon: m3o:developer-board
-  mode: single
   max_exceeded: silent
+  mode: single
   sequence:
   - variables:
-      stufe: '{{ stufe | default(''auto'') }}'
       ausloeser: '{{ ausloeser | default(''manuell'') }}'
-      vorher: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0) }}'
+      stufe: '{{ stufe | default(''auto'') }}'
+      sticks: '{{ (sticks | default(''alle'') | string | trim) or ''alle'' }}'
+      macmap: '{{ states(''input_text.radiostream_stick_mac_map'') | from_json(default={})
+        }}'
+      vorher: '{{ states(''sensor.radiostream_sticks_ohne_verbindung'') }}'
+  - variables:
+      ziel: '{{ (macmap.keys() | list) if sticks == ''alle'' else (sticks.split('','') | map(''trim'')
+        | reject(''eq'', '''') | list) }}'
+  - variables:
+      ziel_text: '{{ ziel | join('', '') }}'
+      unbekannt: '{{ ziel | reject(''in'', macmap.keys() | list) | list }}'
+      adapter_sanft: '{{ macmap.get(ziel[0], '''') if (sticks != ''alle'' and ziel | count
+        == 1) else '''' }}'
+  - if:
+    - condition: template
+      value_template: '{{ unbekannt | count > 0 or ziel | count == 0 }}'
+    then:
+    - action: script.turn_on
+      data:
+        variables:
+          daten:
+            tag: radiostream_stick
+          message: 'Stick-Reset ({{ ausloeser }}): unbekannter Stick ''{{ unbekannt | join('',
+            '') or sticks }}'' - erwartet: {{ macmap.keys() | list | join('', '') }} oder
+            alle.'
+          title: 'Radiostream: Stick-Reset nicht moeglich'
+      target:
+        entity_id: script.benachrichtigung_alle_geraete
+    - stop: Unbekannter Stick
   - if:
     - condition: template
       value_template: '{{ stufe in [''auto'', ''sanft''] }}'
     then:
     - action: rest_command.bt_audio_adapter_reset
+      continue_on_error: true
       data:
+        adapter: '{{ adapter_sanft }}'
         mode: soft
       response_variable: antwort_sanft
-      continue_on_error: true
     - if:
       - condition: template
         value_template: '{{ (antwort_sanft.status | default(0)) != 200 }}'
       then:
       - action: script.turn_on
-        target:
-          entity_id: script.benachrichtigung_alle_geraete
         data:
           variables:
-            title: 'Radiostream: Stick-Reset nicht moeglich'
-            message: 'Sanfter Stick-Reset ({{ ausloeser }}) abgelehnt oder fehlgeschlagen
+            daten:
+              tag: radiostream_stick
+            message: 'Sanfter Reset ({{ ziel_text }}, {{ ausloeser }}) abgelehnt oder fehlgeschlagen
               (HTTP {{ antwort_sanft.status | default(''-'') }}): {{ (antwort_sanft.content.error
               if antwort_sanft.content is mapping else antwort_sanft.content) | default(''keine
               Antwort'') }}'
-            daten:
-              tag: radiostream_stick
+            title: 'Radiostream: Stick-Reset nicht moeglich'
+        target:
+          entity_id: script.benachrichtigung_alle_geraete
       - stop: Sanfter Reset nicht ausgefuehrt
     - delay:
         seconds: 20
-      note: Die Player werden erst ein paar Sekunden nach dem Reset unavailable -
-        sonst waere die Wartebedingung sofort erfuellt
-    - wait_template: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0)
-        == 0 }}'
+      note: Die Player werden erst ein paar Sekunden nach dem Reset unavailable - sonst waere
+        die Wartebedingung sofort erfuellt
+    - continue_on_timeout: true
+      note: Boxen verbinden sich einzeln (Add-on); mit Neustart des MPD und der HA-Integration
+        dauert das bis zu ~90 s
       timeout:
         seconds: 120
-      continue_on_timeout: true
-      note: Boxen verbinden sich einzeln im 20-s-Abstand (Add-on); mit Neustart des
-        MPD und der HA-Integration dauert das bis zu ~90 s
+      wait_template: '{{ states(''sensor.radiostream_sticks_ohne_verbindung'').split('', '')
+        | select(''in'', ziel) | list | count == 0 }}'
   - variables:
-      nach_sanft: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0)
-        }}'
+      nach_sanft: '{{ states(''sensor.radiostream_sticks_ohne_verbindung'').split('', '')
+        | select(''in'', ziel) | list }}'
   - if:
     - condition: template
-      value_template: '{{ stufe == ''usb'' or (stufe == ''auto'' and nach_sanft |
-        int >= 2) }}'
+      value_template: '{{ stufe == ''usb'' or (stufe == ''auto'' and nach_sanft | count >
+        0) }}'
     then:
+    - variables:
+        usb_ziel: '{{ ziel if stufe == ''usb'' else nach_sanft }}'
+    - variables:
+        adapter_usb: '{{ macmap.get(usb_ziel[0], '''') if (usb_ziel | count == 1 and not (stufe
+          == ''usb'' and sticks == ''alle'')) else '''' }}'
     - delay:
         seconds: '{{ 60 if stufe == ''auto'' else 0 }}'
       note: Das Add-on nimmt hoechstens einen Reset pro 60 s an (sonst HTTP 409)
     - action: rest_command.bt_audio_adapter_reset
+      continue_on_error: true
       data:
+        adapter: '{{ adapter_usb }}'
         mode: usb
       response_variable: antwort_usb
-      continue_on_error: true
     - if:
       - condition: template
         value_template: '{{ (antwort_usb.status | default(0)) != 200 }}'
       then:
       - action: script.turn_on
-        target:
-          entity_id: script.benachrichtigung_alle_geraete
         data:
           variables:
-            title: 'Radiostream: Stick-Reset nicht moeglich'
-            message: 'USB-Reset des Sticks ({{ ausloeser }}) abgelehnt oder fehlgeschlagen
-              (HTTP {{ antwort_usb.status | default(''-'') }}): {{ (antwort_usb.content.error
-              if antwort_usb.content is mapping else antwort_usb.content) | default(''keine
-              Antwort'') }}. Bitte den Stick von Hand abziehen und wieder einstecken.'
             daten:
               tag: radiostream_stick
+            message: 'USB-Reset ({{ usb_ziel | join('', '') }}, {{ ausloeser }}) abgelehnt
+              oder fehlgeschlagen (HTTP {{ antwort_usb.status | default(''-'') }}): {{ (antwort_usb.content.error
+              if antwort_usb.content is mapping else antwort_usb.content) | default(''keine
+              Antwort'') }}. Bitte den Stick von Hand abziehen und wieder einstecken.'
+            title: 'Radiostream: Stick-Reset nicht moeglich'
+        target:
+          entity_id: script.benachrichtigung_alle_geraete
       - stop: USB-Reset nicht ausgefuehrt
     - delay:
         seconds: 40
-      note: Stick meldet sich ab und wieder an, das Add-on startet neu
-    - wait_template: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0)
-        == 0 }}'
+      note: Stick meldet sich ab und wieder an, beim Hauptadapter startet das Add-on neu
+    - continue_on_timeout: true
       timeout:
         seconds: 150
-      continue_on_timeout: true
+      wait_template: '{{ states(''sensor.radiostream_sticks_ohne_verbindung'').split('', '')
+        | select(''in'', ziel) | list | count == 0 }}'
   - variables:
-      danach: '{{ states(''sensor.radiostream_boxen_ohne_verbindung'') | int(0) }}'
-      usb_gelaufen: '{{ stufe == ''usb'' or (stufe == ''auto'' and nach_sanft | int
-        >= 2) }}'
+      danach: '{{ states(''sensor.radiostream_sticks_ohne_verbindung'').split('', '') | select(''in'',
+        ziel) | list }}'
+      usb_gelaufen: '{{ stufe == ''usb'' or (stufe == ''auto'' and nach_sanft | count > 0)
+        }}'
   - action: script.turn_on
-    target:
-      entity_id: script.benachrichtigung_alle_geraete
     data:
       variables:
-        title: 'Radiostream: Stick zurückgesetzt'
-        message: '{{ ''USB-Reset'' if usb_gelaufen else ''Sanfter Reset'' }} des Bluetooth-Sticks
-          ({{ ausloeser }}, vorher {{ vorher }} Box(en) ohne Verbindung): {{ ''alle
-          aktiven Boxen sind wieder verbunden.'' if danach | int == 0 else (danach
-          ~ '' Box(en) noch ohne Verbindung - der Bug-Watch kuemmert sich weiter (Steckdosen-Zyklus).'')
-          }}'
         daten:
           tag: radiostream_stick
+        message: '{{ ''USB-Reset'' if usb_gelaufen else ''Sanfter Reset'' }} ({{ ziel_text
+          }}, {{ ausloeser }}; vorher ohne Verbindung: {{ vorher }}): {{ ''alle Boxen dieser
+          Sticks sind wieder verbunden.'' if danach | count == 0 else (''weiter ohne Verbindung:
+          '' ~ (danach | join('', '')) ~ '' - der Bug-Watch kuemmert sich weiter (Steckdosen-Zyklus).'')
+          }}'
+        title: 'Radiostream: Stick zurückgesetzt'
+    target:
+      entity_id: script.benachrichtigung_alle_geraete
 radiostream_reparieren_ultralight:
   alias: Radiostream Diagnose
   description: 'Schnellste, unaufdringlichste Reparaturstufe (Stand 19.09.2026, jetzt

@@ -1,4 +1,4 @@
-# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 14.11.2026.
+# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 18.11.2026.
 # Anonymisiert: Box-MACs -> <MAC_87_5>/<MAC_105_9>/<MAC_97_0>, Mobilgeraete -> geraet_1..3.
 # Beschreibung des Systems: ../chrischan-radiostream.md
 - id: '1785450992212'
@@ -1309,24 +1309,24 @@
       entity_id: script.radiostream_steckdosen_alle_zyklieren
   mode: single
 - id: '1794552641256'
-  alias: Radiostream Stick-Reset bei Mehrfachausfall
-  description: '13.11.2026 (Claude, auf Wunsch des Nutzers): Sind mindestens zwei
-    aktive Boxen mit eingeschalteter Steckdose seit 4 Minuten ohne Bluetooth-Verbindung
-    (sensor.radiostream_boxen_ohne_verbindung >= 2), liegt es eher am Realtek-Stick
-    als an den Boxen - dann startet script.radiostream_stick_zuruecksetzen mit Stufe
-    ''auto'' (erst Adapter aus/an, bei Bedarf USB-Reset wie Abziehen und Einstecken).
-    Laeuft vor dem Steckdosen-Zyklus des Bug-Watch (5 Min); der wartet, bis der Stick-Reset
-    fertig ist, und zykliert nur Boxen, die danach noch fehlen. Nicht waehrend einer
-    Voll-Reparatur, eines Steckdosen-Zyklus aller Boxen oder des Stick-Resets selbst;
-    hoechstens einmal in 30 Minuten (letzter Lauf des Skripts). Anlass: Der Stick
-    hing am 11.11. und 13.11.2026, nur Abziehen half; der Software-Reset ist seit
-    dem 13.11. getestet.'
-  mode: single
-  max_exceeded: silent
+  alias: Radiostream Stick-Reset je Stick
+  description: '13.11.2026 (Claude, auf Wunsch des Nutzers): Automatischer Stick-Reset ueber
+    script.radiostream_stick_zuruecksetzen mit Stufe ''auto'' (erst Adapter aus/an, bei Bedarf
+    USB-Reset wie Abziehen und Einstecken). Laeuft vor dem Steckdosen-Zyklus des Bug-Watch
+    (5 Min); der wartet, bis der Stick-Reset fertig ist, und zykliert nur Boxen, die danach
+    noch fehlen. Nicht waehrend einer Voll-Reparatur, eines Steckdosen-Zyklus aller Boxen
+    oder des Stick-Resets selbst; hoechstens einmal in 30 Minuten (letzter Lauf des Skripts,
+    auch manuell). Anlass: Der Stick hing am 11.11. und 13.11.2026, nur Abziehen half. 18.11.2026
+    (Claude, auf Wunsch des Nutzers): je Stick statt Boxen-Zaehler - ausgeloest, wenn sensor.radiostream_sticks_ohne_verbindung
+    seit 4 Minuten einen oder mehrere Sticks nennt (alle aktiven Boxen dieses Sticks mit eingeschalteter
+    Steckdose ohne Verbindung); zurueckgesetzt wird nur der genannte Stick, bei mehreren alle.'
   triggers:
-  - trigger: numeric_state
-    entity_id: sensor.radiostream_boxen_ohne_verbindung
-    above: 1
+  - trigger: state
+    entity_id: sensor.radiostream_sticks_ohne_verbindung
+    not_to:
+    - keine
+    - unknown
+    - unavailable
     for:
       minutes: 4
   conditions:
@@ -1335,20 +1335,21 @@
     - script.radiostream_stick_zuruecksetzen
     - script.radiostream_reparieren
     - script.radiostream_steckdosen_alle_zyklieren
-    state: 'off'
     note: Nicht in eine laufende Reparatur oder einen laufenden Zyklus hinein
+    state: 'off'
   - condition: template
-    value_template: '{{ now() - (state_attr(''script.radiostream_stick_zuruecksetzen'',
-      ''last_triggered'') or (now() - timedelta(days=1))) > timedelta(minutes=30)
-      }}'
     note: Hoechstens ein Stick-Reset in 30 Minuten (auch ein manueller zaehlt) - verhindert
       eine Schleife, wenn es nicht am Stick liegt
+    value_template: '{{ now() - (state_attr(''script.radiostream_stick_zuruecksetzen'', ''last_triggered'')
+      or (now() - timedelta(days=1))) > timedelta(minutes=30) }}'
   actions:
   - action: script.turn_on
-    target:
-      entity_id: script.radiostream_stick_zuruecksetzen
     data:
       variables:
         stufe: auto
-        ausloeser: automatisch, {{ states('sensor.radiostream_boxen_ohne_verbindung')
-          }} Boxen seit 4 Min ohne Verbindung
+        sticks: '{{ trigger.to_state.state }}'
+        ausloeser: automatisch, {{ trigger.to_state.state }} seit 4 Min ohne Verbindung
+    target:
+      entity_id: script.radiostream_stick_zuruecksetzen
+  max_exceeded: silent
+  mode: single
