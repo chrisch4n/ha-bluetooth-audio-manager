@@ -1,0 +1,22 @@
+# Bluetooth-Verbindungsqualitaet der Radiostream-Boxen, ohne Scan (stoert die Streams nicht).
+# Angelegt 18.11.2026 von Claude. Skript: /config/cli/bt_link_quality.py, laeuft in HA Core
+# (Host-Netzwerk; im Add-on gibt es keine Bluetooth-Sockets). Alle 2 Minuten.
+# Zustand: Anzahl der Boxen mit Messwert, "Fehler" wenn das Skript scheitert.
+# Attribute je Box: rssi (dB ausserhalb des "golden range": 0 = gut, negativ = schwaecher),
+# tx / tx_max (Sendeleistung des Sticks in dBm), adapter (MAC des Sticks); null = nicht verbunden.
+# Eingebunden in configuration.yaml mit: command_line: !include configuration_yaml/command_line.yaml
+- sensor:
+    name: "Radiostream BT-Signal"
+    unique_id: radiostream_bt_signal
+    command: >-
+      python3 /config/cli/bt_link_quality.py '{{ states("input_text.radiostream_address_map") }}'
+    scan_interval: 120
+    command_timeout: 15
+    icon: m3o:network-check
+    value_template: >-
+      {% if value_json is mapping and 'error' not in value_json %}{{ value_json.values() | select('mapping') | list | count }}{% else %}Fehler{% endif %}
+    json_attributes:
+      - "87_5"
+      - "97_0"
+      - "105_9"
+      - error

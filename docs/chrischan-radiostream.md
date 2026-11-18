@@ -548,8 +548,13 @@ nicht nachgewiesen.
   „Get Connection Information", cc.25) scheitert im Add-on: Bluetooth-Sockets
   gibt es nur im Netzwerk-Namespace des Hosts (`EAFNOSUPPORT`), und
   Host-Netzwerk würde die Adresse `1b3a7c56-bluetooth-audio-manager:8099`
-  der REST-Befehle und MPD-Integrationen brechen. Möglicher Weg: ein Skript in
-  HA Core (läuft im Host-Netzwerk) mit `command_line`-Sensor – offen.
+  der REST-Befehle und MPD-Integrationen brechen. **Gelöst über HA Core**
+  (läuft im Host-Netzwerk): Skript `/config/cli/bt_link_quality.py` und
+  `command_line`-Sensor `sensor.radiostream_bt_signal` (alle 2 Min, Export in
+  `chrischan-ha/`), Spalte „Signal" in *Reparatur → Einstellungen & Status*.
+  `rssi` ist bei Bluetooth Classic kein dBm-Wert, sondern der Abstand zum
+  Idealbereich des Sticks (0 = gut, negativ = schwächer); `tx` = Sendeleistung
+  des Sticks, nahe `tx_max` = schwache Strecke.
 - **Keine PulseAudio-Logs.** Das Audio-Plugin von HAOS schreibt nicht ins
   Journal; Aussetzer lassen sich nur mit dem Gap-Monitor des Add-ons messen.
 

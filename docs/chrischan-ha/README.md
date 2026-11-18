@@ -58,6 +58,7 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_text.radiostream_address_map` | Text | `{"97_0":"<MAC_97_0>","105_9":"<MAC_105_9>","87_5":"<MAC_87_5>"}` |
 | `input_text.radiostream_port_map` | Text | `{"87_5": 6600, "105_9": 6601, "97_0": 6602}` |
 | `input_text.radiostream_stick_map` | Text | `{"97_0": "Logilink alt", "105_9": "Logilink alt", "87_5": "Logilink neu"}` (Bluetooth-Stick je Box, für die Statustabelle; seit 18.11.2026) |
+| `sensor.radiostream_bt_signal` | command_line (`configuration_yaml/command_line.yaml`, Skript `cli/bt_link_quality.py` → `/config/cli/`) | Verbindungsqualität je Box ohne Scan, alle 2 Min; Attribute `87_5`/`97_0`/`105_9` mit `rssi`, `tx`, `tx_max`, `adapter` (seit 18.11.2026) |
 | `input_text.radiostream_dose_switch_map` | Text | `{"97_0":"switch.dose_bt_97_0","105_9":"switch.dose_bt_105_9","87_5":"switch.dose_bt_87_5"}` |
 | `input_text.radiostream_schalter_map` | Text | `{"97_0":"switch.97_0_schalter","105_9":"switch.105_9_schalter","87_5":"switch.87_5_schalter"}` |
 | `input_text.radiostream_aktiv_map` | Text | `{"97_0":"input_boolean.radiostream_97_0_aktiv", …}` |
