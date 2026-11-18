@@ -88,6 +88,7 @@ das Einspielen.
 | cc.25 | 18.11. | 48-kHz-Box wird komplett neu verbunden statt nur den Stream neu zu öffnen; eine nicht antwortende Box wird höchstens alle 120 s gesucht, solange am selben Stick gestreamt wird (`POST /api/connect` → 409 mit `retry_in`); laufender Sender wird nach Add-on-Neustart oder Box-Abbruch vom Add-on selbst fortgesetzt (bis 30 Min); `GET /api/diagnostics/link-quality` (im Add-on nicht nutzbar, s. Abschnitt 7) |
 | cc.26 | 18.11. | Signalstärke-Abfrage hört auf, wenn Bluetooth-Sockets im Add-on nicht verfügbar sind; Doku |
 | cc.27 | 18.11. | Fußzeile der Oberfläche nennt alle Sticks, die das Add-on nutzt (Hauptadapter zuerst); `/api/info` liefert dafür `adapter_labels` |
+| cc.28 | 18.11. | Fortsetzen nach Neustart robuster: Der laufende Sender wird alle 30 s notiert; ist ein MPD beim Beenden schon weg (das Stopp-Signal des Containers erreicht MPD und Add-on gleichzeitig), bleibt die Notiz erhalten. Beim cc.27-Neustart hatte das gefehlt, die Sender startete erst „Radiostream permanent“ |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
@@ -573,8 +574,11 @@ nicht nachgewiesen.
   Das Add-on merkt sich deshalb beim Beenden eines MPD (Add-on-Neustart oder
   -Update, Box-Abbruch) den laufenden Sender in `/data/playback_resume.json`
   und startet ihn wieder, sobald der MPD dieser Box läuft (höchstens 30 Min
-  alt; nicht nach Stopp, Vergessen oder MPD aus). Vorher übernahm das
-  „Radiostream permanent" nach ~20–30 s; es bleibt als Rückfallebene.
+  alt; nicht nach Stopp, Vergessen oder MPD aus). Seit cc.28 notiert das
+  Add-on den laufenden Sender zusätzlich alle 30 s, weil ein MPD beim
+  Container-Stopp schon beendet sein kann, bevor das Add-on nachsieht.
+  Vorher übernahm das „Radiostream permanent" nach ~20–30 s; es bleibt als
+  Rückfallebene.
 - **Anzeigenamen:** Der MPD-Ausgabename übernimmt einen geänderten Namen erst
   beim nächsten Start von MPD. *Clear all devices* löscht die Namen.
 - **Sperr-Wert:** Ein Wert für alle gesperrten Boxen, kein Wert pro Box. Er
