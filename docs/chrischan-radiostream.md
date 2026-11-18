@@ -19,11 +19,11 @@ das Einspielen.
 
 ## 1. Aufbau
 
-| Box | Frequenz | MPD-Port | Steckdose |
-|-----|----------|----------|-----------|
-| ES-BT17 | 87.5 MHz | 6600 | `switch.dose_bt_87_5` |
-| ES-BT17 | 105.9 MHz | 6601 | `switch.dose_bt_105_9` |
-| ES-BT17 | 97.0 MHz | 6602 | `switch.dose_bt_97_0` |
+| Box | Frequenz | MPD-Port | Steckdose | Bluetooth-Stick (seit 18.11.2026) |
+|-----|----------|----------|-----------|-----------------------------------|
+| ES-BT17 | 87.5 MHz | 6600 | `switch.dose_bt_87_5` | Logilink neu |
+| ES-BT17 | 105.9 MHz | 6601 | `switch.dose_bt_105_9` | Logilink alt (Hauptadapter) |
+| ES-BT17 | 97.0 MHz | 6602 | `switch.dose_bt_97_0` | Logilink alt (Hauptadapter) |
 
 - **Host:** Home Assistant OS auf einem Fujitsu Futro S740, PulseAudio 17 im
   Audio-Plugin (`hassio_audio`).
@@ -31,10 +31,12 @@ das Einspielen.
   haben keine Pairing-Taste – gepairt bzw. neu verbunden wird per Stromzyklus
   über ihre Zigbee-Steckdose.
 - **Bluetooth-Adapter:**
-  - Realtek RTL8761B als USB-Stick (USB 2.0, mit Verlängerungskabel) –
-    ausschließlich für dieses Add-on, in den App Settings per MAC fest
-    eingestellt. In der HA-Bluetooth-Integration ist er ignoriert
-    (Doppelzugriff HA + Add-on führte früher zu Kernel-Abstürzen).
+  - Zwei Realtek-RTL8761B-USB-Sticks (Logilink), ausschließlich für dieses
+    Add-on: „Logilink alt" (USB 2.0, mit Verlängerungskabel) ist der
+    Hauptadapter, in den App Settings per MAC fest eingestellt; „Logilink
+    neu" (seit 18.11.2026) trägt 87.5 über die Box-Einstellung *Bluetooth
+    adapter* (Abschnitt 6). Beide sind in der HA-Bluetooth-Integration
+    ignoriert (Doppelzugriff HA + Add-on führte früher zu Kernel-Abstürzen).
   - Intel AX210 (intern) – gehört HA, passives Scannen.
 - **Streams:** RADIO BOB! über die MPD-Instanzen des Add-ons. In HA gibt es pro
   Box zwei Player: `media_player.musik_radiostream_<p>` (MPD-Integration, wird
@@ -102,6 +104,20 @@ Erweiterungen (Lautstärke-Sperre, Anzeigenamen, 44,1 kHz, Live-Radio, Diagnose;
 Die Härtung aus cc.17 und der Stick-Reset aus cc.18/cc.19 sind dort noch nicht eingereicht.
 
 ## 3. PulseAudio: Aussetzer-Fix (custom.pa)
+
+> **Stand 18.11.2026: `custom.pa` ist entfernt**, PulseAudio läuft wieder mit
+> der Standard-Erholung (500 ms). Grund: Mit zwei Sticks (Abschnitt 6) trägt
+> kein Stick mehr drei Streams, und die lange Erholung hatte die Bitrate nach
+> jeder Überlast stundenlang unten gehalten (UKW-Rauschen, siehe unten).
+> Aktiv war bis zuletzt der 60-Minuten-Wert (`3600000`); der am 14.11.
+> beschlossene 30-Minuten-Wert wurde nie eingespielt.
+> Messung danach (Gap-Monitor, je 10 Min): 14:49–14:59 105.9 und 97.0 auf
+> „Logilink alt" **0** Stockungen, 87.5 allein auf „Logilink neu" 179
+> Stockungen (60–200 ms, etwa alle 3 s = 5 Stufen runter, 2,5 s wieder hoch),
+> alle in den ersten 8 Minuten nach dem Verbinden; 15:02–15:10 alle drei
+> **0**. Der Rest dieses Abschnitts beschreibt die Lage mit einem Stick.
+> Bei Bedarf wieder anlegen wie unten beschrieben, dann mit kurzem Wert
+> (z. B. `60000`).
 
 **Symptom:** Mit drei gleichzeitigen Streams alle 50–70 Sekunden ein kurzer
 Aussetzer.
@@ -312,7 +328,7 @@ Mit dem gepatchten Add-on waren diese Teile überflüssig oder störend:
 
 Wiederherstellen lässt sich alles über ein HA-Backup von vor dem 06.11.2026.
 
-## 6. Zweiter Bluetooth-Stick (bestellt 14.11.2026)
+## 6. Zweiter Bluetooth-Stick (bestellt 14.11., in Betrieb seit 18.11.2026)
 
 Drei Streams auf einem Realtek-Stick überlasten ihn ab und zu, und jede
 Überlast senkt die SBC-Bitrate für lange Zeit (Abschnitt 3). Mit zwei Streams
@@ -394,8 +410,28 @@ Per API statt Oberfläche: `PUT /api/devices/<MAC_87_5>/settings
   gilt dann nicht. Noch nicht geklärt.
 - Dashboard „Radiostreams" → Reparatur → Einstellungen & Status: Spalte
   „Stick" (fest eingetragen).
+- 14:47 `custom.pa` entfernt (Abschnitt 3), 14:48 cc.24 eingespielt; alle
+  drei Boxen verbanden vom Add-on aus direkt mit 44,1 kHz.
+- 15:11 Steckdosen von 105.9 und 87.5 getauscht (Boxen umgesteckt). Danach
+  Namen in Zigbee2MQTT getauscht (`bridge/request/device/rename`, ohne
+  `homeassistant_rename`) und die Entity-IDs in HA über eine Zwischen-ID
+  (`switch.dose_bt_tmp`, samt `_last_seen`/`_linkquality`): `switch.dose_bt_87_5`
+  ist wieder die Dose der Box 87.5. Skripte, Automationen und
+  `input_text.radiostream_dose_switch_map` brauchten keine Änderung; der
+  Verlauf der beiden Entity-IDs mischt ab dem Tausch die zwei Dosen.
+- 105.9 kam nach dem Umstecken nicht wieder (`br-connection-page-timeout`),
+  erst nach dem Steckdosen-Zyklus (Stufe 2, von der Bug-Watch ausgelöst,
+  15:16) um 15:18:52. **Währenddessen fiel 97.0 auf die unterste Bitrate**
+  (15 Frames, `at_lowest_step: true`) und rauschte: Die wiederholten
+  Verbindungsversuche zu 105.9 laufen über denselben Stick. Neuverbinden von
+  97.0 um 15:19 stellte die volle Bitrate her. Ob 97.0 sich nach dem Ende der
+  Verbindungsversuche mit 500 ms Erholung auch von selbst erholt hätte, ist
+  offen. Eine automatische Rettung (Box neu verbinden, wenn sie auf der
+  untersten Stufe hängen bleibt) ist zurückgestellt: Die Bitrate lässt sich
+  nur über `pactl list sinks` ablesen, und ein regelmäßiger `pactl`-Aufruf
+  hat früher selbst gestottert (cc.8).
 
-## 7. Bekannte Grenzen (Stand 14.11.2026)
+## 7. Bekannte Grenzen (Stand 18.11.2026)
 
 Beobachtet oder aus dem Aufbau abgeleitet; „möglich" heißt: denkbar, aber
 nicht nachgewiesen.
@@ -408,9 +444,10 @@ nicht nachgewiesen.
   13.11. habe ich das dem UKW-Teil der Boxen zugeschrieben – falsch. Ursache
   ist der abgesenkte SBC-Bitpool (Abschnitt 3): Ein Stromreset half nur, weil
   die Box danach neu verbindet und mit voller Bitrate startet. Am 14.11.
-  nachgewiesen (Neuverbinden nur per Bluetooth genügte); Abhilfe: Erholung
-  alle 30 Minuten (`custom.pa`), der nächtliche Zyklus ist abgeschaltet. Home Assistant sieht die
-  Bitrate nicht; `GET /api/diagnostics/pulse-bluetooth` zeigt sie (cc.20).
+  nachgewiesen (Neuverbinden nur per Bluetooth genügte). Seit 18.11. zwei
+  Sticks und Standard-Erholung (500 ms) statt `custom.pa`; der nächtliche
+  Zyklus ist abgeschaltet. Home Assistant sieht die Bitrate nicht;
+  `GET /api/diagnostics/pulse-bluetooth` zeigt sie (cc.20).
 - **Möglich: Übersteuerung bei vollem Pegel.** Kleine UKW-Sender verzerren
   oft bei vollem Eingangspegel; Radio BOB ist laut gemastert. Gegenmittel ist
   der Sperr-Wert unter 100 % (cc.16, Regler *Lautstärke alle Boxen*). Am
@@ -429,11 +466,20 @@ nicht nachgewiesen.
 
 **Bluetooth und PulseAudio**
 
-- **Drei Streams auf einem Realtek-Stick nur mit custom.pa** (Abschnitt 3).
-  Nach einer Überlast läuft die SBC-Bitrate niedriger und erholt sich nur in
-  60-Minuten-Schritten (bis zu ~5 h); nach jedem Neustart oder Neuverbinden
-  sind anfangs 1–2 kurze Aussetzer möglich. Hinter UKW ist die niedrigere
-  Bitrate praktisch nicht hörbar.
+- **Drei Streams auf einem Realtek-Stick nur mit custom.pa** (Abschnitt 3),
+  mit der Nebenwirkung stundenlang niedriger Bitrate nach jeder Überlast.
+  Seit 18.11.2026 deshalb zwei Sticks (2 + 1 Streams) ohne `custom.pa`. In den
+  ersten Minuten nach dem Verbinden kann eine Box mit schwächerer Funkstrecke
+  (bisher 87.5) kurz stocken, danach lief es sauber.
+- **Ist eine Box nicht erreichbar, leidet die andere am selben Stick.** Die
+  wiederholten Verbindungsversuche belegen den Stick, die Bitrate der
+  laufenden Box fällt bis auf die unterste Stufe (UKW-Rauschen). Abhilfe:
+  die fehlende Box wieder ans Netz bringen (Steckdosen-Zyklus) und die
+  verrauschte Box neu verbinden (`POST /api/force-reconnect`).
+- **Box läuft zu schnell (≈ 1,09-fach).** Baut eine Box den Stream selbst mit
+  48 kHz auf und öffnet das Add-on ihn auf 44,1 kHz neu, kann die Box bei
+  48 kHz bleiben (18.11.2026, 97.0). Das Add-on erkennt das nicht; Neuverbinden
+  vom Add-on aus behebt es.
 - **Der Realtek-Stick kann abstürzen.** Am 11.11.2026 um 18:20 meldete der
   Kernel `Bluetooth: hci1: RTL: hw err, trigger devcoredump (51)`: Die
   Firmware des Sticks setzte sich selbst zurück, alle drei Verbindungen fielen
