@@ -1,5 +1,5 @@
 # Dashboard "radio-streams" (Receiver, Reparatur, Presets, Radio, Radiostreams),
-# Export der Rohkonfiguration aus Home Assistant, Stand 13.11.2026.
+# Export der Rohkonfiguration aus Home Assistant, Stand 13.11.2026 (Statustabelle 18.11.2026).
 # Einfuegen ueber Dashboard > Bearbeiten > Rohkonfigurations-Editor.
 # Enthaelt keine MACs, IPs, Benutzer- oder Geraete-IDs. Braucht card-mod/UIX;
 # die Ansicht "Receiver" nutzt die eigene Karte custom:radiostream-receiver-card.
@@ -327,17 +327,17 @@ views:
       heading: Einstellungen & Status
       icon: mdi:cog
     - type: markdown
-      content: '**Frequenz** | **MAC** | **Port**
+      content: '**Frequenz** | **MAC** | **Port** | **Stick**
 
-        :--|:--:|:--:
+        :--|:--:|:--:|:--
 
         {% set a = states(''input_text.radiostream_address_map'') | from_json %}{% set pm = states(''input_text.radiostream_port_map'')
-        | from_json %}{% for p, l in [(''87_5'',''87.5''),(''97_0'',''97.0''),(''105_9'',''105.9'')] %}{{
-        l }} | {{ a[p] }} | {{ pm[p] }}
+        | from_json %}{% for p, l, s in [(''87_5'',''87.5'',''Logilink neu''),(''97_0'',''97.0'',''Logilink alt''),(''105_9'',''105.9'',''Logilink alt'')]
+        %}{{ l }} | {{ a[p] }} | {{ pm[p] }} | {{ s }}
 
         {% endfor %}
 
-        _MAC und Port live aus den zentralen Maps._'
+        _MAC und Port live aus den zentralen Maps, Stick fest eingetragen (Stand 18.11.2026)._'
       entity_id:
       - input_text.radiostream_address_map
       - input_text.radiostream_port_map

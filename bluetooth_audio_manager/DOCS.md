@@ -387,10 +387,15 @@ it.
 **Recommendation:** Use a dedicated USB Bluetooth adapter that is **not**
 configured in Home Assistant's Bluetooth integration.
 
-**Switching adapters:** Click **Select** on a different adapter. A confirmation
-dialog warns that all current device pairings will be cleared. The add-on
-restarts with the new adapter. The adapter selection is stored by MAC address
-so it survives reboots.
+**Switching the main adapter:** Click **Make main** on a different adapter.
+This **unpairs every speaker and deletes its settings**; switching back does
+not restore them. The confirmation dialog lists the speakers that will be
+unpaired, and the switch only runs after you tick the acknowledgement. The
+add-on then restarts with the new adapter. The adapter selection is stored by
+MAC address so it survives reboots. To use an extra adapter for some speakers
+only, do **not** switch — set it in those speakers' settings (see below).
+Through the API, `POST /api/set-adapter` with `clean: true` needs
+`confirm_unpair` set to the number from `GET /api/set-adapter/impact`.
 
 **Several adapters (this build):** one app instance can drive speakers on
 more than one adapter — useful when one adapter cannot carry all streams
@@ -422,7 +427,8 @@ paired on the new adapter.
 
 1. Open the add-on from the Home Assistant sidebar (**BT Audio**)
 2. If you have multiple Bluetooth adapters, go to **Settings > Bluetooth
-   Adapters** and select the one to use
+   Adapters** and make the one to use the main adapter (**Make main**) —
+   before you pair any speakers
 3. Put your Bluetooth speaker in pairing mode
 4. Click the **Add Device** tile — a scan runs for the configured duration,
    showing a countdown

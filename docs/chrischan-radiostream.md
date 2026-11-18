@@ -82,6 +82,7 @@ das Einspielen.
 | cc.21 | 14.11. | Mehrere Bluetooth-Adapter in einer Instanz: Einstellung *Bluetooth adapter* pro Box, Koppeln auf einem bestimmten Adapter (`POST /api/pair` mit `adapter`, sperrt die Box währenddessen am alten Adapter und löscht dort danach die Kopplung), Scan und Stick-Reset pro Adapter, Überwachung jedes Adapters |
 | cc.22 | 15.11. | Eigene Namen für Bluetooth-Adapter (Stift-Knopf in *Bluetooth Adapters*, `PUT /api/adapters/<MAC>/name`), angezeigt in der Adapterliste, den Box-Einstellungen und auf den Gerätekarten |
 | cc.23 | 15.11. | Adapter-Namen werden in einem eigenen Dialog der App vergeben statt im Eingabefenster des Browsers |
+| cc.24 | 18.11. | Hauptadapter-Wechsel abgesichert: Knopf heißt *Make main*, der Dialog nennt die Boxen, die entkoppelt werden, und verlangt eine Bestätigung; die API verlangt `confirm_unpair` (Anzahl der Boxen) |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
@@ -333,9 +334,11 @@ REST-Befehlen nötig.
    Adapter wird als „entdeckt" angeboten → **Ignorieren**. Sonst nutzt HA ihn
    für BLE, und das Add-on lehnt ihn ab.
 3. Add-on-Oberfläche → *Settings → Bluetooth Adapters*: Der neue Stick steht
-   in der Liste (MAC notieren). **Nicht** auf *Select* drücken – das würde den
-   Hauptadapter wechseln und alle Kopplungen löschen. Mit dem Stift-Knopf
-   beiden Sticks Namen geben (z. B. „Stick 1" und „Stick 87.5").
+   in der Liste (MAC notieren). **Nicht** auf *Make main* (bis cc.23:
+   *Select*) drücken – das würde den Hauptadapter wechseln und alle
+   Kopplungen samt Einstellungen löschen (passiert am 18.11.2026, siehe
+   unten). Mit dem Stift-Knopf beiden Sticks Namen geben (hier „Logilink alt"
+   und „Logilink neu").
 4. Bei 87.5 *Settings* öffnen → *Bluetooth adapter* = neuer Stick → **Pair on
    this adapter**. Das Add-on sperrt 87.5 am Realtek (die Box wird getrennt und
    kann sich dort nicht neu verbinden) und sucht sie 40 s lang am neuen Stick.
@@ -364,6 +367,33 @@ Per API statt Oberfläche: `PUT /api/devices/<MAC_87_5>/settings
   Bug-Watch (Steckdosen-Zyklus, dann Voll-Reparatur). Offen: eigener
   Auslöser pro Stick.
 - Nicht den Intel AX210 dafür nehmen (gehört HA; trägt keine drei Streams).
+
+**Umzug am 18.11.2026 (erledigt)**
+
+- Der neue Stick meldete sich als `hci1`, der alte rutschte auf `hci2`. Das
+  Add-on startete sich deswegen neu und blieb – Adapter per MAC gespeichert –
+  richtig beim alten Stick.
+- 14:20 wurde beim neuen Stick *Select* gedrückt: alle drei Boxen entkoppelt,
+  ihre Einstellungen und Anzeigenamen gelöscht, Hauptadapter = neuer Stick.
+  Wiederherstellung per API: Hauptadapter zurück auf den alten Stick
+  (`POST /api/set-adapter`, ohne `clean`), Scan, 105.9 und 97.0 am alten
+  Stick gekoppelt, 87.5 mit `adapter` am neuen; Einstellungen neu gesetzt
+  (MPD 6600/6601/6602, `volume_lock`, AVRCP aus, Namen „87.5"/„105.9"/„97.0").
+  Die Werte standen im Add-on-Log („custom settings" beim Start). Daraus
+  entstand cc.24.
+- Während die Boxen ohne Verbindung waren, löste „Stick-Reset bei
+  Mehrfachausfall" erst einen Soft-, dann einen USB-Reset aus; harmlos.
+- Danach lief **97.0 zu schnell** (≈ 1,09-fach = 48/44,1): Die Box hatte den
+  Stream selbst mit 48 kHz aufgebaut, das Add-on ihn auf 44,1 kHz neu
+  geöffnet, die Box spielte weiter mit 48 kHz. Ein Neuverbinden vom Add-on aus
+  (`POST /api/force-reconnect`) behob es. Das Add-on erkennt diesen Zustand
+  nicht – bei „zu schnell/zu hoch" die Box neu verbinden.
+- Nach dem Neukoppeln zeigt die Diagnose 5 statt 7 SBC-Frames pro Paket
+  (nicht auf der untersten Stufe, bei allen drei gleich). Vermutlich kleinere
+  Bluetooth-Pakete nach dem Neukoppeln; die Zuordnung Frames → Bitpool oben
+  gilt dann nicht. Noch nicht geklärt.
+- Dashboard „Radiostreams" → Reparatur → Einstellungen & Status: Spalte
+  „Stick" (fest eingetragen).
 
 ## 7. Bekannte Grenzen (Stand 14.11.2026)
 
