@@ -238,7 +238,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 | **Nächtlicher Steckdosen-Zyklus** (deaktiviert) | täglich 04:30 | Startet `radiostream_steckdosen_alle_zyklieren`. Am 13.11.2026 gegen das Rauschen eingerichtet, am 14.11. abgeschaltet: Das Rauschen kam von der abgesenkten Bluetooth-Bitrate (Abschnitt 3), und das Neuverbinden der Boxen senkt sie selbst ab. |
 | **Stick-Reset je Stick** (Entity `automation.radiostream_stick_reset_bei_mehrfachausfall`) | `sensor.radiostream_sticks_ohne_verbindung` nennt seit 4 Min einen oder mehrere Sticks (alle aktiven Boxen mit Strom an diesem Stick: Player `unavailable`) | Startet `radiostream_stick_zuruecksetzen` mit Stufe *auto* nur für den genannten Stick (bei mehreren für alle). Nicht während Voll-Reparatur, Zyklus aller Boxen oder eines laufenden Stick-Resets; höchstens einmal in 30 Min (ab 13.11.2026, je Stick seit 18.11.2026; vorher: zwei Boxen ohne Verbindung). |
 | **Sender-Auswahl persistieren** | Änderung eines Sender-/Preset-Selects | Schreibt die Auswahl in `letzter_sender_*` / `letzter_preset_*`. |
-| **Senderlisten synchronisieren** | HA-Start, Änderung von `sensor.radiostream_senderliste` | Aktualisiert die Optionen aller 13 Selects und stellt die gemerkte Auswahl wieder her. |
+| **Senderlisten synchronisieren** | HA-Start, Änderung von `sensor.radiostream_senderliste` | Aktualisiert die Optionen aller 13 Selects und stellt die gemerkte Auswahl wieder her. Bis dahin gilt die im Helfer gespeicherte Optionsliste – sie muss die Senderliste enthalten, sonst springt ein Select beim Start kurz auf den ersten Eintrag (am 18.11.2026 angeglichen, siehe `chrischan-ha/README.md`). |
 
 ### Eskalationskette (Bug-Watch)
 

@@ -71,8 +71,8 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_boolean.radiostream_lautstarke_fest_100` | Schalter | Lautstärke-Sperre aller Boxen („Radiostream Lautstärke fest") |
 | `input_number.radiostream_lautstarke_alle_boxen` | Zahl (10–100 %, Schieberegler) | Wert, auf dem die Sperre die Boxen hält (Add-on-Einstellung `volume_lock_level`, ab cc.16) |
 | `input_boolean.radiostream_power_schaltet_steckdosen` | Schalter | „Aus" schaltet auch die Steckdose |
-| `input_select.radiosender_<p>` | Dropdown | Sender je Box (Optionen setzt die Automation „Senderlisten synchronisieren") |
-| `input_select.radiostream_preset_1..10` | Dropdown | Presets (ebenso) |
+| `input_select.radiosender_<p>` | Dropdown | Sender je Box (Optionen setzt die Automation „Senderlisten synchronisieren"). **Die im Helfer gespeicherten Optionen müssen die Senderliste enthalten:** Nach einem HA-Neustart gilt zuerst die gespeicherte Liste, und ein Sender, der dort fehlt, springt auf den ersten Eintrag – die Automation „Radiostream permanent" spielt ihn, bis die Synchronisierung den gemerkten Sender zurückholt (so am 18.11.2026: 97.0 zeigte bzw. spielte bis zu 80 s „Queen" statt „Schleswig Holstein"). Nach einer Änderung der Senderliste die gespeicherten Optionen aller 13 Dropdowns mitziehen. |
+| `input_select.radiostream_preset_1..10` | Dropdown | Presets (ebenso, auch für die gespeicherten Optionen) |
 | `input_select.radiostream_<p>_steckdose` | Dropdown | Optionen: die drei `switch.dose_bt_*` |
 | `input_number.radiostream_<p>_letzte_position` | Zahl | Stall-Erkennung (muss −1 und die Spielzeit in Sekunden aufnehmen können) |
 | `input_datetime.radiostream_letzte_automatische_voll_reparatur` | Datum + Zeit | Sperrzeit der Voll-Reparatur |
