@@ -12,6 +12,7 @@ from aiohttp.web import WebSocketResponse
 from dbus_next.errors import DBusError
 
 from ..config import VOLUME_LOCK_LEVEL_MAX, VOLUME_LOCK_LEVEL_MIN
+from ..reconnect import ConnectDeferred
 from ..persistence.store import FRIENDLY_NAME_MAX_LEN, normalize_address
 
 if TYPE_CHECKING:
@@ -402,6 +403,13 @@ def create_api_routes(
                 return err
             success = await manager.connect_device(address)
             return web.json_response({"connected": success, "address": address})
+        except ConnectDeferred as e:
+            logger.info("Connect deferred: %s", e)
+            return web.json_response({
+                "error": str(e),
+                "deferred": True,
+                "retry_in": round(manager.page_retry_wait(address)),
+            }, status=409)
         except Exception as e:
             logger.error("Connect failed for %s: %s", address, e)
             return web.json_response({"error": _friendly_error(e)}, status=500)
@@ -866,6 +874,23 @@ def create_api_routes(
             "custom": interval is not None,
             "sinks": sinks,
         })
+
+    @routes.get("/api/diagnostics/link-quality")
+    async def diagnostics_link_quality(request: web.Request) -> web.Response:
+        """Fresh RSSI / TX power of every connected speaker, without a scan.
+
+        For a BR/EDR link ``rssi`` is dB outside the controller's golden
+        receive range (0 = inside, negative = weaker), not dBm.
+        """
+        result = []
+        for address in sorted(getattr(manager, "_device_connect_time", {}) or {}):
+            entry = {"address": address}
+            try:
+                entry.update(await manager.read_link_quality(address))
+            except Exception as e:
+                entry["error"] = str(e) or type(e).__name__
+            result.append(entry)
+        return web.json_response({"speakers": result})
 
     @routes.get("/api/diagnostics/gap-monitor")
     async def gap_monitor_status(request: web.Request) -> web.Response:

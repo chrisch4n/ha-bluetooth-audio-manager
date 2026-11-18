@@ -346,6 +346,21 @@ paths:
                   address: { type: string, example: "AA:BB:CC:DD:EE:FF" }
         "400":
           $ref: "#/components/responses/BadAddress"
+        "409":
+          description: >
+            Not tried: the speaker did not answer ("page timeout") less than
+            2 minutes ago and another speaker on the same adapter is
+            streaming; paging it now would disturb that stream. `retry_in`
+            says when it may be tried again. `POST /api/force-reconnect` is
+            not held back.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  deferred: { type: boolean, example: true }
+                  retry_in: { type: integer, example: 87 }
         "500":
           $ref: "#/components/responses/BluezError"
 
@@ -964,6 +979,41 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+
+  /api/diagnostics/link-quality:
+    get:
+      tags: [Diagnostics]
+      summary: Link quality of connected speakers (no scan)
+      description: >
+        Reads RSSI and transmit power of every connected speaker's link
+        through the kernel's management interface (Get Connection
+        Information). Unlike RSSI from a scan this does not disturb running
+        streams. For a classic (BR/EDR) link `rssi` is **not dBm** but dB
+        outside the controller's golden receive range: 0 = inside (good),
+        negative = weaker. `tx_power` is the adapter's current transmit
+        power on the link in dBm; close to `max_tx_power` points to a weak
+        link. The device list carries the last background reading (every
+        30 s) as `link`.
+      responses:
+        "200":
+          description: One entry per connected speaker.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  speakers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        address: { type: string }
+                        rssi: { type: integer, nullable: true, example: -4 }
+                        tx_power: { type: integer, nullable: true, example: 8 }
+                        max_tx_power: { type: integer, nullable: true, example: 10 }
+                        adapter: { type: string, example: hci1 }
+                        at: { type: number, description: Unix time of the reading }
+                        error: { type: string, description: Set instead of the values when the reading failed }
 
   /api/diagnostics/gap-monitor:
     get:

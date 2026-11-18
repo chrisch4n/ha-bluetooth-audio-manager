@@ -470,6 +470,20 @@ function buildDeviceCard(d) {
     rssiHtml = ` <i class="fas fa-signal ${colorClass}"${clipStyle} title="${escapeAttr(title)}"></i> <small class="${stale ? "text-secondary" : "text-muted"}">${escapeHtml(String(d.rssi))} dBm</small>`;
   }
 
+  // --- Link quality of a connected speaker (no scan; RSSI relative to the
+  // controller's golden range: 0 = fine, negative = that many dB weaker) ---
+  let linkHtml = "";
+  if (d.connected && d.link && (d.link.rssi != null || d.link.tx_power != null)) {
+    const r = d.link.rssi;
+    const rText = r == null ? "?" : r === 0 ? "in range" : `${r > 0 ? "+" : ""}${r} dB`;
+    const rClass = r == null || r >= 0 ? "text-success" : r >= -6 ? "text-warning" : "text-danger";
+    const tx = d.link.tx_power != null
+      ? ` · TX ${d.link.tx_power}${d.link.max_tx_power != null ? "/" + d.link.max_tx_power : ""} dBm`
+      : "";
+    const title = "Link quality without a scan: received signal relative to the adapter's golden range (0 = fine, negative = weaker); TX = the adapter's transmit power on this link (near the maximum = weak link)";
+    linkHtml = ` <small class="${rClass}" title="${escapeAttr(title)}"><i class="fas fa-link"></i> ${escapeHtml(rText + tx)}</small>`;
+  }
+
   // --- Profiles text (always rendered in a fixed-height slot) ---
   const profiles = profileLabels(d.uuids);
   let profilesHtml = "";
@@ -565,7 +579,7 @@ function buildDeviceCard(d) {
             </div>
           </div>
           <div class="device-slot-badges">${buildCapBadges(d)}</div>
-          <div class="device-slot-meta device-meta-text font-monospace text-muted">${btNameHtml}${escapeHtml(d.address)}${rssiHtml}${d.adapter ? ` on ${escapeHtml(d.adapter_name || d.adapter)}` : ""}</div>
+          <div class="device-slot-meta device-meta-text font-monospace text-muted">${btNameHtml}${escapeHtml(d.address)}${rssiHtml}${linkHtml}${d.adapter ? ` on ${escapeHtml(d.adapter_name || d.adapter)}` : ""}</div>
           <div class="device-slot-profiles device-meta-text">${profilesHtml}</div>
           ${signalHtml}
           ${sinkHtml}
