@@ -87,6 +87,7 @@ das Einspielen.
 | cc.24 | 18.11. | Hauptadapter-Wechsel abgesichert: Knopf heißt *Make main*, der Dialog nennt die Boxen, die entkoppelt werden, und verlangt eine Bestätigung; die API verlangt `confirm_unpair` (Anzahl der Boxen) |
 | cc.25 | 18.11. | 48-kHz-Box wird komplett neu verbunden statt nur den Stream neu zu öffnen; eine nicht antwortende Box wird höchstens alle 120 s gesucht, solange am selben Stick gestreamt wird (`POST /api/connect` → 409 mit `retry_in`); laufender Sender wird nach Add-on-Neustart oder Box-Abbruch vom Add-on selbst fortgesetzt (bis 30 Min); `GET /api/diagnostics/link-quality` (im Add-on nicht nutzbar, s. Abschnitt 7) |
 | cc.26 | 18.11. | Signalstärke-Abfrage hört auf, wenn Bluetooth-Sockets im Add-on nicht verfügbar sind; Doku |
+| cc.27 | 18.11. | Fußzeile der Oberfläche nennt alle Sticks, die das Add-on nutzt (Hauptadapter zuerst); `/api/info` liefert dafür `adapter_labels` |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
