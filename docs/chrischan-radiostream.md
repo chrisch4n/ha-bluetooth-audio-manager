@@ -310,9 +310,10 @@ Konvention: Ein Skript ruft ein anderes immer mit `script.turn_on` +
 ### REST-Befehle
 
 `rest_command.bt_audio_*` (z. B. `get_devices`, `get_state`, `scan`,
-`set_volume_lock`) stehen in einer YAML-Datei, die von der
-`configuration.yaml` eingebunden wird, und sprechen die REST-API des Add-ons
-an. `bt_audio_scan` wird derzeit von nichts aufgerufen, bleibt aber für den
+`set_volume_lock`) stehen seit 18.11.2026 im Paket
+`configuration_yaml/packages/radiostream.yaml` (zusammen mit den Universal-Playern,
+dem Signal-Sensor und der Senderliste; Export in `chrischan-ha/packages/`) und
+sprechen die REST-API des Add-ons an. `bt_audio_scan` wird derzeit von nichts aufgerufen, bleibt aber für den
 Bedarfsfall stehen.
 `bt_audio_adapter_reset` (seit 13.11.2026) setzt Bluetooth-Sticks zurück
 (`mode` *soft* oder *usb*, optional `adapter` = MAC eines Sticks, sonst alle;

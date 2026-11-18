@@ -1,0 +1,455 @@
+# Radiostream: Player, BT-Signal, BT Audio Manager und Senderliste in einem Paket
+# (am 18.11.2026 zusammengeführt aus media_player.yaml, command_line.yaml, rest_command.yaml
+# und templates/radio.yaml; configuration.yaml lädt den Ordner packages/ per homeassistant: packages:).
+# Die Recorder-Ausschlüsse bleiben zentral in recorder.yaml.
+
+media_player:
+  - platform: universal
+    name: "Radiostream 87.5"
+    unique_id: radiostream_87_5_player
+    children:
+      - media_player.musik_radiostream_87_5
+    commands:
+      turn_on:
+        service: script.radiostream_power_toggle
+        data:
+          player: "87_5"
+          action: "on"
+      turn_off:
+        service: script.radiostream_power_toggle
+        data:
+          player: "87_5"
+          action: "off"
+      media_play:
+        service: script.radiostream_power_toggle
+        data:
+          player: "87_5"
+          action: "on"
+      media_pause:
+        service: script.radiostream_power_toggle
+        data:
+          player: "87_5"
+          action: "off"
+      media_stop:
+        service: media_player.media_stop
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+      volume_up:
+        service: media_player.volume_up
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+      volume_down:
+        service: media_player.volume_down
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+      volume_set:
+        service: media_player.volume_set
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+        data:
+          volume_level: "{{ volume_level }}"
+      volume_mute:
+        service: media_player.volume_mute
+        target:
+          entity_id: media_player.musik_radiostream_87_5
+        data:
+          is_volume_muted: "{{ is_volume_muted }}"
+      select_source:
+        service: input_select.select_option
+        target:
+          entity_id: input_select.radiosender_87_5
+        data:
+          option: "{{ source }}"
+      media_next_track:
+        service: input_select.select_next
+        target:
+          entity_id: input_select.radiosender_87_5
+      media_previous_track:
+        service: input_select.select_previous
+        target:
+          entity_id: input_select.radiosender_87_5
+    attributes:
+      volume_level: media_player.musik_radiostream_87_5|volume_level
+      is_volume_muted: media_player.musik_radiostream_87_5|is_volume_muted
+      media_title: media_player.musik_radiostream_87_5|media_title
+      source: input_select.radiosender_87_5
+      source_list: input_select.radiosender_87_5|options
+
+  - platform: universal
+    name: "Radiostream 97.0"
+    unique_id: radiostream_sender_97_0_player
+    children:
+      - media_player.musik_radiostream_97_0
+    commands:
+      turn_on:
+        service: script.radiostream_power_toggle
+        data:
+          player: "97_0"
+          action: "on"
+      turn_off:
+        service: script.radiostream_power_toggle
+        data:
+          player: "97_0"
+          action: "off"
+      media_play:
+        service: script.radiostream_power_toggle
+        data:
+          player: "97_0"
+          action: "on"
+      media_pause:
+        service: script.radiostream_power_toggle
+        data:
+          player: "97_0"
+          action: "off"
+      media_stop:
+        service: media_player.media_stop
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+      volume_up:
+        service: media_player.volume_up
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+      volume_down:
+        service: media_player.volume_down
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+      volume_set:
+        service: media_player.volume_set
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+        data:
+          volume_level: "{{ volume_level }}"
+      volume_mute:
+        service: media_player.volume_mute
+        target:
+          entity_id: media_player.musik_radiostream_97_0
+        data:
+          is_volume_muted: "{{ is_volume_muted }}"
+      select_source:
+        service: input_select.select_option
+        target:
+          entity_id: input_select.radiosender_97_0
+        data:
+          option: "{{ source }}"
+      media_next_track:
+        service: input_select.select_next
+        target:
+          entity_id: input_select.radiosender_97_0
+      media_previous_track:
+        service: input_select.select_previous
+        target:
+          entity_id: input_select.radiosender_97_0
+    attributes:
+      volume_level: media_player.musik_radiostream_97_0|volume_level
+      is_volume_muted: media_player.musik_radiostream_97_0|is_volume_muted
+      media_title: media_player.musik_radiostream_97_0|media_title
+      source: input_select.radiosender_97_0
+      source_list: input_select.radiosender_97_0|options
+
+  - platform: universal
+    name: "Radiostream 105.9"
+    unique_id: radiostream_105_9_player
+    children:
+      - media_player.musik_radiostream_105_9
+    commands:
+      turn_on:
+        service: script.radiostream_power_toggle
+        data:
+          player: "105_9"
+          action: "on"
+      turn_off:
+        service: script.radiostream_power_toggle
+        data:
+          player: "105_9"
+          action: "off"
+      media_play:
+        service: script.radiostream_power_toggle
+        data:
+          player: "105_9"
+          action: "on"
+      media_pause:
+        service: script.radiostream_power_toggle
+        data:
+          player: "105_9"
+          action: "off"
+      media_stop:
+        service: media_player.media_stop
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+      volume_up:
+        service: media_player.volume_up
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+      volume_down:
+        service: media_player.volume_down
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+      volume_set:
+        service: media_player.volume_set
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+        data:
+          volume_level: "{{ volume_level }}"
+      volume_mute:
+        service: media_player.volume_mute
+        target:
+          entity_id: media_player.musik_radiostream_105_9
+        data:
+          is_volume_muted: "{{ is_volume_muted }}"
+      select_source:
+        service: input_select.select_option
+        target:
+          entity_id: input_select.radiosender_105_9
+        data:
+          option: "{{ source }}"
+      media_next_track:
+        service: input_select.select_next
+        target:
+          entity_id: input_select.radiosender_105_9
+      media_previous_track:
+        service: input_select.select_previous
+        target:
+          entity_id: input_select.radiosender_105_9
+    attributes:
+      volume_level: media_player.musik_radiostream_105_9|volume_level
+      is_volume_muted: media_player.musik_radiostream_105_9|is_volume_muted
+      media_title: media_player.musik_radiostream_105_9|media_title
+      source: input_select.radiosender_105_9
+      source_list: input_select.radiosender_105_9|options
+
+command_line:
+  # Bluetooth-Verbindungsqualitaet der Radiostream-Boxen, ohne Scan (stoert die Streams nicht).
+  # Angelegt 18.11.2026 von Claude. Skript: /config/cli/bt_link_quality.py, laeuft in HA Core
+  # (Host-Netzwerk; im Add-on gibt es keine Bluetooth-Sockets). Alle 2 Minuten.
+  # Zustand: Anzahl der Boxen mit Messwert, "Fehler" wenn das Skript scheitert.
+  # Attribute je Box: rssi (dB ausserhalb des "golden range": 0 = gut, negativ = schwaecher),
+  # tx / tx_max (Sendeleistung des Sticks in dBm), adapter (MAC des Sticks); null = nicht verbunden.
+  - sensor:
+      name: "Radiostream BT-Signal"
+      unique_id: radiostream_bt_signal
+      command: >-
+        python3 /config/cli/bt_link_quality.py '{{ states("input_text.radiostream_address_map") }}'
+      scan_interval: 120
+      command_timeout: 15
+      icon: m3o:network-check
+      value_template: >-
+        {% if value_json is mapping and 'error' not in value_json %}{{ value_json.values() | select('mapping') | list | count }}{% else %}Fehler{% endif %}
+      json_attributes:
+        - "87_5"
+        - "97_0"
+        - "105_9"
+        - error
+
+rest_command:
+  bt_audio_health:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/health"
+    method: GET
+
+  bt_audio_forget_device:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/forget"
+    method: POST
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_force_reconnect:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/force-reconnect"
+    method: POST
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_scan:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/scan"
+    method: POST
+
+  bt_audio_connect:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/connect"
+    method: post
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_disconnect:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/disconnect"
+    method: post
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_pair_device:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/pair"
+    method: POST
+    content_type: "application/json"
+    payload: '{"address": "{{ address }}"}'
+
+  bt_audio_set_mpd:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/devices/{{ address }}/settings"
+    method: PUT
+    content_type: "application/json"
+    payload: '{"mpd_enabled": true, "mpd_port": {{ mpd_port }}}'
+
+  # Lautstaerke fest auf 100 % (gepatchtes Add-on, ab 2.1.0-cc.6). Angelegt 02.11.2026 von Claude.
+  # Aufruf: rest_command.bt_audio_set_volume_lock mit address (MAC) und lock (true/false).
+  bt_audio_set_volume_lock:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/devices/{{ address }}/settings"
+    method: PUT
+    content_type: "application/json"
+    payload: '{"volume_lock": {{ "true" if (lock | bool) else "false" }}}'
+
+  bt_audio_get_devices:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/devices"
+    method: GET
+    content_type: "application/json"
+
+  bt_audio_get_sinks:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/audio/sinks"
+    method: get
+
+  bt_audio_get_state:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/state"
+    method: get
+
+  bt_audio_get_info:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/info"
+    method: get
+
+  bt_audio_scan_status:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/scan/status"
+    method: get
+
+  bt_audio_get_adapters:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/adapters"
+    method: get
+
+  bt_audio_set_adapter:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/set-adapter"
+    method: post
+    content_type: "application/json"
+    payload: '{"adapter": "{{ adapter }}", "clean": {{ "true" if clean | default(false) else "false" }}}'
+
+  bt_audio_restart:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/restart"
+    method: post
+
+  # Bluetooth-Stick zuruecksetzen (gepatchtes Add-on, ab 2.1.0-cc.18). Angelegt 13.11.2026 von Claude.
+  # Aufruf: rest_command.bt_audio_adapter_reset mit mode 'soft' (Adapter ueber BlueZ aus/an)
+  # oder 'usb' (wie Abziehen und Einstecken, danach startet das Add-on neu). Antwort 409 = zu frueh.
+  # Optional adapter = MAC eines Sticks: nur diesen zuruecksetzen; ohne = alle Sticks des Add-ons.
+  # Ergaenzt 18.11.2026 von Claude (Stick-Reset je Stick).
+  bt_audio_adapter_reset:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/adapter/reset"
+    method: POST
+    content_type: "application/json"
+    payload: '{"mode": "{{ mode | default(''soft'') }}"{% if adapter | default('''') %}, "adapter": "{{ adapter }}"{% endif %}}'
+    timeout: 30
+
+  bt_audio_get_settings:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/settings"
+    method: get
+
+  bt_audio_put_settings:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/settings"
+    method: put
+    content_type: "application/json"
+    # Ein Objekt (z. B. aus einer Automation) wird mit to_json zu JSON, ein fertiger
+    # JSON-Text geht unveraendert durch. Umgestellt 18.11.2026 von Claude.
+    payload: "{{ payload if payload is string else (payload | to_json) }}"
+
+  bt_audio_get_logs:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/logs"
+    method: get
+
+  bt_audio_diagnostics_mpris:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/diagnostics/mpris"
+    method: get
+
+#   bt_audio_debug_avrcp_cycle:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/avrcp-cycle"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'
+
+#   bt_audio_debug_mpris_reregister:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/mpris-reregister"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'
+
+#   bt_audio_debug_mpris_avrcp_cycle:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/mpris-avrcp-cycle"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'
+
+#   bt_audio_debug_disconnect_hfp:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/disconnect-hfp"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'
+
+#   bt_audio_debug_hfp_reconnect_cycle:
+#     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/debug/hfp-reconnect-cycle"
+#     method: post
+#     content_type: "application/json"
+#     payload: '{"address": "{{ address }}"}'
+
+template:
+  # Radio-Senderliste (braucht Attribute, deshalb ohne Blueprint)
+  - sensor:
+      - name: "Radiostream Senderliste"
+        unique_id: radiostream_senderliste
+        icon: mdi:radio
+        state: "ok"
+        attributes:
+          Radio Bob! Schleswig Holstein: "http://streams.radiobob.de/bob-shlive/mp3-192/mediaplayer/"
+          Radio Bob! Queen: "http://streams.radiobob.de/bob-queen/mp3-192/mediaplayer/"
+          Radio Bob! Symphonic Metal: "http://streams.radiobob.de/symphmetal/mp3-192/mediaplayer/"
+          Radio Bob! Power Metal: "https://streams.radiobob.de/powermetal/mp3-192/"
+          Radio Bob! Mittelalter: "http://streams.radiobob.de/mittelalter/mp3-192/mediaplayer/"
+          Radio Bob! Prog-Rock: "http://streams.radiobob.de/progrock/mp3-192/mediaplayer/"
+          RADIO Bob! Metal: "http://streams.radiobob.de/bob-metal/mp3-192/mediaplayer/"
+          Radio Bob! Classic Rock: "http://streams.radiobob.de/bob-classicrock/mp3-192/mediaplayer/"
+          Radio Bob! Harte Saite: "http://streams.radiobob.de/bob-hartesaite/mp3-192/mediaplayer/"
+          Radio Bob! Motörhead: "https://streams.radiobob.de/motoerhead/mp3-192/"
+          Radio Bob! Ozzy Osbourne: "https://streams.radiobob.de/ozzyosbourne/mp3-192/"
+          Radio Bob! AC/DC: "http://streams.radiobob.de/bob-acdc/mp3-192/mediaplayer/"
+          Radio Bob! Wacken Radio: "http://streams.radiobob.de/bob-wacken/mp3-192/mediaplayer/"
+          Radio Bob! Rock Hits: "http://streams.radiobob.de/bob-rockhits/mp3-192/mediaplayer/"
+          Radio Bob! 2000er Rock: "http://streams.radiobob.de/2000er/mp3-192/mediaplayer/"
+          Radio Bob! Rock Oldies: "http://streams.radiobob.de/rockoldies/mp3-192/mediaplayer/"
+          Radio Bob! Iron Maiden: "https://streams.radiobob.de/bob-ironmaiden/mp3-192/"
+          Radio Bob! 70er Rock: "https://streams.radiobob.de/70errock/mp3-192/"
+          Radio Bob! 80s Rock: "http://streams.radiobob.de/bob-80srock/mp3-192/mediaplayer/"
+          Radio Bob! Hair Metal: "https://streams.radiobob.de/hairmetal/mp3-192/"
+          Radio Bob! Hardrock: "http://streams.radiobob.de/bob-hardrock/mp3-192/mediaplayer/"
+          Radio Bob! Grunge: "http://streams.radiobob.de/bob-grunge/mp3-192/mediaplayer/"
+          Radio Bob! Punk: "http://streams.radiobob.de/bob-punk/mp3-192/mediaplayer/"
+          Radio Bob! Folk Rock: "https://streams.radiobob.de/folkrock/mp3-192/"
+          Radio Bob! Rockabilly: "http://streams.radiobob.de/bob-rockabilly/mp3-192/"
+          Radio Bob! Woodstock: "https://streams.radiobob.de/woodstock/mp3-192/"
+          Radio Bob! Festival: "https://streams.radiobob.de/bob-festival/mp3-192/"
+          Radio Bob! Kuschelrock: "http://streams.radiobob.de/bob-kuschelrock/mp3-192/mediaplayer/"
+          Radio Bob! Metalcore: "http://streams.radiobob.de/metalcore/mp3-192/mediaplayer/"
+          Radio Bob! Metallica: "http://streams.radiobob.de/metallica/mp3-192/mediaplayer/"
+          Radio Bob! Rockparty: "http://streams.radiobob.de/rockparty/mp3-192/mediaplayer/"
+          Radio Bob! Tobias Sammet Rockshow: "http://streams.radiobob.de/sammet/mp3-192/mediaplayer/"
+          Radio Bob! The BossHoss: "http://streams.radiobob.de/bosshoss/mp3-192/mediaplayer/"
+          Radio Bob! Fury in the Slaughterhouse: "http://streams.radiobob.de/fury/mp3-192/mediaplayer/"
+          Radio Bob! Death Metal: "http://streams.radiobob.de/deathmetal/mp3-192/mediaplayer/"
+          Radio Bob! Nu Metal: "https://streams.radiobob.de/numetal/mp3-192/"
+          Radio Bob! DONOTS Rockshow: "https://streams.radiobob.de/donots/mp3-192/"
+          Radio Bob! College Rock: "https://streams.radiobob.de/collegerock/mp3-192/"
+          Radio Bob! National: "http://streams.radiobob.de/bob-national/mp3-192/mediaplayer/"
+          Klassik Radio: "https://klassikr.streamabc.net/klr-krdnational-mp3-192-8877033"
+          N-Joy: "http://icecast.ndr.de/ndr/njoy/live/mp3/128/stream.mp3"
+#          RADIO BOB! Mittelalter: "http://streams.radiobob.de/mittelalter/mp3-192/mediaplayer"
+#          RADIO BOB! Prog-Rock: "http://streams.radiobob.de/progrock/mp3-192/mediaplayer/"
+#          Radio Bob! Unplugged / Chillout: "http://streams.radiobob.de/bob-chillout/mp3-192/mediaplayer/"
+#          Radio Bob! Stoner Rock: "https://streams.radiobob.de/stonerrock/mp3-192/"
+#          Radio Bob! Alternative: "http://streams.radiobob.de/bob-alternative/mp3-192/mediaplayer/"
+#          Radio Bob! Singer/Songwriter: "http://streams.radiobob.de/bob-singersong/mp3-192/mediaplayer/"
+#          Radio Bob! Guitar Heroes: "https://streams.radiobob.de/guitarheroes/mp3-192/"
+#          Radio Bob! Made in Germany: "https://streams.radiobob.de/rockmadeingermany/mp3-192/"
+#          Radio Bob! Electro Rock: "https://streams.radiobob.de/electrorock/mp3-192/"
+#          Radio Bob! Britpop: "http://streams.radiobob.de/bob-britpop/mp3-192/mediaplayer/"
+#          Radio Bob! The Rolling Stones: "https://streams.radiobob.de/rollingstones/mp3-192/"
+#          Radio Bob! Country: "http://streams.radiobob.de/country/mp3-192/mediaplayer/"
+#          Radio Bob! Blues: "https://streams.radiobob.de/blues/mp3-192/"
+#          Radio Bob! Emo: "http://streams.radiobob.de/emo/mp3-192/mediaplayer/"

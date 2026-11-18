@@ -16,9 +16,7 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 | [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 10 Radiostream-Automationen |
 | [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 10 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
 | [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver, Reparatur (oben: „Wiedergabe" je Box, OK/Problem), Presets, Radio, Radiostreams |
-| [`configuration_yaml/rest_command.yaml`](configuration_yaml/rest_command.yaml) | `rest_command: !include …` | `rest_command.bt_audio_*` für die REST-API des Add-ons |
-| [`configuration_yaml/media_player.yaml`](configuration_yaml/media_player.yaml) | `media_player: !include …` | Universal-Media-Player `media_player.radiostream_<p>_sender` |
-| [`configuration_yaml/template_radiostream_senderliste.yaml`](configuration_yaml/template_radiostream_senderliste.yaml) | Ausschnitt aus `template: !include …` | `sensor.radiostream_senderliste` (Sendername → Stream-URL) |
+| [`packages/radiostream.yaml`](packages/radiostream.yaml) | Paket in `configuration_yaml/packages/` (seit 18.11.2026; `configuration.yaml` lädt den Ordner mit `homeassistant: packages: !include_dir_named configuration_yaml/packages/`) | Alles YAML-Seitige des Radiostreams in einer Datei: Universal-Media-Player `media_player.radiostream_<p>_sender`, `sensor.radiostream_bt_signal` (command_line), `rest_command.bt_audio_*` für die REST-API des Add-ons und `sensor.radiostream_senderliste` (Sendername → Stream-URL). Die Recorder-Ausschlüsse bleiben in der zentralen `recorder.yaml`. |
 
 `<p>` steht für die Box: `87_5`, `105_9` oder `97_0`.
 
@@ -29,7 +27,7 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 | `<MAC_87_5>`, `<MAC_105_9>`, `<MAC_97_0>` | Bluetooth-Adresse der jeweiligen Box |
 | `notify.mobile_app_geraet_1..3` | Benachrichtigungsdienste der drei Handys/Tablets (Companion-App) |
 
-Die Adresse des Add-ons in `rest_command.yaml`
+Die Adresse des Add-ons in den REST-Befehlen
 (`http://1b3a7c56-bluetooth-audio-manager:8099`) und der Slug in
 `script.radiostream_reparieren` (`1b3a7c56_bluetooth_audio_manager`) hängen vom
 Repository ab, aus dem das Add-on installiert ist; bei einer anderen Installation
@@ -59,7 +57,7 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_text.radiostream_port_map` | Text | `{"87_5": 6600, "105_9": 6601, "97_0": 6602}` |
 | `input_text.radiostream_stick_map` | Text | `{"97_0": "Logilink alt", "105_9": "Logilink alt", "87_5": "Logilink neu"}` (Bluetooth-Stick je Box, für die Statustabelle und den Stick-Reset; seit 18.11.2026) |
 | `input_text.radiostream_stick_mac_map` | Text | `{"Logilink alt": "<MAC_STICK_ALT>", "Logilink neu": "<MAC_STICK_NEU>"}` (Adapter-MAC je Stick-Name, für `radiostream_stick_zuruecksetzen`; seit 18.11.2026) |
-| `sensor.radiostream_bt_signal` | command_line (`configuration_yaml/command_line.yaml`, Skript `cli/bt_link_quality.py` → `/config/cli/`) | Verbindungsqualität je Box ohne Scan, alle 2 Min; Attribute `87_5`/`97_0`/`105_9` mit `rssi`, `tx`, `tx_max`, `adapter` (seit 18.11.2026) |
+| `sensor.radiostream_bt_signal` | command_line (`packages/radiostream.yaml`, Skript `cli/bt_link_quality.py` → `/config/cli/`) | Verbindungsqualität je Box ohne Scan, alle 2 Min; Attribute `87_5`/`97_0`/`105_9` mit `rssi`, `tx`, `tx_max`, `adapter` (seit 18.11.2026) |
 | `input_text.radiostream_dose_switch_map` | Text | `{"97_0":"switch.dose_bt_97_0","105_9":"switch.dose_bt_105_9","87_5":"switch.dose_bt_87_5"}` |
 | `input_text.radiostream_schalter_map` | Text | `{"97_0":"switch.97_0_schalter","105_9":"switch.105_9_schalter","87_5":"switch.87_5_schalter"}` |
 | `input_text.radiostream_aktiv_map` | Text | `{"97_0":"input_boolean.radiostream_97_0_aktiv", …}` |
@@ -85,9 +83,10 @@ anpassen (siehe [`../api.md`](../api.md)).
 ## Einspielen
 
 1. Add-on installieren, Boxen pairen, MPD je Box aktivieren.
-2. Die Dateien aus `configuration_yaml/` in den Konfigurationsordner legen und in
-   `configuration.yaml` einbinden (`rest_command:`, `media_player:`; den
-   Senderlisten-Sensor in die eigene `template:`-Konfiguration übernehmen).
+2. `packages/radiostream.yaml` als Paket einbinden (z. B. nach
+   `configuration_yaml/packages/` legen und in `configuration.yaml`
+   `homeassistant: packages: !include_dir_named configuration_yaml/packages/`
+   eintragen), `cli/bt_link_quality.py` nach `/config/cli/` legen.
    Konfiguration prüfen, Home Assistant neu starten.
 3. Die drei MPD-Integrationen einrichten und ihre Config-Entry-IDs in
    `input_text.radiostream_mpd_entry_map` eintragen.
