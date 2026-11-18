@@ -123,7 +123,9 @@ def _open_control_socket() -> socket.socket:
         err = ctypes.get_errno()
         os.close(fd)
         raise _fail(err, "bind(HCI_CHANNEL_CONTROL)")
-    return socket.socket(fileno=fd)
+    # Pass the family: without it Python calls getsockname() to find it,
+    # which a management (control channel) socket rejects with EBADFD.
+    return socket.socket(AF_BLUETOOTH, socket.SOCK_RAW, BTPROTO_HCI, fileno=fd)
 
 
 def get_conn_info(adapter_path: str, address: str, timeout: float = 2.0) -> dict:

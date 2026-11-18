@@ -49,7 +49,9 @@ def open_socket():
         err = ctypes.get_errno()
         os.close(fd)
         raise OSError(err, "bind")
-    return socket.socket(fileno=fd)
+    # Pass the family: without it Python calls getsockname() to find it,
+    # which a management (control channel) socket rejects with EBADFD.
+    return socket.socket(AF_BLUETOOTH, socket.SOCK_RAW, BTPROTO_HCI, fileno=fd)
 
 
 def command(sock, opcode, index, params=b"", timeout=2.0):

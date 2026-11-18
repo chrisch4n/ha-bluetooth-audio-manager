@@ -553,8 +553,10 @@ nicht nachgewiesen.
   `command_line`-Sensor `sensor.radiostream_bt_signal` (alle 2 Min, Export in
   `chrischan-ha/`), Spalte „Signal" in *Reparatur → Einstellungen & Status*.
   `rssi` ist bei Bluetooth Classic kein dBm-Wert, sondern der Abstand zum
-  Idealbereich des Sticks (0 = gut, negativ = schwächer); `tx` = Sendeleistung
-  des Sticks, nahe `tx_max` = schwache Strecke.
+  Idealbereich des Sticks (0 = gut, negativ = schwächer); `tx`/`tx_max` melden
+  die Realtek-Sticks nicht (0/0). Erste Werte 18.11.2026 16:01: 87.5 −24 dB
+  (Logilink neu), 105.9 −18 dB, 97.0 −2 dB (beide Logilink alt) – 87.5 hat die
+  schwächste Strecke, passend zu ihren Stockungen nach dem Verbinden.
 - **Keine PulseAudio-Logs.** Das Audio-Plugin von HAOS schreibt nicht ins
   Journal; Aussetzer lassen sich nur mit dem Gap-Monitor des Add-ons messen.
 
