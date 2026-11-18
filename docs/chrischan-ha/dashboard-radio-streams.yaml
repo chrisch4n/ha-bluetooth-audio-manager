@@ -333,13 +333,14 @@ views:
 
         {% set a = states(''input_text.radiostream_address_map'') | from_json %}{% set pm = states(''input_text.radiostream_port_map'')
         | from_json %}{% set st = states(''input_text.radiostream_stick_map'') | from_json(default={}) %}{% for p, l in [(''87_5'',''87.5''),(''97_0'',''97.0''),(''105_9'',''105.9'')]
-        %}{% set sig = state_attr(''sensor.radiostream_bt_signal'', p) %}{{ l }} | {{ a[p] }} | {{ pm[p] }} | {{ st.get(p, ''–'') }} | {% if sig is mapping %}{{ ''gut''
-        if sig.rssi == 0 else ((sig.rssi ~ '' dB'') if sig.rssi is number else ''?'') }}{% if sig.tx_max %} · TX {{ sig.tx }}/{{ sig.tx_max }} dBm{% endif %}{% else %}–{% endif %}
+        %}{% set sig = state_attr(''sensor.radiostream_bt_signal'', p) %}{{ l }} | {{ a[p] }} | {{ pm[p] }} | {{ st.get(p, ''–'') }} | {% if sig is mapping %}{% if sig.rssi is number %}{% set
+        w = ''gut'' if sig.rssi >= -5 else (''mäßig'' if sig.rssi >= -15 else (''schwach'' if sig.rssi >= -25 else ''kritisch'')) %}{{ sig.rssi
+        }} dB · {{ w }}{% else %}?{% endif %}{% if sig.tx_max %} · TX {{ sig.tx }}/{{ sig.tx_max }} dBm{% endif %}{% else %}–{% endif %}
 
         {% endfor %}
 
-        _MAC, Port und Stick live aus den zentralen Maps. Signal: Abstand zum Idealbereich des Sticks (gut = darin, negativ = schwächer),
-        alle 2 Minuten ohne Scan gemessen._'
+        _MAC, Port und Stick live aus den zentralen Maps. Signal: Abstand zum Idealbereich des Sticks in dB, alle 2 Minuten ohne Scan
+        gemessen; gut bis −5, mäßig bis −15, schwach bis −25, darunter kritisch._'
       entity_id:
       - input_text.radiostream_address_map
       - input_text.radiostream_port_map

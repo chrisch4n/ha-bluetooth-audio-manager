@@ -557,6 +557,10 @@ nicht nachgewiesen.
   die Realtek-Sticks nicht (0/0). Erste Werte 18.11.2026 16:01: 87.5 −24 dB
   (Logilink neu), 105.9 −18 dB, 97.0 −2 dB (beide Logilink alt) – 87.5 hat die
   schwächste Strecke, passend zu ihren Stockungen nach dem Verbinden.
+  Bewertung in der Tabelle (Faustregel, kein Standard): gut bis −5 dB, mäßig
+  bis −15, schwach bis −25, darunter kritisch. Bei einer Untergrenze des
+  Idealbereichs von typisch −56 dBm entspricht −22 dB etwa −78 dBm, rund
+  10 dB über der Empfindlichkeit; Schwankungen von 2–4 dB sind normal.
 - **Keine PulseAudio-Logs.** Das Audio-Plugin von HAOS schreibt nicht ins
   Journal; Aussetzer lassen sich nur mit dem Gap-Monitor des Add-ons messen.
 
