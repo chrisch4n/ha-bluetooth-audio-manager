@@ -89,6 +89,7 @@ das Einspielen.
 | cc.26 | 18.11. | Signalstärke-Abfrage hört auf, wenn Bluetooth-Sockets im Add-on nicht verfügbar sind; Doku |
 | cc.27 | 18.11. | Fußzeile der Oberfläche nennt alle Sticks, die das Add-on nutzt (Hauptadapter zuerst); `/api/info` liefert dafür `adapter_labels` |
 | cc.28 | 18.11. | Fortsetzen nach Neustart robuster: Der laufende Sender wird alle 30 s notiert; ist ein MPD beim Beenden schon weg (das Stopp-Signal des Containers erreicht MPD und Add-on gleichzeitig), bleibt die Notiz erhalten. Beim cc.27-Neustart hatte das gefehlt, die Sender startete erst „Radiostream permanent“ |
+| cc.29 | 18.11. | Kleine Korrekturen aus der Durchsicht: Klappt das Neuverbinden einer 48-kHz-Box nicht sofort, wird der Sender notiert und beim Wiederverbinden fortgesetzt (vorher wartete er auf HA); ein Fehler beim Fortsetzen erscheint als solcher im Log statt als „MPD start failed“. |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
