@@ -8,12 +8,14 @@
 > [`docs/chrischan-radiostream.md`](docs/chrischan-radiostream.md), with the
 > Home Assistant configuration in [`docs/chrischan-ha/`](docs/chrischan-ha/).
 >
-> **Submitted upstream:** [scyto#324](https://github.com/scyto/ha-bluetooth-audio-manager/pull/324)
-> (fixes for #315–#319) and [scyto#325](https://github.com/scyto/ha-bluetooth-audio-manager/pull/325)
+> **Submitted upstream:** [scyto#327](https://github.com/scyto/ha-bluetooth-audio-manager/pull/327)
+> (fixes for #315–#319) and [scyto#328](https://github.com/scyto/ha-bluetooth-audio-manager/pull/328)
 > (volume lock, friendly names, 44.1 kHz preference, live-radio robustness,
-> diagnostics; builds on #324). Both carry only `src/` and `tests/` of this branch.
+> diagnostics; builds on #327). Both carry only `src/` and `tests/` of this branch.
+> They replace #324/#325, which GitHub closed when a history rewrite of this
+> fork briefly detached the branches from `dev`.
 > [scyto#326](https://github.com/scyto/ha-bluetooth-audio-manager/pull/326) (18 Nov 2026,
-> builds on #325) adds cc.17–cc.28: hardening, adapter reset, several adapters,
+> builds on #328) adds cc.17–cc.28: hardening, adapter reset, several adapters,
 > adapter names, guarded "Make main", 48 kHz reconnect, page throttling, resume
 > after restart, SBC diagnostics — with DOCS.md, `usb: true` and AppArmor rules
 > for both app folders; the link-quality reading is left out.

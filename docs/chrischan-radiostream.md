@@ -101,12 +101,14 @@ das Einspielen.
 Alles Übrige im Branch ist eigene Arbeit (Fixes für scyto#315–#319 und die
 Erweiterungen cc.2–cc.23).
 
-Bei scyto eingereicht (09.11.2026), nur `src/` und `tests/`:
-[#324](https://github.com/scyto/ha-bluetooth-audio-manager/pull/324) mit den Fixes für
-#315–#319 und [#325](https://github.com/scyto/ha-bluetooth-audio-manager/pull/325) mit den
-Erweiterungen (Lautstärke-Sperre, Anzeigenamen, 44,1 kHz, Live-Radio, Diagnose; baut auf #324 auf).
+Bei scyto eingereicht (09.11.2026), nur `src/` und `tests/`: #324 mit den Fixes für
+#315–#319 und #325 mit den Erweiterungen (Lautstärke-Sperre, Anzeigenamen, 44,1 kHz,
+Live-Radio, Diagnose; baut auf #324 auf). GitHub schloss beide am 18.11.2026, als das
+Umschreiben der Fork-Historie (echte MAC-Adressen entfernt) die Branches kurz von `dev`
+trennte; sie ließen sich nicht wieder öffnen. Gleicher Inhalt neu eingereicht als
+[#327](https://github.com/scyto/ha-bluetooth-audio-manager/pull/327) (Fixes) und [#328](https://github.com/scyto/ha-bluetooth-audio-manager/pull/328) (Erweiterungen, baut auf #327 auf).
 Am 18.11.2026 folgte [#326](https://github.com/scyto/ha-bluetooth-audio-manager/pull/326)
-(baut auf #325 auf) mit cc.17–cc.28: Härtung, Stick-Reset, mehrere Adapter, Adapter-Namen,
+(baut auf #328 auf) mit cc.17–cc.28: Härtung, Stick-Reset, mehrere Adapter, Adapter-Namen,
 geschütztes „Make main", 48-kHz-Neuverbindung, Paging-Drossel, Fortsetzen nach Neustart,
 SBC-Diagnose – samt DOCS.md, `usb: true` und AppArmor-Regeln für beide App-Ordner; die
 Signalmessung fehlt dort (im Add-on nicht nutzbar).
