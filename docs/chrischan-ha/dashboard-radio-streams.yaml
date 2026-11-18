@@ -332,15 +332,16 @@ views:
         :--|:--:|:--:|:--
 
         {% set a = states(''input_text.radiostream_address_map'') | from_json %}{% set pm = states(''input_text.radiostream_port_map'')
-        | from_json %}{% for p, l, s in [(''87_5'',''87.5'',''Logilink neu''),(''97_0'',''97.0'',''Logilink alt''),(''105_9'',''105.9'',''Logilink alt'')]
-        %}{{ l }} | {{ a[p] }} | {{ pm[p] }} | {{ s }}
+        | from_json %}{% set st = states(''input_text.radiostream_stick_map'') | from_json(default={}) %}{% for p, l in [(''87_5'',''87.5''),(''97_0'',''97.0''),(''105_9'',''105.9'')]
+        %}{{ l }} | {{ a[p] }} | {{ pm[p] }} | {{ st.get(p, ''–'') }}
 
         {% endfor %}
 
-        _MAC und Port live aus den zentralen Maps, Stick fest eingetragen (Stand 18.11.2026)._'
+        _MAC, Port und Stick live aus den zentralen Maps._'
       entity_id:
       - input_text.radiostream_address_map
       - input_text.radiostream_port_map
+      - input_text.radiostream_stick_map
     - type: grid
       columns: 2
       square: false

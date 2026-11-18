@@ -85,6 +85,8 @@ das Einspielen.
 | cc.22 | 15.11. | Eigene Namen für Bluetooth-Adapter (Stift-Knopf in *Bluetooth Adapters*, `PUT /api/adapters/<MAC>/name`), angezeigt in der Adapterliste, den Box-Einstellungen und auf den Gerätekarten |
 | cc.23 | 15.11. | Adapter-Namen werden in einem eigenen Dialog der App vergeben statt im Eingabefenster des Browsers |
 | cc.24 | 18.11. | Hauptadapter-Wechsel abgesichert: Knopf heißt *Make main*, der Dialog nennt die Boxen, die entkoppelt werden, und verlangt eine Bestätigung; die API verlangt `confirm_unpair` (Anzahl der Boxen) |
+| cc.25 | 18.11. | 48-kHz-Box wird komplett neu verbunden statt nur den Stream neu zu öffnen; eine nicht antwortende Box wird höchstens alle 120 s gesucht, solange am selben Stick gestreamt wird (`POST /api/connect` → 409 mit `retry_in`); laufender Sender wird nach Add-on-Neustart oder Box-Abbruch vom Add-on selbst fortgesetzt (bis 30 Min); `GET /api/diagnostics/link-quality` (im Add-on nicht nutzbar, s. Abschnitt 7) |
+| cc.26 | 18.11. | Signalstärke-Abfrage hört auf, wenn Bluetooth-Sockets im Add-on nicht verfügbar sind; Doku |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 
@@ -471,15 +473,19 @@ nicht nachgewiesen.
   Seit 18.11.2026 deshalb zwei Sticks (2 + 1 Streams) ohne `custom.pa`. In den
   ersten Minuten nach dem Verbinden kann eine Box mit schwächerer Funkstrecke
   (bisher 87.5) kurz stocken, danach lief es sauber.
-- **Ist eine Box nicht erreichbar, leidet die andere am selben Stick.** Die
-  wiederholten Verbindungsversuche belegen den Stick, die Bitrate der
-  laufenden Box fällt bis auf die unterste Stufe (UKW-Rauschen). Abhilfe:
-  die fehlende Box wieder ans Netz bringen (Steckdosen-Zyklus) und die
-  verrauschte Box neu verbinden (`POST /api/force-reconnect`).
-- **Box läuft zu schnell (≈ 1,09-fach).** Baut eine Box den Stream selbst mit
-  48 kHz auf und öffnet das Add-on ihn auf 44,1 kHz neu, kann die Box bei
-  48 kHz bleiben (18.11.2026, 97.0). Das Add-on erkennt das nicht; Neuverbinden
-  vom Add-on aus behebt es.
+- **Ist eine Box nicht erreichbar, leidet die andere am selben Stick.** Jeder
+  vergebliche Verbindungsversuch belegt den Stick ~5 s; am 18.11. fiel 97.0
+  so auf die unterste Bitrate (UKW-Rauschen), während 105.9 fehlte. Seit
+  cc.25 wird eine Box nach einem „page timeout" höchstens alle 120 s gesucht,
+  solange eine andere Box am selben Stick streamt (gilt auch für
+  `POST /api/connect` aus HA: Antwort 409 mit `retry_in`;
+  `POST /api/force-reconnect` ist ausgenommen). Ist die Bitrate trotzdem
+  unten: verrauschte Box neu verbinden (`POST /api/force-reconnect`).
+- **Box lief zu schnell (≈ 1,09-fach)** – bis cc.24. Hatte eine Box den
+  Stream selbst mit 48 kHz aufgebaut, öffnete das Add-on nur den Stream auf
+  44,1 kHz neu, und die Box konnte bei 48 kHz bleiben (18.11.2026, 97.0). Seit
+  cc.25 verbindet das Add-on die Box komplett neu; damit kam bisher jedes Mal
+  sauber 44,1 kHz.
 - **Der Realtek-Stick kann abstürzen.** Am 11.11.2026 um 18:20 meldete der
   Kernel `Bluetooth: hci1: RTL: hw err, trigger devcoredump (51)`: Die
   Firmware des Sticks setzte sich selbst zurück, alle drei Verbindungen fielen
@@ -537,17 +543,26 @@ nicht nachgewiesen.
   Bleibt eine Box danach trotzdem stumm, meldet und repariert das seit dem
   11.11.2026 der Bug-Watch (Einstieg „spielt nicht", Abschnitt 4).
 - **Signalstärke nur mit Scan.** BlueZ liefert die Signalstärke nur während
-  eines Scans, und der stört auf demselben Chip alle laufenden Streams. Im
-  Betrieb gibt es deshalb keine Messung mehr.
+  eines Scans, und der stört auf demselben Chip alle laufenden Streams. Die
+  Abfrage einer bestehenden Verbindung ohne Scan (Kernel-Schnittstelle
+  „Get Connection Information", cc.25) scheitert im Add-on: Bluetooth-Sockets
+  gibt es nur im Netzwerk-Namespace des Hosts (`EAFNOSUPPORT`), und
+  Host-Netzwerk würde die Adresse `1b3a7c56-bluetooth-audio-manager:8099`
+  der REST-Befehle und MPD-Integrationen brechen. Möglicher Weg: ein Skript in
+  HA Core (läuft im Host-Netzwerk) mit `command_line`-Sensor – offen.
 - **Keine PulseAudio-Logs.** Das Audio-Plugin von HAOS schreibt nicht ins
   Journal; Aussetzer lassen sich nur mit dem Gap-Monitor des Add-ons messen.
 
 **Add-on**
 
-- **Nach einem Neustart oder Update des Add-ons spielt MPD nicht von selbst
-  weiter.** Die Player gehen dabei teils direkt von *spielt* auf *aus*, ohne
-  *nicht verfügbar* zu sein. Wieder gestartet werden sie von „Radiostream
-  permanent" (Auslöser *Rückkehr* und *Stopp*, nach ~20–30 s).
+- **Fortsetzen nach Neustart (seit cc.25).** MPD kann im Add-on-Container
+  keine eigene Zustandsdatei schreiben (MPD 0.24 braucht dafür
+  `CAP_DAC_READ_SEARCH`), jeder neue MPD startet mit leerer Warteschlange.
+  Das Add-on merkt sich deshalb beim Beenden eines MPD (Add-on-Neustart oder
+  -Update, Box-Abbruch) den laufenden Sender in `/data/playback_resume.json`
+  und startet ihn wieder, sobald der MPD dieser Box läuft (höchstens 30 Min
+  alt; nicht nach Stopp, Vergessen oder MPD aus). Vorher übernahm das
+  „Radiostream permanent" nach ~20–30 s; es bleibt als Rückfallebene.
 - **Anzeigenamen:** Der MPD-Ausgabename übernimmt einen geänderten Namen erst
   beim nächsten Start von MPD. *Clear all devices* löscht die Namen.
 - **Sperr-Wert:** Ein Wert für alle gesperrten Boxen, kein Wert pro Box. Er
@@ -559,10 +574,11 @@ nicht nachgewiesen.
 - **Stopp am MPD-Player wird rückgängig gemacht.** Ist der Aktiv-Schalter an,
   startet „Radiostream permanent" einen gestoppten Player nach 20 s neu.
   Absichtlich aus geht eine Box nur über den Aktiv-Schalter bzw. Power.
-- **REST-Befehl `bt_audio_put_settings`:** Die Automation übergibt das JSON
-  als Text-Vorlage. Home Assistant wandelt es dabei in ein Objekt um, gibt
-  aber beim Einsetzen wieder den Originaltext aus – funktioniert (getestet
-  am 07.11.2026), hängt aber an diesem Verhalten von HA.
+- **REST-Befehl `bt_audio_put_settings`:** seit 18.11.2026 robust – die
+  Vorlage `{{ payload if payload is string else (payload | to_json) }}` macht
+  aus einem Objekt JSON und reicht fertigen JSON-Text durch (beides
+  getestet). Vorher hing es daran, dass HA beim Einsetzen den Originaltext
+  ausgab.
 - **„Spielt nicht" heißt: der Player meldet nicht `playing`.** Meldet MPD
   *spielt*, obwohl nichts ankommt (Position steht), greift weiter nur der
   5-Minuten-Watchdog von „Radiostream permanent" mit einem Neustart des Streams;

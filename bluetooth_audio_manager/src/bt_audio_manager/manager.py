@@ -6,6 +6,7 @@ management, PulseAudio, reconnection, keep-alive, and the web server.
 
 import asyncio
 import collections
+import errno
 import json
 import logging
 import os
@@ -3125,6 +3126,15 @@ class BluetoothAudioManager:
                     except PermissionError as e:
                         logger.warning("Link quality not available (%s) — stopping the readings", _err(e))
                         return
+                    except OSError as e:
+                        if getattr(e, "errno", None) == errno.EAFNOSUPPORT:
+                            # Bluetooth sockets exist only in the host's network
+                            # namespace; an add-on without host networking (this
+                            # one) cannot open them.  Nothing to retry.
+                            logger.info("Link quality needs host networking (%s) — not reading it", _err(e))
+                            return
+                        logger.debug("Link quality of %s not read: %s", address, _err(e))
+                        self._link_quality.pop(address, None)
                     except (ConnInfoError, OSError, ValueError) as e:
                         logger.debug("Link quality of %s not read: %s", address, _err(e))
                         self._link_quality.pop(address, None)

@@ -74,19 +74,27 @@
 >   hours of lower quality. After a few overloads (they cluster in the first
 >   minutes after a reconnect) the bitpool reached the speakers' minimum and
 >   three FM transmitters behind the speakers sounded very noisy while
->   Bluetooth delivered without gaps. 30 minutes (`1800000`, as above) is the
->   compromise in use. `GET /api/diagnostics/pulse-bluetooth` shows how far
->   each speaker's bitrate is down (`sbc_frames_per_packet`: 7 = full,
->   bitpool 53, at 44.1 kHz; 15 = bitpool about 22 or lower); a reconnect
+>   Bluetooth delivered without gaps. If you need the file, keep the interval
+>   short (a minute or a few). `GET /api/diagnostics/pulse-bluetooth` shows
+>   how far each speaker's bitrate is down (`sbc_frames_per_packet`: the
+>   value at full bitrate depends on the link's packet size, e.g. 5 or 7;
+>   15 = the lowest step, also flagged as `at_lowest_step`); a reconnect
 >   restores full bitrate. Measurements and the full setup this build is
 >   used with: [docs/chrischan-radiostream.md](https://github.com/chrisch4n/ha-bluetooth-audio-manager/blob/chrischan/docs/chrischan-radiostream.md).
+>
+>   **Better: no more than two streaming speakers per adapter** — this build
+>   drives several adapters (see *Bluetooth Adapters*). The setup above has
+>   run with two plus one speakers on two sticks on PulseAudio's default
+>   since 18 Nov 2026, without `custom.pa`.
 >
 > - **Prefer 44.1 kHz** (App Settings, on by default) — whoever sets up an
 >   A2DP stream picks its format: the app's connects run at 44.1 kHz, but a
 >   speaker connecting by itself after a power cycle may pick 48 kHz
->   (resampling, ~9 % more radio time). Such a stream is closed and re-opened
->   from the app a few seconds after the connect (MPD paused meanwhile); at
->   most two attempts per speaker in 10 minutes.
+>   (resampling, ~9 % more radio time). Such a speaker is disconnected and
+>   connected again from the app a few seconds after the connect (the
+>   station is queued again afterwards); at most two attempts per speaker in
+>   10 minutes. Up to cc.24 only the A2DP stream was re-opened, which could
+>   leave a speaker decoding at 48 kHz — it then played about 9 % too fast.
 >
 > Optimisations:
 >
@@ -99,6 +107,19 @@
 >   pause is left alone; a stop issued while the error is still pending is
 >   indistinguishable from it, so to really stop during an outage switch the
 >   speaker off as usual.
+> - **Resume after a restart** — MPD cannot keep its own state file in an
+>   add-on container, so every new daemon starts with an empty queue. When
+>   the app stops a daemon because the app restarts or updates, or because
+>   its speaker dropped, it notes the station that was playing
+>   (`/data/playback_resume.json`) and plays it again as soon as that
+>   speaker's daemon is back (entries older than 30 minutes are dropped).
+>   Stopped, forgotten or MPD-disabled speakers are not resumed.
+> - **Unreachable speaker, others on the same adapter** — every failed page
+>   ("page timeout") keeps the adapter's radio busy for about 5 s, and a
+>   speaker streaming on the same adapter overloads and loses bitrate. After
+>   a page timeout the speaker is therefore tried at most every 120 s while
+>   another speaker on that adapter streams. `POST /api/connect` then answers
+>   409 with `retry_in`; `POST /api/force-reconnect` is never held back.
 > - **Fewer D-Bus signals** — only ObjectManager signals and the own
 >   adapter's subtree are subscribed (all BlueZ signals with log_level debug).
 > - **PulseAudio watchdog** — the connection to PulseAudio is checked with
@@ -115,6 +136,12 @@
 >
 > Diagnostics:
 >
+> - `GET /api/diagnostics/link-quality` — RSSI (relative to the controller's
+>   golden range, 0 = fine) and transmit power of each connected speaker's
+>   link, read without a scan through the kernel's management interface.
+>   **Not available in this add-on:** Bluetooth sockets exist only in the
+>   host's network namespace, so each entry reports `Address family not
+>   supported` and the background reading stops after the first try.
 > - `GET /api/diagnostics/audio-logs?grep=Skipping&lines=2000` — the HAOS
 >   audio plugin's PulseAudio log (read through the Supervisor, timestamped).
 >   PulseAudio logs `Skipping N us ... in audio stream` when a Bluetooth link

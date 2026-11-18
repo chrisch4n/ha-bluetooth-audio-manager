@@ -108,7 +108,9 @@
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/settings"
     method: put
     content_type: "application/json"
-    payload: "{{ payload }}"
+    # Ein Objekt (z. B. aus einer Automation) wird mit to_json zu JSON, ein fertiger
+    # JSON-Text geht unveraendert durch. Umgestellt 18.11.2026 von Claude.
+    payload: "{{ payload if payload is string else (payload | to_json) }}"
 
   bt_audio_get_logs:
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/logs"
