@@ -105,7 +105,11 @@ Bei scyto eingereicht (09.11.2026), nur `src/` und `tests/`:
 [#324](https://github.com/scyto/ha-bluetooth-audio-manager/pull/324) mit den Fixes für
 #315–#319 und [#325](https://github.com/scyto/ha-bluetooth-audio-manager/pull/325) mit den
 Erweiterungen (Lautstärke-Sperre, Anzeigenamen, 44,1 kHz, Live-Radio, Diagnose; baut auf #324 auf).
-Die Härtung aus cc.17 und der Stick-Reset aus cc.18/cc.19 sind dort noch nicht eingereicht.
+Am 18.11.2026 folgte [#326](https://github.com/scyto/ha-bluetooth-audio-manager/pull/326)
+(baut auf #325 auf) mit cc.17–cc.28: Härtung, Stick-Reset, mehrere Adapter, Adapter-Namen,
+geschütztes „Make main", 48-kHz-Neuverbindung, Paging-Drossel, Fortsetzen nach Neustart,
+SBC-Diagnose – samt DOCS.md, `usb: true` und AppArmor-Regeln für beide App-Ordner; die
+Signalmessung fehlt dort (im Add-on nicht nutzbar).
 
 ## 3. PulseAudio: Aussetzer-Fix (custom.pa)
 
