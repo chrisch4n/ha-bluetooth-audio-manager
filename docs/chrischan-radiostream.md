@@ -298,7 +298,7 @@ Meldung „bitte manuell prüfen" nach 40.
 | `radiostream_stick_zuruecksetzen` | Bluetooth-Stick zurücksetzen, ohne ihn abzuziehen (`rest_command.bt_audio_adapter_reset`, Add-on ab cc.18). Feld *sticks*: `alle` (Standard, Button) oder Stick-Namen aus `input_text.radiostream_stick_mac_map`, kommagetrennt – bei genau einem Namen nur dieser Stick (seit 18.11.2026). Stufe *auto*: erst sanft (Adapter über BlueZ aus/an, Boxen verbinden sich einzeln), ist ein Ziel-Stick nach gut 2 Minuten weiter ganz ohne Verbindung, folgt der USB-Reset (wie Abziehen und Einstecken: Firmware wird neu geladen; beim Hauptadapter startet das Add-on neu). *sanft* / *usb* nur die jeweilige Stufe. Ergebnis als Push (Tag `radiostream_stick`). Button „Stick zurücksetzen" in der Ansicht *Reparatur*; läuft automatisch je Stick. Live getestet am 13.11.2026: sanft ~1 Min Pause, USB ~40 s (die Boxen verbanden sich danach von selbst). |
 | `radiostream_reparieren` („Voll-Reparatur") | Steckdose(n) aus, Add-on-Neustart, Steckdose(n) an, MPD-Integrationen neu laden, MPD sicherstellen. |
 | `radiostream_mpd_sicherstellen` | Startet einen fehlenden MPD-Dienst einer verbundenen Box. |
-| `radiostream_notfall_forget_pair` | Box entfernen, neu pairen, MPD zuweisen. |
+| `radiostream_notfall_forget_pair` | Box entfernen, neu pairen, MPD zuweisen. Feld `player` (87_5/97_0/105_9) statt `address`/`mpd_port` – MAC und Port kommen dann aus den zentralen Maps (seit 19.11.2026). Koppelt ohne `adapter`, also am Hauptadapter. |
 | `radiostream_power_toggle` | An/Aus pro Box (Steckdose und Aktiv-Schalter). |
 | `radiostream_preset_abspielen` | Preset auf eine Box legen. |
 
@@ -326,6 +326,14 @@ ON AIR je Speicherplatz, die drei Boxen mit Senderwahl) und *Reparatur* (Diagnos
 Steckdosen-Zyklus, Bluetooth-Stick zurücksetzen und „Boxen ohne Verbindung",
 Voll- und Notfall-Reparatur, Tabelle Frequenz/MAC/Port). Die Ansichten *Radiostreams*,
 *Presets* und *Radio* wurden am 19.11.2026 entfernt.
+
+*Reparatur (neu)* (19.11.2026, Kopie zum Vergleich, *Reparatur* bleibt unverändert): vier
+Abschnitte Status · Reparatur in Stufen · Bluetooth-Sticks · Steckdosen & Einstellungen.
+Die Knöpfe sind Kacheln des jeweiligen Skripts – ein farbiges Symbol heißt „läuft gerade“.
+Stick-Reset je Stick (*Logilink alt*, *Logilink neu*, *Beide*) mit Schalter für den
+automatischen Reset, „Sticks ohne Verbindung“ im Status, Notfall-Koppeln über das Feld
+`player` statt Templates, Bestätigungstexte auf dem aktuellen Stand (kein Hinweis auf den
+abgeschalteten Nachtzyklus, keine Kopplungstaste an der ES-BT17).
 
 ## 5. Aufgeräumt am 06.11.2026
 

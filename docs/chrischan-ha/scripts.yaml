@@ -62,31 +62,64 @@ radiostream_notfall_forget_pair:
     Nach dem Scan bis zu 3 Kopplungsversuche mit Erfolgskontrolle per get_devices
     statt eines einzelnen Versuchs mit fester Wartezeit. (3) Fuer bereits gemappte
     Boxen am Ende script.radiostream_mpd_sicherstellen. Hinweis: Wird die Box trotzdem
-    nicht gefunden, muss sie in den Kopplungsmodus versetzt werden.]'
+    nicht gefunden, muss sie in den Kopplungsmodus versetzt werden.] [19.11.2026 Claude,
+    auf Wunsch des Nutzers: optionales Feld player (87_5/97_0/105_9) - MAC und MPD-Port
+    kommen dann aus input_text.radiostream_address_map / _port_map. Grund: Dashboard-Knoepfe
+    uebergaben Templates als Variablen, die beim Skriptaufruf nicht ausgewertet werden.
+    address/mpd_port gehen weiterhin.]'
   fields:
     address:
       description: Bluetooth-Adresse der Box, z.B. <MAC_87_5> (87.5/es-bt17)
       name: MAC-Adresse
-      required: true
+      required: false
       selector:
         text: {}
     mpd_port:
       description: Zu setzender MPD-Port, z.B. 6600 fuer 87.5
       name: MPD-Port
-      required: true
+      required: false
       selector:
         number:
           max: 6699
           min: 6600
           mode: box
+    player:
+      name: Box
+      description: 'Statt MAC und Port: die Box (87_5, 97_0, 105_9); MAC und Port kommen
+        aus den zentralen Maps'
+      required: false
+      selector:
+        select:
+          options:
+          - label: '87.5'
+            value: '87_5'
+          - label: '97.0'
+            value: '97_0'
+          - label: '105.9'
+            value: '105_9'
   mode: single
   sequence:
   - variables:
       address_map: '{{ states(''input_text.radiostream_address_map'') | from_json
         }}'
+      port_map: '{{ states(''input_text.radiostream_port_map'') | from_json(default={})
+        }}'
+      box: '{{ player | default('''') }}'
+  - variables:
+      address: '{{ (address_map[box] if box in address_map else (address | default('''')))
+        | upper }}'
+      mpd_port: '{{ (port_map[box] if box in port_map else (mpd_port | default(0))) |
+        int }}'
+  - variables:
       player_key: '{% set ns = namespace(k='''') %}{% for k, v in address_map.items()
         %}{% if v | upper == address | upper %}{% set ns.k = k %}{% endif %}{% endfor
         %}{{ ns.k }}'
+  - if:
+    - condition: template
+      value_template: '{{ address | length != 17 or mpd_port | int < 6600 }}'
+    then:
+    - stop: Keine gueltige MAC-Adresse oder kein MPD-Port (player oder address/mpd_port
+        angeben)
   - action: rest_command.bt_audio_forget_device
     continue_on_error: true
     data:

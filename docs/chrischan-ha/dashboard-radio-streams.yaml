@@ -1,5 +1,5 @@
-# Dashboard "radio-streams" (Receiver, Reparatur, Presets, Radio, Radiostreams),
-# Export der Rohkonfiguration aus Home Assistant, Stand 13.11.2026 (Statustabelle 18.11.2026).
+# Dashboard "radio-streams" (Receiver, Reparatur, Reparatur (neu)),
+# Export der Rohkonfiguration aus Home Assistant, Stand 19.11.2026.
 # Einfuegen ueber Dashboard > Bearbeiten > Rohkonfigurations-Editor.
 # Enthaelt keine MACs, IPs, Benutzer- oder Geraete-IDs. Braucht card-mod/UIX;
 # die Ansicht "Receiver" nutzt die eigene Karte custom:radiostream-receiver-card.
@@ -386,3 +386,693 @@ views:
         icon: m3o:bedtime
         features:
         - type: toggle
+- title: Reparatur (neu)
+  path: reparatur-neu
+  icon: m3o:build
+  type: sections
+  max_columns: 2
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Status
+      icon: m3o:monitor-heart
+      heading_style: title
+      badges:
+      - type: entity
+        entity: binary_sensor.bluetooth_audio_manager_chrischan_aktiv
+        show_state: true
+        show_icon: true
+        color: green
+    - type: tile
+      entity: binary_sensor.radiostream_87_5_spielt_nicht
+      name: '87.5'
+      icon: m3o:speaker
+      vertical: true
+      state_content:
+      - state
+      - last_changed
+      grid_options:
+        columns: 4
+    - type: tile
+      entity: binary_sensor.radiostream_97_0_spielt_nicht
+      name: '97.0'
+      icon: m3o:speaker
+      vertical: true
+      state_content:
+      - state
+      - last_changed
+      grid_options:
+        columns: 4
+    - type: tile
+      entity: binary_sensor.radiostream_105_9_spielt_nicht
+      name: '105.9'
+      icon: m3o:speaker
+      vertical: true
+      state_content:
+      - state
+      - last_changed
+      grid_options:
+        columns: 4
+    - type: tile
+      entity: sensor.radiostream_boxen_ohne_verbindung
+      name: Boxen ohne Verbindung
+      icon: m3o:sync-problem
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: sensor.radiostream_sticks_ohne_verbindung
+      name: Sticks ohne Verbindung
+      icon: m3o:network-check
+      grid_options:
+        columns: 6
+    - type: markdown
+      content: '**Frequenz** | **MAC** | **Port** | **Stick** | **Signal**
+
+        :--|:--:|:--:|:--|:--
+
+        {% set a = states(''input_text.radiostream_address_map'') | from_json %}{% set pm
+        = states(''input_text.radiostream_port_map'') | from_json %}{% set st = states(''input_text.radiostream_stick_map'')
+        | from_json(default={}) %}{% for p, l in [(''87_5'',''87.5''),(''97_0'',''97.0''),(''105_9'',''105.9'')]
+        %}{% set sig = state_attr(''sensor.radiostream_bt_signal'', p) %}{{ l }} | {{ a[p]
+        }} | {{ pm[p] }} | {{ st.get(p, ''–'') }} | {% if sig is mapping %}{% if sig.rssi
+        is number %}{% set w = ''gut'' if sig.rssi >= -5 else (''mäßig'' if sig.rssi >= -15
+        else (''schwach'' if sig.rssi >= -25 else ''kritisch'')) %}{{ sig.rssi }} dB · {{
+        w }}{% else %}?{% endif %}{% if sig.tx_max %} · TX {{ sig.tx }}/{{ sig.tx_max }} dBm{%
+        endif %}{% else %}–{% endif %}
+
+        {% endfor %}
+
+        _MAC, Port und Stick live aus den zentralen Maps. Signal: Abstand zum Idealbereich
+        des Sticks in dB, alle 2 Minuten ohne Scan gemessen; gut bis −5, mäßig bis −15, schwach
+        bis −25, darunter kritisch._'
+      entity_id:
+      - input_text.radiostream_address_map
+      - input_text.radiostream_port_map
+      - input_text.radiostream_stick_map
+      - sensor.radiostream_bt_signal
+  - type: grid
+    cards:
+    - type: heading
+      heading: Reparatur in Stufen
+      icon: m3o:build
+      heading_style: title
+    - type: markdown
+      text_only: true
+      content: 'Von oben nach unten vorgehen – jede Stufe greift stärker ein. Ein farbiges
+        Symbol heißt: läuft gerade.'
+    - type: heading
+      heading: Stufe 1 · Diagnose
+      icon: m3o:stethoscope
+      heading_style: subtitle
+    - type: tile
+      entity: script.radiostream_reparieren_ultralight
+      name: '87.5'
+      icon: m3o:stethoscope
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_reparieren_ultralight
+        data:
+          variables:
+            player: '87_5'
+        confirmation:
+          text: 'Stufe 1 · Diagnose für 87.5: prüft Bluetooth und Audio. Gesunde Verbindungen
+            bleiben unangetastet; bei Bedarf milder Connect, MPD-Neustart oder Force-Reconnect.
+            Die Prüfung selbst lässt den Ton kurz stocken. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_reparieren_ultralight
+        data:
+          variables:
+            player: '87_5'
+        confirmation:
+          text: 'Stufe 1 · Diagnose für 87.5: prüft Bluetooth und Audio. Gesunde Verbindungen
+            bleiben unangetastet; bei Bedarf milder Connect, MPD-Neustart oder Force-Reconnect.
+            Die Prüfung selbst lässt den Ton kurz stocken. Fortfahren?'
+    - type: tile
+      entity: script.radiostream_reparieren_ultralight
+      name: '97.0'
+      icon: m3o:stethoscope
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_reparieren_ultralight
+        data:
+          variables:
+            player: '97_0'
+        confirmation:
+          text: 'Stufe 1 · Diagnose für 97.0: prüft Bluetooth und Audio. Gesunde Verbindungen
+            bleiben unangetastet; bei Bedarf milder Connect, MPD-Neustart oder Force-Reconnect.
+            Die Prüfung selbst lässt den Ton kurz stocken. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_reparieren_ultralight
+        data:
+          variables:
+            player: '97_0'
+        confirmation:
+          text: 'Stufe 1 · Diagnose für 97.0: prüft Bluetooth und Audio. Gesunde Verbindungen
+            bleiben unangetastet; bei Bedarf milder Connect, MPD-Neustart oder Force-Reconnect.
+            Die Prüfung selbst lässt den Ton kurz stocken. Fortfahren?'
+    - type: tile
+      entity: script.radiostream_reparieren_ultralight
+      name: '105.9'
+      icon: m3o:stethoscope
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_reparieren_ultralight
+        data:
+          variables:
+            player: '105_9'
+        confirmation:
+          text: 'Stufe 1 · Diagnose für 105.9: prüft Bluetooth und Audio. Gesunde Verbindungen
+            bleiben unangetastet; bei Bedarf milder Connect, MPD-Neustart oder Force-Reconnect.
+            Die Prüfung selbst lässt den Ton kurz stocken. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_reparieren_ultralight
+        data:
+          variables:
+            player: '105_9'
+        confirmation:
+          text: 'Stufe 1 · Diagnose für 105.9: prüft Bluetooth und Audio. Gesunde Verbindungen
+            bleiben unangetastet; bei Bedarf milder Connect, MPD-Neustart oder Force-Reconnect.
+            Die Prüfung selbst lässt den Ton kurz stocken. Fortfahren?'
+    - type: heading
+      heading: Stufe 2 · Steckdosen-Zyklus
+      icon: m3o:power-settings-new
+      heading_style: subtitle
+    - type: tile
+      entity: script.radiostream_steckdose_zyklieren
+      name: '87.5'
+      icon: m3o:power-settings-new
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_steckdose_zyklieren
+        data:
+          variables:
+            player: '87_5'
+        confirmation:
+          text: 'Stufe 2 · Steckdosen-Zyklus für 87.5: Steckdose 30 s stromlos, dann wieder
+            an. Kein Add-on-Neustart, die anderen beiden Sender laufen weiter. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_steckdose_zyklieren
+        data:
+          variables:
+            player: '87_5'
+        confirmation:
+          text: 'Stufe 2 · Steckdosen-Zyklus für 87.5: Steckdose 30 s stromlos, dann wieder
+            an. Kein Add-on-Neustart, die anderen beiden Sender laufen weiter. Fortfahren?'
+    - type: tile
+      entity: script.radiostream_steckdose_zyklieren
+      name: '97.0'
+      icon: m3o:power-settings-new
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_steckdose_zyklieren
+        data:
+          variables:
+            player: '97_0'
+        confirmation:
+          text: 'Stufe 2 · Steckdosen-Zyklus für 97.0: Steckdose 30 s stromlos, dann wieder
+            an. Kein Add-on-Neustart, die anderen beiden Sender laufen weiter. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_steckdose_zyklieren
+        data:
+          variables:
+            player: '97_0'
+        confirmation:
+          text: 'Stufe 2 · Steckdosen-Zyklus für 97.0: Steckdose 30 s stromlos, dann wieder
+            an. Kein Add-on-Neustart, die anderen beiden Sender laufen weiter. Fortfahren?'
+    - type: tile
+      entity: script.radiostream_steckdose_zyklieren
+      name: '105.9'
+      icon: m3o:power-settings-new
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_steckdose_zyklieren
+        data:
+          variables:
+            player: '105_9'
+        confirmation:
+          text: 'Stufe 2 · Steckdosen-Zyklus für 105.9: Steckdose 30 s stromlos, dann wieder
+            an. Kein Add-on-Neustart, die anderen beiden Sender laufen weiter. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_steckdose_zyklieren
+        data:
+          variables:
+            player: '105_9'
+        confirmation:
+          text: 'Stufe 2 · Steckdosen-Zyklus für 105.9: Steckdose 30 s stromlos, dann wieder
+            an. Kein Add-on-Neustart, die anderen beiden Sender laufen weiter. Fortfahren?'
+    - type: tile
+      entity: script.radiostream_steckdosen_alle_zyklieren
+      name: Alle drei nacheinander (ca. 6 Min)
+      icon: m3o:power-settings-new
+      hide_state: true
+      grid_options:
+        columns: 12
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_steckdosen_alle_zyklieren
+        confirmation:
+          text: 'Stufe 2 für alle drei, nacheinander: jede eingeschaltete Box 30 s stromlos,
+            90 s später die nächste. Es ist immer nur ein Sender still, Dauer etwa 6 Minuten.
+            Kein Add-on-Neustart, ausgeschaltete Boxen bleiben aus. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_steckdosen_alle_zyklieren
+        confirmation:
+          text: 'Stufe 2 für alle drei, nacheinander: jede eingeschaltete Box 30 s stromlos,
+            90 s später die nächste. Es ist immer nur ein Sender still, Dauer etwa 6 Minuten.
+            Kein Add-on-Neustart, ausgeschaltete Boxen bleiben aus. Fortfahren?'
+    - type: heading
+      heading: Stufe 3 · Voll-Reparatur
+      icon: m3o:handyman
+      heading_style: subtitle
+    - type: tile
+      entity: script.radiostream_reparieren
+      name: Voll-Reparatur (Add-on-Neustart, alle drei)
+      icon: m3o:handyman
+      hide_state: true
+      grid_options:
+        columns: 12
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_reparieren
+        confirmation:
+          text: 'Stufe 3 · Voll-Reparatur für alle drei: Steckdosen aus, Add-on-Neustart,
+            Steckdosen gestaffelt wieder an, MPD neu laden. Alle Sender sind etwa 2 Minuten
+            still. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_reparieren
+        confirmation:
+          text: 'Stufe 3 · Voll-Reparatur für alle drei: Steckdosen aus, Add-on-Neustart,
+            Steckdosen gestaffelt wieder an, MPD neu laden. Alle Sender sind etwa 2 Minuten
+            still. Fortfahren?'
+  - type: grid
+    cards:
+    - type: heading
+      heading: Bluetooth-Sticks
+      icon: m3o:developer-board
+      heading_style: title
+    - type: tile
+      entity: script.radiostream_stick_zuruecksetzen
+      name: Logilink alt
+      icon: m3o:developer-board
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_stick_zuruecksetzen
+        data:
+          variables:
+            stufe: auto
+            sticks: Logilink alt
+            ausloeser: Dashboard
+        confirmation:
+          text: 'Stick „Logilink alt“ (Hauptadapter) zurücksetzen, ohne ihn abzuziehen: erst
+            Adapter aus und wieder an, die Boxen an diesem Stick sind dabei 1–2 Minuten still.
+            Haben sie nach gut 2 Minuten noch keine Verbindung, folgt der USB-Reset (wie Abziehen
+            und Einstecken) – dabei startet das Add-on neu und alle Sender sind kurz still.
+            Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_stick_zuruecksetzen
+        data:
+          variables:
+            stufe: auto
+            sticks: Logilink alt
+            ausloeser: Dashboard
+        confirmation:
+          text: 'Stick „Logilink alt“ (Hauptadapter) zurücksetzen, ohne ihn abzuziehen: erst
+            Adapter aus und wieder an, die Boxen an diesem Stick sind dabei 1–2 Minuten still.
+            Haben sie nach gut 2 Minuten noch keine Verbindung, folgt der USB-Reset (wie Abziehen
+            und Einstecken) – dabei startet das Add-on neu und alle Sender sind kurz still.
+            Fortfahren?'
+    - type: tile
+      entity: script.radiostream_stick_zuruecksetzen
+      name: Logilink neu
+      icon: m3o:developer-board
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_stick_zuruecksetzen
+        data:
+          variables:
+            stufe: auto
+            sticks: Logilink neu
+            ausloeser: Dashboard
+        confirmation:
+          text: 'Stick „Logilink neu“ zurücksetzen, ohne ihn abzuziehen: erst Adapter aus
+            und wieder an. Haben die Boxen an diesem Stick nach gut 2 Minuten noch keine Verbindung,
+            folgt der USB-Reset (wie Abziehen und Einstecken). Nur die Boxen an diesem Stick
+            sind 1–2 Minuten still, kein Add-on-Neustart. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_stick_zuruecksetzen
+        data:
+          variables:
+            stufe: auto
+            sticks: Logilink neu
+            ausloeser: Dashboard
+        confirmation:
+          text: 'Stick „Logilink neu“ zurücksetzen, ohne ihn abzuziehen: erst Adapter aus
+            und wieder an. Haben die Boxen an diesem Stick nach gut 2 Minuten noch keine Verbindung,
+            folgt der USB-Reset (wie Abziehen und Einstecken). Nur die Boxen an diesem Stick
+            sind 1–2 Minuten still, kein Add-on-Neustart. Fortfahren?'
+    - type: tile
+      entity: script.radiostream_stick_zuruecksetzen
+      name: Beide
+      icon: m3o:developer-board
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_stick_zuruecksetzen
+        data:
+          variables:
+            stufe: auto
+            sticks: alle
+            ausloeser: Dashboard
+        confirmation:
+          text: 'Beide Sticks zurücksetzen, ohne sie abzuziehen: erst Adapter aus und wieder
+            an, alle drei Sender sind 1–2 Minuten still. Hat ein Stick nach gut 2 Minuten
+            noch keine Verbindung, folgt für ihn der USB-Reset (beim Hauptadapter startet
+            dabei das Add-on neu). Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_stick_zuruecksetzen
+        data:
+          variables:
+            stufe: auto
+            sticks: alle
+            ausloeser: Dashboard
+        confirmation:
+          text: 'Beide Sticks zurücksetzen, ohne sie abzuziehen: erst Adapter aus und wieder
+            an, alle drei Sender sind 1–2 Minuten still. Hat ein Stick nach gut 2 Minuten
+            noch keine Verbindung, folgt für ihn der USB-Reset (beim Hauptadapter startet
+            dabei das Add-on neu). Fortfahren?'
+    - type: tile
+      entity: automation.radiostream_stick_reset_bei_mehrfachausfall
+      name: Automatisch, wenn ein Stick 4 Min ohne Verbindung ist
+      icon: m3o:developer-board
+      grid_options:
+        columns: 12
+      features:
+      - type: toggle
+    - type: heading
+      heading: Notfall · Neu koppeln (nur manuell)
+      icon: m3o:emergency
+      heading_style: subtitle
+    - type: tile
+      entity: script.radiostream_notfall_forget_pair
+      name: '87.5'
+      icon: mdi:bluetooth-transfer
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_notfall_forget_pair
+        data:
+          variables:
+            player: '87_5'
+        confirmation:
+          text: 'Notfall · Neu koppeln für 87.5: Die Box wird vergessen, neu gesucht und gekoppelt
+            und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe 1 bis 3 nicht
+            geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus- und wieder einschalten
+            (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen. Achtung: Die Box
+            wird derzeit am Hauptadapter gekoppelt – danach in der App bei der Box den Adapter
+            wieder auf „Logilink neu“ stellen. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_notfall_forget_pair
+        data:
+          variables:
+            player: '87_5'
+        confirmation:
+          text: 'Notfall · Neu koppeln für 87.5: Die Box wird vergessen, neu gesucht und gekoppelt
+            und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe 1 bis 3 nicht
+            geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus- und wieder einschalten
+            (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen. Achtung: Die Box
+            wird derzeit am Hauptadapter gekoppelt – danach in der App bei der Box den Adapter
+            wieder auf „Logilink neu“ stellen. Fortfahren?'
+    - type: tile
+      entity: script.radiostream_notfall_forget_pair
+      name: '97.0'
+      icon: mdi:bluetooth-transfer
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_notfall_forget_pair
+        data:
+          variables:
+            player: '97_0'
+        confirmation:
+          text: 'Notfall · Neu koppeln für 97.0: Die Box wird vergessen, neu gesucht und gekoppelt
+            und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe 1 bis 3 nicht
+            geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus- und wieder einschalten
+            (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen. Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_notfall_forget_pair
+        data:
+          variables:
+            player: '97_0'
+        confirmation:
+          text: 'Notfall · Neu koppeln für 97.0: Die Box wird vergessen, neu gesucht und gekoppelt
+            und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe 1 bis 3 nicht
+            geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus- und wieder einschalten
+            (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen. Fortfahren?'
+    - type: tile
+      entity: script.radiostream_notfall_forget_pair
+      name: '105.9'
+      icon: mdi:bluetooth-transfer
+      vertical: true
+      hide_state: true
+      grid_options:
+        columns: 4
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_notfall_forget_pair
+        data:
+          variables:
+            player: '105_9'
+        confirmation:
+          text: 'Notfall · Neu koppeln für 105.9: Die Box wird vergessen, neu gesucht und
+            gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe
+            1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus-
+            und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen.
+            Fortfahren?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_notfall_forget_pair
+        data:
+          variables:
+            player: '105_9'
+        confirmation:
+          text: 'Notfall · Neu koppeln für 105.9: Die Box wird vergessen, neu gesucht und
+            gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe
+            1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus-
+            und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen.
+            Fortfahren?'
+  - type: grid
+    cards:
+    - type: heading
+      heading: Steckdosen
+      icon: m3o:outlet
+      heading_style: title
+    - type: tile
+      entity: switch.dose_bt_87_5
+      name: '87.5'
+      icon: m3o:outlet
+      vertical: true
+      grid_options:
+        columns: 4
+      icon_tap_action:
+        action: toggle
+        confirmation:
+          text: Steckdose 87.5 wirklich schalten? Beim Ausschalten verliert die Box sofort
+            den Strom.
+    - type: tile
+      entity: switch.dose_bt_97_0
+      name: '97.0'
+      icon: m3o:outlet
+      vertical: true
+      grid_options:
+        columns: 4
+      icon_tap_action:
+        action: toggle
+        confirmation:
+          text: Steckdose 97.0 wirklich schalten? Beim Ausschalten verliert die Box sofort
+            den Strom.
+    - type: tile
+      entity: switch.dose_bt_105_9
+      name: '105.9'
+      icon: m3o:outlet
+      vertical: true
+      grid_options:
+        columns: 4
+      icon_tap_action:
+        action: toggle
+        confirmation:
+          text: Steckdose 105.9 wirklich schalten? Beim Ausschalten verliert die Box sofort
+            den Strom.
+    - type: tile
+      entity: switch.radiostream_steckdosen_alle
+      name: Alle drei
+      icon: m3o:power-plug
+      grid_options:
+        columns: 12
+      icon_tap_action:
+        action: toggle
+        confirmation:
+          text: 'Alle drei Steckdosen schalten? Beim Ausschalten verlieren alle Boxen sofort
+            den Strom; beim Einschalten gehen alle gleichzeitig an (schonender: Stufe 2 ·
+            Alle drei nacheinander).'
+    - type: heading
+      heading: Einstellungen
+      icon: m3o:settings
+      heading_style: title
+    - type: tile
+      entity: input_boolean.radiostream_power_schaltet_steckdosen
+      name: Power schaltet Steckdosen
+      icon: m3o:power-settings-new
+      tap_action:
+        action: toggle
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_boolean.radiostream_lautstarke_fest_100
+      name: Lautstärke fest
+      icon: m3o:volume-up
+      tap_action:
+        action: toggle
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_number.radiostream_lautstarke_alle_boxen
+      name: Lautstärke alle Boxen
+      icon: m3o:volume-down
+      features:
+      - type: numeric-input
+        style: slider
+      grid_options:
+        columns: 12
+    - type: tile
+      entity: automation.radiostream_player_unavailable_bt_audio_manager_bug_watch
+      name: Watchdog
+      icon: m3o:shield
+      features:
+      - type: toggle
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: automation.radiostream_nachtlicher_steckdosen_zyklus
+      name: Nachts zyklieren (04:30)
+      icon: m3o:bedtime
+      features:
+      - type: toggle
+      grid_options:
+        columns: 6
+    - type: tile
+      entity: input_datetime.radiostream_letzte_automatische_voll_reparatur
+      name: Letzte Auto-Reparatur
+      icon: m3o:schedule
+      grid_options:
+        columns: 12
