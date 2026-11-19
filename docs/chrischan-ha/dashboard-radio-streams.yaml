@@ -880,12 +880,11 @@ views:
           variables:
             player: '87_5'
         confirmation:
-          text: 'Notfall · Neu koppeln für 87.5: Die Box wird vergessen, neu gesucht und gekoppelt
-            und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe 1 bis 3 nicht
-            geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus- und wieder einschalten
-            (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen. Achtung: Die Box
-            wird derzeit am Hauptadapter gekoppelt – danach in der App bei der Box den Adapter
-            wieder auf „Logilink neu“ stellen. Fortfahren?'
+          text: 'Notfall · Neu koppeln für 87.5: Die Box wird vergessen, neu gesucht und an
+            ihrem Stick gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden,
+            wenn Stufe 1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose
+            aus- und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut
+            versuchen. Fortfahren?'
       icon_tap_action:
         action: perform-action
         perform_action: script.turn_on
@@ -895,12 +894,11 @@ views:
           variables:
             player: '87_5'
         confirmation:
-          text: 'Notfall · Neu koppeln für 87.5: Die Box wird vergessen, neu gesucht und gekoppelt
-            und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe 1 bis 3 nicht
-            geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus- und wieder einschalten
-            (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen. Achtung: Die Box
-            wird derzeit am Hauptadapter gekoppelt – danach in der App bei der Box den Adapter
-            wieder auf „Logilink neu“ stellen. Fortfahren?'
+          text: 'Notfall · Neu koppeln für 87.5: Die Box wird vergessen, neu gesucht und an
+            ihrem Stick gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden,
+            wenn Stufe 1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose
+            aus- und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut
+            versuchen. Fortfahren?'
     - type: tile
       entity: script.radiostream_notfall_forget_pair
       name: '97.0'
@@ -918,10 +916,11 @@ views:
           variables:
             player: '97_0'
         confirmation:
-          text: 'Notfall · Neu koppeln für 97.0: Die Box wird vergessen, neu gesucht und gekoppelt
-            und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe 1 bis 3 nicht
-            geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus- und wieder einschalten
-            (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen. Fortfahren?'
+          text: 'Notfall · Neu koppeln für 97.0: Die Box wird vergessen, neu gesucht und an
+            ihrem Stick gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden,
+            wenn Stufe 1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose
+            aus- und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut
+            versuchen. Fortfahren?'
       icon_tap_action:
         action: perform-action
         perform_action: script.turn_on
@@ -931,10 +930,11 @@ views:
           variables:
             player: '97_0'
         confirmation:
-          text: 'Notfall · Neu koppeln für 97.0: Die Box wird vergessen, neu gesucht und gekoppelt
-            und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe 1 bis 3 nicht
-            geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus- und wieder einschalten
-            (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen. Fortfahren?'
+          text: 'Notfall · Neu koppeln für 97.0: Die Box wird vergessen, neu gesucht und an
+            ihrem Stick gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden,
+            wenn Stufe 1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose
+            aus- und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut
+            versuchen. Fortfahren?'
     - type: tile
       entity: script.radiostream_notfall_forget_pair
       name: '105.9'
@@ -953,10 +953,10 @@ views:
             player: '105_9'
         confirmation:
           text: 'Notfall · Neu koppeln für 105.9: Die Box wird vergessen, neu gesucht und
-            gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe
-            1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus-
-            und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen.
-            Fortfahren?'
+            an ihrem Stick gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden,
+            wenn Stufe 1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose
+            aus- und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut
+            versuchen. Fortfahren?'
       icon_tap_action:
         action: perform-action
         perform_action: script.turn_on
@@ -967,10 +967,10 @@ views:
             player: '105_9'
         confirmation:
           text: 'Notfall · Neu koppeln für 105.9: Die Box wird vergessen, neu gesucht und
-            gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden, wenn Stufe
-            1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose aus-
-            und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut versuchen.
-            Fortfahren?'
+            an ihrem Stick gekoppelt und bekommt danach wieder ihren MPD-Port. Nur verwenden,
+            wenn Stufe 1 bis 3 nicht geholfen haben. Wird die Box nicht gefunden: ihre Steckdose
+            aus- und wieder einschalten (die ES-BT17 hat keine Kopplungstaste) und erneut
+            versuchen. Fortfahren?'
   - type: grid
     cards:
     - type: heading

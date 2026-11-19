@@ -66,7 +66,10 @@ radiostream_notfall_forget_pair:
     auf Wunsch des Nutzers: optionales Feld player (87_5/97_0/105_9) - MAC und MPD-Port
     kommen dann aus input_text.radiostream_address_map / _port_map. Grund: Dashboard-Knoepfe
     uebergaben Templates als Variablen, die beim Skriptaufruf nicht ausgewertet werden.
-    address/mpd_port gehen weiterhin.]'
+    address/mpd_port gehen weiterhin.] [19.11.2026 Claude, auf Wunsch des Nutzers: koppelt
+    am Stick der Box (input_text.radiostream_stick_map -> radiostream_stick_mac_map, rest_command.bt_audio_pair_device
+    mit adapter). Grund: Nach dem Forget kennt das Add-on die Stick-Zuordnung nicht mehr
+    und koppelte sonst am Hauptadapter. Box ohne Eintrag: Hauptadapter wie bisher.]'
   fields:
     address:
       description: Bluetooth-Adresse der Box, z.B. <MAC_87_5> (87.5/es-bt17)
@@ -114,6 +117,10 @@ radiostream_notfall_forget_pair:
       player_key: '{% set ns = namespace(k='''') %}{% for k, v in address_map.items()
         %}{% if v | upper == address | upper %}{% set ns.k = k %}{% endif %}{% endfor
         %}{{ ns.k }}'
+  - variables:
+      adapter: '{% set sm = states(''input_text.radiostream_stick_map'') | from_json(default={})
+        %}{% set mm = states(''input_text.radiostream_stick_mac_map'') | from_json(default={})
+        %}{{ mm.get(sm.get(player_key, ''''), '''') }}'
   - if:
     - condition: template
       value_template: '{{ address | length != 17 or mpd_port | int < 6600 }}'
@@ -140,6 +147,7 @@ radiostream_notfall_forget_pair:
         continue_on_error: true
         data:
           address: '{{ address }}'
+          adapter: '{{ adapter }}'
       - delay:
           seconds: 10
       - action: rest_command.bt_audio_get_devices

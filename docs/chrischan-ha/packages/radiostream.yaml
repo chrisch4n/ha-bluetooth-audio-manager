@@ -276,10 +276,14 @@ rest_command:
     payload: '{"address": "{{ address }}"}'
 
   bt_audio_pair_device:
+    # 19.11.2026 Claude, auf Wunsch des Nutzers: optional adapter (MAC des Sticks) - nach einem
+    # Forget kennt das Add-on die Stick-Zuordnung nicht mehr und koppelt sonst am Hauptadapter.
+    # timeout 60: Koppeln auf einem anderen Stick sucht die Box erst (dauert laenger als 10 s).
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/pair"
     method: POST
     content_type: "application/json"
-    payload: '{"address": "{{ address }}"}'
+    payload: '{"address": "{{ address }}"{% if adapter is defined and adapter %}, "adapter": "{{ adapter }}"{% endif %}}'
+    timeout: 60
 
   bt_audio_set_mpd:
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/devices/{{ address }}/settings"
