@@ -394,6 +394,38 @@ views:
   - type: grid
     cards:
     - type: heading
+      heading: Senderauswahl
+      icon: m3o:radio
+    - type: tile
+      entity: select.radiosender_87_5
+      name: '87.5'
+      icon: m3o:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 4
+    - type: tile
+      entity: select.radiosender_97_0
+      name: '97.0'
+      icon: m3o:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 4
+    - type: tile
+      entity: select.radiosender_105_9
+      name: '105.9'
+      icon: m3o:radio
+      features:
+      - type: select-options
+        style: dropdown
+      grid_options:
+        columns: 4
+  - type: grid
+    cards:
+    - type: heading
       heading: Preset-Zuordnung
       icon: mdi:radio
     - type: tile
