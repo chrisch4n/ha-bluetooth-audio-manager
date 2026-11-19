@@ -327,8 +327,9 @@ Steckdosen-Zyklus, Bluetooth-Stick zurücksetzen und „Boxen ohne Verbindung",
 Voll- und Notfall-Reparatur, Tabelle Frequenz/MAC/Port). Die Ansichten *Radiostreams*,
 *Presets* und *Radio* wurden am 19.11.2026 entfernt.
 
-*Reparatur (neu)* (19.11.2026, Kopie zum Vergleich, *Reparatur* bleibt unverändert): vier
-Abschnitte Status · Reparatur in Stufen · Bluetooth-Sticks · Steckdosen & Einstellungen.
+*Reparatur* am 19.11.2026 neu aufgebaut (erst als Kopie, dann ersetzt; Pfad unverändert
+`/radio-streams/reparatur`): vier Abschnitte Status · Reparatur in Stufen ·
+Bluetooth-Sticks · Steckdosen & Einstellungen.
 Die Knöpfe sind Kacheln des jeweiligen Skripts – ein farbiges Symbol heißt „läuft gerade“.
 Stick-Reset je Stick (*Logilink alt*, *Logilink neu*, *Beide*) mit Schalter für den
 automatischen Reset, „Sticks ohne Verbindung“ im Status, Notfall-Koppeln über das Feld
