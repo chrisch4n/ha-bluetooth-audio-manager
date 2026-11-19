@@ -15,7 +15,7 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 |-------|-------|--------|
 | [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 10 Radiostream-Automationen |
 | [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 10 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
-| [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver, Reparatur (oben: „Wiedergabe" je Box, OK/Problem), Presets, Radiostreams |
+| [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver (Bedienung, Seite MEMORY für die Presets) und Reparatur (oben: „Wiedergabe" je Box, OK/Problem) |
 | [`packages/radiostream.yaml`](packages/radiostream.yaml) | Paket in `configuration_yaml/packages/` (seit 18.11.2026; `configuration.yaml` lädt den Ordner mit `homeassistant: packages: !include_dir_named configuration_yaml/packages/`) | Alles YAML-Seitige des Radiostreams in einer Datei: Universal-Media-Player `media_player.radiostream_<p>_sender`, `sensor.radiostream_bt_signal` (command_line), `rest_command.bt_audio_*` für die REST-API des Add-ons und `sensor.radiostream_senderliste` (Sendername → Stream-URL). Die Recorder-Ausschlüsse bleiben in der zentralen `recorder.yaml`. |
 
 `<p>` steht für die Box: `87_5`, `105_9` oder `97_0`.
@@ -50,10 +50,9 @@ anpassen (siehe [`../api.md`](../api.md)).
   `custom:radiostream-receiver-card`, die nicht in diesem Export liegt. Sie liest seit 19.11.2026 die
   Template-Selects `select.radiosender_<p>` / `select.radiostream_preset_<n>` und schaltet über `select.*`;
   ihre Seite MEMORY zeigt seitdem auch ON AIR je Speicherplatz und die drei Boxen mit Senderwahl.
-  Die Ansicht „Radio“ (Röhrenradio-Karte `custom:radiostream-radio-card`) wurde am 19.11.2026 entfernt.
-  Die Ansicht *Presets* nutzt seit 19.11.2026 `custom:radiostream-preset-card`
-  ([`cards/radiostream-preset-card.js`](cards/radiostream-preset-card.js), als Dashboard-Ressource vom
-  Typ *module* eingebunden): die 10 Presets und die Senderwahl der drei Boxen im Stil des Receivers.
+  Am 19.11.2026 entfernt: die Ansichten „Radio“ (Röhrenradio-Karte `custom:radiostream-radio-card`),
+  „Presets“ (zuletzt `custom:radiostream-preset-card`) und „Radiostreams“ (Basic-Player mit Preset-Tasten);
+  Bedienung und Preset-Belegung laufen über den Receiver.
 
 **Helfer (UI → Einstellungen → Helfer)**
 

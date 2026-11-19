@@ -321,10 +321,11 @@ siehe `radiostream_stick_zuruecksetzen`). `bt_audio_put_settings` nimmt
 
 ### Dashboard `radio-streams`
 
-Ansichten *Radiostreams* (Bedienung), *Reparatur* (Diagnose, BT-Reconnect,
+Ansichten *Receiver* (Bedienung im Stil eines RS-970-Receivers; Seite MEMORY: Preset-Belegung,
+ON AIR je Speicherplatz, die drei Boxen mit Senderwahl) und *Reparatur* (Diagnose, BT-Reconnect,
 Steckdosen-Zyklus, Bluetooth-Stick zurücksetzen und „Boxen ohne Verbindung",
-Voll- und Notfall-Reparatur, Tabelle Frequenz/MAC/Port),
-*Presets*, *Radio*, *Receiver*.
+Voll- und Notfall-Reparatur, Tabelle Frequenz/MAC/Port). Die Ansichten *Radiostreams*,
+*Presets* und *Radio* wurden am 19.11.2026 entfernt.
 
 ## 5. Aufgeräumt am 06.11.2026
 
