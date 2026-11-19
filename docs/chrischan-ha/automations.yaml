@@ -862,7 +862,7 @@
                 != ''unavailable'' }}'
             - condition: template
               value_template: '{{ trigger.to_state is not defined or trigger.to_state.state
-                == states(''input_select.radiosender_'' ~ repeat.item) }}'
+                == states(''select.radiosender_'' ~ repeat.item) }}'
             then:
             - variables:
                 warte: '{% set raw = states(''input_text.radiostream_letzter_start'') %}{%
@@ -880,7 +880,7 @@
             - action: media_player.play_media
               data:
                 media:
-                  media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''input_select.radiosender_''
+                  media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''select.radiosender_''
                     ~ repeat.item)) }}'
                   media_content_type: music
                   metadata: {}
@@ -906,7 +906,7 @@
                 ''media_position'') | float(-1) }}'
               pos_vorher: '{{ states(''input_number.radiostream_'' ~ repeat.item ~ ''_letzte_position'')
                 | float(-2) }}'
-              url_soll: '{{ state_attr(''sensor.radiostream_senderliste'', states(''input_select.radiosender_''
+              url_soll: '{{ state_attr(''sensor.radiostream_senderliste'', states(''select.radiosender_''
                 ~ repeat.item)) }}'
               url_ist: '{{ state_attr(''media_player.musik_radiostream_'' ~ repeat.item, ''media_content_id'')
                 }}'
@@ -939,7 +939,7 @@
               - action: media_player.play_media
                 data:
                   media:
-                    media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''input_select.radiosender_''
+                    media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''select.radiosender_''
                       ~ repeat.item)) }}'
                     media_content_type: music
                     metadata: {}
