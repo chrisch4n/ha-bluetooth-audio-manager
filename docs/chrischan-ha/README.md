@@ -47,7 +47,9 @@ anpassen (siehe [`../api.md`](../api.md)).
 - `binary_sensor.internet` (Ping-Integration auf eine Adresse im Internet): ohne
   Internet eskaliert der Bug-Watch eine stumme, aber erreichbare Box nicht.
 - Für das Dashboard: card-mod bzw. UIX; die Ansicht *Receiver* nutzt die eigene Karte
-  `custom:radiostream-receiver-card`, die nicht in diesem Export liegt.
+  `custom:radiostream-receiver-card`, die nicht in diesem Export liegt. Sie und die Röhrenradio-Karte
+  `custom:radiostream-radio-card` (Ansicht „Radio“) lesen seit 19.11.2026 die Template-Selects
+  `select.radiosender_<p>` / `select.radiostream_preset_<n>` und schalten über `select.*`.
 
 **Helfer (UI → Einstellungen → Helfer)**
 
