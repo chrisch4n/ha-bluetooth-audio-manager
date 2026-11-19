@@ -50,6 +50,9 @@ anpassen (siehe [`../api.md`](../api.md)).
   `custom:radiostream-receiver-card`, die nicht in diesem Export liegt. Sie und die Röhrenradio-Karte
   `custom:radiostream-radio-card` (Ansicht „Radio“) lesen seit 19.11.2026 die Template-Selects
   `select.radiosender_<p>` / `select.radiostream_preset_<n>` und schalten über `select.*`.
+  Die Ansicht *Presets* nutzt seit 19.11.2026 `custom:radiostream-preset-card`
+  ([`cards/radiostream-preset-card.js`](cards/radiostream-preset-card.js), als Dashboard-Ressource vom
+  Typ *module* eingebunden): die 10 Presets und die Senderwahl der drei Boxen im Stil des Receivers.
 
 **Helfer (UI → Einstellungen → Helfer)**
 
