@@ -63,14 +63,13 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_text.radiostream_aktiv_map` | Text | `{"97_0":"input_boolean.radiostream_97_0_aktiv", …}` |
 | `input_text.radiostream_mpd_entry_map` | Text | `{"97_0":"<config_entry_id der MPD-Integration>", …}` |
 | `input_text.radiostream_letzter_start` | Text | leer (wird von „Radiostream permanent" geschrieben) |
-| `input_text.letzter_sender_<p>`, `input_text.letzter_preset_1..10` | Text | leer (gemerkte Auswahl) |
+| `input_text.letzter_sender_<p>`, `input_text.letzter_preset_1..10` | Text (max. 60) | Wert der Template-Selects (Senderwahl, Presets) |
 | `input_boolean.radiostream_<p>_aktiv` | Schalter | soll die Box spielen |
 | `input_boolean.radiostream_ausfall_gemeldet_<p>` | Schalter | Merker für die Entwarnung |
 | `input_boolean.radiostream_lautstarke_fest_100` | Schalter | Lautstärke-Sperre aller Boxen („Radiostream Lautstärke fest") |
 | `input_number.radiostream_lautstarke_alle_boxen` | Zahl (10–100 %, Schieberegler) | Wert, auf dem die Sperre die Boxen hält (Add-on-Einstellung `volume_lock_level`, ab cc.16) |
 | `input_boolean.radiostream_power_schaltet_steckdosen` | Schalter | „Aus" schaltet auch die Steckdose |
-| `input_select.radiosender_<p>` | Dropdown | Sender je Box (Optionen setzt die Automation „Senderlisten synchronisieren"). **Die im Helfer gespeicherten Optionen müssen die Senderliste enthalten:** Nach einem HA-Neustart gilt zuerst die gespeicherte Liste, und ein Sender, der dort fehlt, springt auf den ersten Eintrag – die Automation „Radiostream permanent" spielt ihn, bis die Synchronisierung den gemerkten Sender zurückholt (so am 18.11.2026: 97.0 zeigte bzw. spielte bis zu 80 s „Queen" statt „Schleswig Holstein"). Nach einer Änderung der Senderliste die gespeicherten Optionen aller 13 Dropdowns mitziehen. |
-| `input_select.radiostream_preset_1..10` | Dropdown | Presets (ebenso, auch für die gespeicherten Optionen) |
+| `select.radiosender_<p>`, `select.radiostream_preset_1..10` | Template-Select im Paket `packages/radiostream.yaml` (seit 18.11.2026) | Senderwahl je Box und die 10 Presets. Optionen immer aus `sensor.radiostream_senderliste`, der Wert steht in `input_text.letzter_sender_<p>` / `letzter_preset_<n>` (eine Auswahl schreibt dorthin, beim Neustart wird er sicher wiederhergestellt). Ersetzen die früheren `input_select`-Helfer, deren gespeicherte Optionsliste veraltete: nach einem Neustart sprang eine Auswahl, deren Sender dort fehlte, auf den ersten Eintrag (am 18.11.2026: 97.0 bis zu 80 s „Queen"). |
 | `input_select.radiostream_<p>_steckdose` | Dropdown | Optionen: die drei `switch.dose_bt_*` |
 | `input_number.radiostream_<p>_letzte_position` | Zahl | Stall-Erkennung (muss −1 und die Spielzeit in Sekunden aufnehmen können) |
 | `input_datetime.radiostream_letzte_automatische_voll_reparatur` | Datum + Zeit | Sperrzeit der Voll-Reparatur |

@@ -2,6 +2,8 @@
 # (am 18.11.2026 zusammengeführt aus media_player.yaml, command_line.yaml, rest_command.yaml
 # und templates/radio.yaml; configuration.yaml lädt den Ordner packages/ per homeassistant: packages:).
 # Die Recorder-Ausschlüsse bleiben zentral in recorder.yaml.
+# 18.11.2026 (Claude, auf Wunsch des Nutzers): Senderwahl und Presets als Template-Selects (select.*),
+# die Universal-Player nutzen diese statt der input_select-Helfer.
 
 media_player:
   - platform: universal
@@ -55,25 +57,25 @@ media_player:
         data:
           is_volume_muted: "{{ is_volume_muted }}"
       select_source:
-        service: input_select.select_option
+        service: select.select_option
         target:
-          entity_id: input_select.radiosender_87_5
+          entity_id: select.radiosender_87_5
         data:
           option: "{{ source }}"
       media_next_track:
-        service: input_select.select_next
+        service: select.select_next
         target:
-          entity_id: input_select.radiosender_87_5
+          entity_id: select.radiosender_87_5
       media_previous_track:
-        service: input_select.select_previous
+        service: select.select_previous
         target:
-          entity_id: input_select.radiosender_87_5
+          entity_id: select.radiosender_87_5
     attributes:
       volume_level: media_player.musik_radiostream_87_5|volume_level
       is_volume_muted: media_player.musik_radiostream_87_5|is_volume_muted
       media_title: media_player.musik_radiostream_87_5|media_title
-      source: input_select.radiosender_87_5
-      source_list: input_select.radiosender_87_5|options
+      source: select.radiosender_87_5
+      source_list: select.radiosender_87_5|options
 
   - platform: universal
     name: "Radiostream 97.0"
@@ -126,25 +128,25 @@ media_player:
         data:
           is_volume_muted: "{{ is_volume_muted }}"
       select_source:
-        service: input_select.select_option
+        service: select.select_option
         target:
-          entity_id: input_select.radiosender_97_0
+          entity_id: select.radiosender_97_0
         data:
           option: "{{ source }}"
       media_next_track:
-        service: input_select.select_next
+        service: select.select_next
         target:
-          entity_id: input_select.radiosender_97_0
+          entity_id: select.radiosender_97_0
       media_previous_track:
-        service: input_select.select_previous
+        service: select.select_previous
         target:
-          entity_id: input_select.radiosender_97_0
+          entity_id: select.radiosender_97_0
     attributes:
       volume_level: media_player.musik_radiostream_97_0|volume_level
       is_volume_muted: media_player.musik_radiostream_97_0|is_volume_muted
       media_title: media_player.musik_radiostream_97_0|media_title
-      source: input_select.radiosender_97_0
-      source_list: input_select.radiosender_97_0|options
+      source: select.radiosender_97_0
+      source_list: select.radiosender_97_0|options
 
   - platform: universal
     name: "Radiostream 105.9"
@@ -197,25 +199,25 @@ media_player:
         data:
           is_volume_muted: "{{ is_volume_muted }}"
       select_source:
-        service: input_select.select_option
+        service: select.select_option
         target:
-          entity_id: input_select.radiosender_105_9
+          entity_id: select.radiosender_105_9
         data:
           option: "{{ source }}"
       media_next_track:
-        service: input_select.select_next
+        service: select.select_next
         target:
-          entity_id: input_select.radiosender_105_9
+          entity_id: select.radiosender_105_9
       media_previous_track:
-        service: input_select.select_previous
+        service: select.select_previous
         target:
-          entity_id: input_select.radiosender_105_9
+          entity_id: select.radiosender_105_9
     attributes:
       volume_level: media_player.musik_radiostream_105_9|volume_level
       is_volume_muted: media_player.musik_radiostream_105_9|is_volume_muted
       media_title: media_player.musik_radiostream_105_9|media_title
-      source: input_select.radiosender_105_9
-      source_list: input_select.radiosender_105_9|options
+      source: select.radiosender_105_9
+      source_list: select.radiosender_105_9|options
 
 command_line:
   # Bluetooth-Verbindungsqualitaet der Radiostream-Boxen, ohne Scan (stoert die Streams nicht).
@@ -453,3 +455,152 @@ template:
 #          Radio Bob! Country: "http://streams.radiobob.de/country/mp3-192/mediaplayer/"
 #          Radio Bob! Blues: "https://streams.radiobob.de/blues/mp3-192/"
 #          Radio Bob! Emo: "http://streams.radiobob.de/emo/mp3-192/mediaplayer/"
+
+  # 18.11.2026 (Claude, auf Wunsch des Nutzers): Senderwahl je Box und die 10 Presets als Template-Selects
+  # (ersetzen die input_select-Helfer radiosender_* / radiostream_preset_*). Die Optionen kommen immer aus
+  # der Senderliste oben, der Wert steht in input_text.letzter_sender_<p> bzw. letzter_preset_<n> und wird
+  # beim Neustart sicher wiederhergestellt - keine gespeicherte Optionsliste mehr, die veralten kann.
+  - select:
+      - name: "Radiosender 97.0"
+        unique_id: radiostream_select_sender_97_0
+        icon: m3o:radio
+        options: &radiostream_optionen "{% set s = states.sensor.radiostream_senderliste %}{{ (s.attributes.keys() | reject('in', ['friendly_name', 'icon']) | list) if s else [] }}"
+        state: "{{ states('input_text.letzter_sender_97_0') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_sender_97_0
+            data:
+              value: "{{ option }}"
+      - name: "Radiosender 105.9"
+        unique_id: radiostream_select_sender_105_9
+        icon: m3o:radio
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_sender_105_9') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_sender_105_9
+            data:
+              value: "{{ option }}"
+      - name: "Radiosender 87.5"
+        unique_id: radiostream_select_sender_87_5
+        icon: m3o:radio
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_sender_87_5') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_sender_87_5
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 1"
+        unique_id: radiostream_select_preset_1
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_1') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_1
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 2"
+        unique_id: radiostream_select_preset_2
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_2') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_2
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 3"
+        unique_id: radiostream_select_preset_3
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_3') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_3
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 4"
+        unique_id: radiostream_select_preset_4
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_4') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_4
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 5"
+        unique_id: radiostream_select_preset_5
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_5') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_5
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 6"
+        unique_id: radiostream_select_preset_6
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_6') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_6
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 7"
+        unique_id: radiostream_select_preset_7
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_7') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_7
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 8"
+        unique_id: radiostream_select_preset_8
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_8') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_8
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 9"
+        unique_id: radiostream_select_preset_9
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_9') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_9
+            data:
+              value: "{{ option }}"
+      - name: "Radiostream Preset 10"
+        unique_id: radiostream_select_preset_10
+        icon: m3o:circle
+        options: *radiostream_optionen
+        state: "{{ states('input_text.letzter_preset_10') }}"
+        select_option:
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.letzter_preset_10
+            data:
+              value: "{{ option }}"

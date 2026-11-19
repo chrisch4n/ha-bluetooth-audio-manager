@@ -4,11 +4,14 @@
 radiostream_preset_abspielen:
   alias: Radiostream Preset abspielen
   description: 'Spielt einen der 10 globalen Radiostream-Presets (input_select.radiostream_preset_1..10)
-    auf einem der drei Player-Helfer (radiosender_97_0 / _105_9 / _87_5) ab, indem
-    der Sendername per input_select.select_option in den Ziel-Helper geschrieben wird
-    - triggert die konsolidierte automation.radiostream_permanent_97_0_105_9_87_5.
-    Am 21.08.2026 vereinfacht: 3-faches choose durch direktes templated Target ersetzt
-    (ziel_helper wird bereits als vollstaendige entity_id uebergeben).'
+    auf einem der drei Player-Helfer (radiosender_97_0 / _105_9 / _87_5) ab, indem der Sendername
+    per input_select.select_option in den Ziel-Helper geschrieben wird - triggert die konsolidierte
+    automation.radiostream_permanent_97_0_105_9_87_5. Am 21.08.2026 vereinfacht: 3-faches
+    choose durch direktes templated Target ersetzt (ziel_helper wird bereits als vollstaendige
+    entity_id uebergeben). [18.11.2026 Claude, auf Wunsch des Nutzers: Presets und Senderwahl
+    sind jetzt Template-Selects (select.radiostream_preset_N, select.radiosender_<player>,
+    Paket radiostream.yaml); select.select_option. Ein uebergebenes input_select.radiosender_*
+    wird auf select.* umgeschrieben, damit alte Aufrufe weiter funktionieren.]'
   fields:
     preset:
       description: Preset-Nummer 1-10
@@ -33,20 +36,21 @@ radiostream_preset_abspielen:
         select:
           options:
           - label: '97.0'
-            value: input_select.radiosender_97_0
+            value: select.radiosender_97_0
           - label: '105.9'
-            value: input_select.radiosender_105_9
+            value: select.radiosender_105_9
           - label: '87.5'
-            value: input_select.radiosender_87_5
+            value: select.radiosender_87_5
   mode: parallel
   sequence:
   - variables:
-      preset_sender: '{{ states(''input_select.radiostream_preset_'' ~ preset) }}'
-  - action: input_select.select_option
+      preset_sender: '{{ states(''select.radiostream_preset_'' ~ preset) }}'
+      ziel: '{{ ziel_helper | replace(''input_select.'', ''select.'') }}'
+  - action: select.select_option
     data:
       option: '{{ preset_sender }}'
     target:
-      entity_id: '{{ ziel_helper }}'
+      entity_id: '{{ ziel }}'
 radiostream_notfall_forget_pair:
   alias: 'Radiostream Notfall: Forget + Pair + MPD zuweisen'
   description: 'Manueller Nothelfer fuer eine haengende Bluetooth-Audio-Box: vergisst

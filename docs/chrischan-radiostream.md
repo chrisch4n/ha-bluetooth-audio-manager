@@ -216,10 +216,10 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
   Boxen hält (10–100 %, Standard 100).
 - `input_boolean.radiostream_power_schaltet_steckdosen` – ob „Aus" auch die
   Steckdose schaltet.
-- `input_select.radiosender_<p>`, `input_select.radiostream_preset_1..10`,
-  `input_select.radiostream_<p>_steckdose`.
-- `input_text.letzter_sender_<p>` / `letzter_preset_<n>` – gemerkte Auswahl
-  (robust gegen veraltete Werte nach einem Neustart).
+- `select.radiosender_<p>`, `select.radiostream_preset_1..10` – Template-Selects
+  im Paket `radiostream.yaml` (seit 18.11.2026, vorher `input_select`-Helfer):
+  Optionen immer aus der Senderliste, Wert in `input_text.letzter_sender_<p>` /
+  `letzter_preset_<n>`. `input_select.radiostream_<p>_steckdose` bleibt ein Helfer.
 - `input_number.radiostream_<p>_letzte_position` – Stall-Erkennung des Watchdogs.
 - `input_text.radiostream_letzter_start` – Mixing-Schutz (zuletzt gestarteter
   Player + Zeit).
@@ -238,8 +238,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 | **Lautstärke-Sperre an Add-on übertragen** | Schalter `lautstarke_fest_100`, Wert `lautstarke_alle_boxen`, HA-Start | Gibt den Sperr-Wert (10–100 %) als `volume_lock_level` ans Add-on und setzt `volume_lock` für alle Boxen per REST (bei reiner Wert-Änderung nur den Wert). |
 | **Nächtlicher Steckdosen-Zyklus** (deaktiviert) | täglich 04:30 | Startet `radiostream_steckdosen_alle_zyklieren`. Am 13.11.2026 gegen das Rauschen eingerichtet, am 14.11. abgeschaltet: Das Rauschen kam von der abgesenkten Bluetooth-Bitrate (Abschnitt 3), und das Neuverbinden der Boxen senkt sie selbst ab. |
 | **Stick-Reset je Stick** (Entity `automation.radiostream_stick_reset_bei_mehrfachausfall`) | `sensor.radiostream_sticks_ohne_verbindung` nennt seit 4 Min einen oder mehrere Sticks (alle aktiven Boxen mit Strom an diesem Stick: Player `unavailable`) | Startet `radiostream_stick_zuruecksetzen` mit Stufe *auto* nur für den genannten Stick (bei mehreren für alle). Nicht während Voll-Reparatur, Zyklus aller Boxen oder eines laufenden Stick-Resets; höchstens einmal in 30 Min (ab 13.11.2026, je Stick seit 18.11.2026; vorher: zwei Boxen ohne Verbindung). |
-| **Sender-Auswahl persistieren** | Änderung eines Sender-/Preset-Selects | Schreibt die Auswahl in `letzter_sender_*` / `letzter_preset_*`. |
-| **Senderlisten synchronisieren** | HA-Start, Änderung von `sensor.radiostream_senderliste` | Aktualisiert die Optionen aller 13 Selects und stellt die gemerkte Auswahl wieder her. Bis dahin gilt die im Helfer gespeicherte Optionsliste – sie muss die Senderliste enthalten, sonst springt ein Select beim Start kurz auf den ersten Eintrag (am 18.11.2026 angeglichen, siehe `chrischan-ha/README.md`). |
+| ~~Sender-Auswahl persistieren~~, ~~Senderlisten synchronisieren~~ | – | Seit 18.11.2026 deaktiviert (bleiben vorerst als Rückweg): Die Template-Selects schreiben ihre Auswahl selbst in `letzter_sender_*` / `letzter_preset_*` und holen die Optionen direkt aus der Senderliste. `input_select.set_options` wurde nie gespeichert – deshalb veralteten die Listen der alten Helfer, und nach einem Neustart sprang 97.0 kurz auf „Queen“. |
 
 ### Eskalationskette (Bug-Watch)
 

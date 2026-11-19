@@ -3,22 +3,25 @@
 # Beschreibung des Systems: ../chrischan-radiostream.md
 - id: '1785450992212'
   alias: Radiostream Senderlisten synchronisieren
-  description: 'Synchronisiert Sender-Optionen mit sensor.radiostream_senderliste.
-    Liest die vorherige Wahl aus input_text.letzter_sender_X / letzter_preset_N statt
-    aus dem input_select-Zustand, da HAs RestoreEntity nach Neustart gelegentlich
-    einen veralteten Wert restauriert. Stellt die gemerkte Wahl nach set_options wieder
-    her, falls in der neuen Liste enthalten - gilt fuer alle 3 Hauptsender UND alle
-    10 Presets (Presets koennen Nicht-RadioBob-Sender wie Klassik Radio enthalten).
-    Konsolidiert 31.08.2026: die vormals 13 einzelnen variables-Eintraege + 13 if/then-Bloecke
-    sind jetzt ein einziger repeat: for_each ueber eine Liste von 13 {select, text}-Paaren
-    - behebt dabei auch eine Unsauberkeit im alten Aufbau, bei der die 10 Preset-Restores
-    AUSSERHALB der sender_liste>=35-Absicherung liefen (die 3 Sender-Restores aber
-    innerhalb) - jetzt einheitlich innerhalb der Absicherung. Neue Presets/Sender
-    brauchen nur einen Eintrag in restore_pairs, keinen neuen Codeblock. [02.10.2026
-    Fix: die gemerkte Auswahl wird jetzt vor set_options gesichert. Faellt ein gemerkter
-    Sender voruebergehend aus der Liste, bleibt er im input_text erhalten und wird
-    wiederhergestellt, sobald er wieder in der Liste steht - vorher ueberschrieb die
-    Persistier-Automation ihn sofort mit dem Ersatzwert.]'
+  description: '[18.11.2026 Claude, auf Wunsch des Nutzers: DEAKTIVIERT - die Template-Selects
+    select.radiosender_* / select.radiostream_preset_* (Paket radiostream.yaml) holen ihre
+    Optionen immer direkt aus sensor.radiostream_senderliste; input_select.set_options wurde
+    nie gespeichert, deshalb veralteten die Listen der Helfer. Bleibt vorerst als Rueckweg
+    stehen.] Synchronisiert Sender-Optionen mit sensor.radiostream_senderliste. Liest die
+    vorherige Wahl aus input_text.letzter_sender_X / letzter_preset_N statt aus dem input_select-Zustand,
+    da HAs RestoreEntity nach Neustart gelegentlich einen veralteten Wert restauriert. Stellt
+    die gemerkte Wahl nach set_options wieder her, falls in der neuen Liste enthalten - gilt
+    fuer alle 3 Hauptsender UND alle 10 Presets (Presets koennen Nicht-RadioBob-Sender wie
+    Klassik Radio enthalten). Konsolidiert 31.08.2026: die vormals 13 einzelnen variables-Eintraege
+    + 13 if/then-Bloecke sind jetzt ein einziger repeat: for_each ueber eine Liste von 13
+    {select, text}-Paaren - behebt dabei auch eine Unsauberkeit im alten Aufbau, bei der die
+    10 Preset-Restores AUSSERHALB der sender_liste>=35-Absicherung liefen (die 3 Sender-Restores
+    aber innerhalb) - jetzt einheitlich innerhalb der Absicherung. Neue Presets/Sender brauchen
+    nur einen Eintrag in restore_pairs, keinen neuen Codeblock. [02.10.2026 Fix: die gemerkte
+    Auswahl wird jetzt vor set_options gesichert. Faellt ein gemerkter Sender voruebergehend
+    aus der Liste, bleibt er im input_text erhalten und wird wiederhergestellt, sobald er
+    wieder in der Liste steht - vorher ueberschrieb die Persistier-Automation ihn sofort mit
+    dem Ersatzwert.]'
   triggers:
   - event: start
     trigger: homeassistant
@@ -36,20 +39,19 @@
   actions:
   - delay: 00:00:20
   - variables:
-      sender_liste: '{{ states.sensor.radiostream_senderliste.attributes.keys() |
-        reject(''in'', [''friendly_name'', ''icon'']) | list }}'
+      sender_liste: '{{ states.sensor.radiostream_senderliste.attributes.keys() | reject(''in'',
+        [''friendly_name'', ''icon'']) | list }}'
   - if:
     - condition: template
       value_template: '{{ sender_liste | length >= 35 }}'
     then:
     - variables:
         merk: '{% set ns = namespace(d={}) %}{% for t in [''input_text.letzter_sender_97_0'',
-          ''input_text.letzter_sender_105_9'', ''input_text.letzter_sender_87_5'',
-          ''input_text.letzter_preset_1'', ''input_text.letzter_preset_2'', ''input_text.letzter_preset_3'',
-          ''input_text.letzter_preset_4'', ''input_text.letzter_preset_5'', ''input_text.letzter_preset_6'',
-          ''input_text.letzter_preset_7'', ''input_text.letzter_preset_8'', ''input_text.letzter_preset_9'',
-          ''input_text.letzter_preset_10''] %}{% set ns.d = dict(ns.d, **{t: states(t)})
-          %}{% endfor %}{{ ns.d }}'
+          ''input_text.letzter_sender_105_9'', ''input_text.letzter_sender_87_5'', ''input_text.letzter_preset_1'',
+          ''input_text.letzter_preset_2'', ''input_text.letzter_preset_3'', ''input_text.letzter_preset_4'',
+          ''input_text.letzter_preset_5'', ''input_text.letzter_preset_6'', ''input_text.letzter_preset_7'',
+          ''input_text.letzter_preset_8'', ''input_text.letzter_preset_9'', ''input_text.letzter_preset_10'']
+          %}{% set ns.d = dict(ns.d, **{t: states(t)}) %}{% endfor %}{{ ns.d }}'
       note: Gemerkte Auswahl VOR set_options sichern - danach kann die Persistier-Automation
         die Helfer schon mit einem Ersatzwert ueberschrieben haben.
     - action: input_select.set_options
@@ -72,8 +74,8 @@
         - input_select.radiostream_preset_10
     - delay:
         seconds: 2
-      note: Der Persistier-Automation Zeit geben, ihre durch set_options ausgeloesten
-        Schreibvorgaenge abzuschliessen.
+      note: Der Persistier-Automation Zeit geben, ihre durch set_options ausgeloesten Schreibvorgaenge
+        abzuschliessen.
     - repeat:
         for_each:
         - select: input_select.radiosender_97_0
@@ -107,8 +109,8 @@
             vorherige: '{{ merk[repeat.item.text] }}'
         - if:
           - condition: template
-            value_template: '{{ vorherige in sender_liste and states(repeat.item.select)
-              != vorherige }}'
+            value_template: '{{ vorherige in sender_liste and states(repeat.item.select) !=
+              vorherige }}'
           then:
           - action: input_select.select_option
             data:
@@ -117,23 +119,21 @@
               entity_id: '{{ repeat.item.select }}'
         - if:
           - condition: template
-            value_template: '{{ vorherige not in sender_liste and vorherige not in
-              [''unknown'', ''unavailable'', ''''] and states(repeat.item.text) !=
-              vorherige }}'
+            value_template: '{{ vorherige not in sender_liste and vorherige not in [''unknown'',
+              ''unavailable'', ''''] and states(repeat.item.text) != vorherige }}'
           then:
           - action: input_text.set_value
             target:
               entity_id: '{{ repeat.item.text }}'
             data:
               value: '{{ vorherige }}'
-          note: 'Gemerkter Sender fehlt in der neuen Liste: die Auswahl ist auf den
-            ersten Eintrag gesprungen und die Persistier-Automation hat diesen Ersatzwert
-            gespeichert. Den gemerkten Sender zurueckschreiben, damit er wiederhergestellt
-            wird, sobald er wieder in der Liste steht.'
-      note: Ersetzt seit 31.08.2026 13 einzelne if/then-Restore-Bloecke - iteriert
-        ueber alle 3 Hauptsender + 10 Presets, liest vorherige Wahl aus input_text
-        (RestoreEntity-sicher), stellt sie wieder her falls noch in der neuen Liste
-        enthalten
+          note: 'Gemerkter Sender fehlt in der neuen Liste: die Auswahl ist auf den ersten
+            Eintrag gesprungen und die Persistier-Automation hat diesen Ersatzwert gespeichert.
+            Den gemerkten Sender zurueckschreiben, damit er wiederhergestellt wird, sobald
+            er wieder in der Liste steht.'
+      note: Ersetzt seit 31.08.2026 13 einzelne if/then-Restore-Bloecke - iteriert ueber alle
+        3 Hauptsender + 10 Presets, liest vorherige Wahl aus input_text (RestoreEntity-sicher),
+        stellt sie wieder her falls noch in der neuen Liste enthalten
   mode: restart
 - id: '1786256754488'
   alias: Radiostream Player unavailable (BT Audio Manager Bug-Watch)
@@ -592,15 +592,17 @@
   mode: parallel
 - id: '1787259075350'
   alias: Radiostream Sender-Auswahl unabhängig persistieren
-  description: 'Schreibt bei JEDER echten Aenderung der 3 Hauptsender + 10 Presets
-    den neuen Wert sofort in den zugehoerigen input_text-Helfer (letzter_sender_X
-    / letzter_preset_N) - Zielname wird per Template aus dem Entity-Namen abgeleitet,
-    statt 13 einzelne choose-Zweige zu pflegen. Hintergrund: HAs eigener RestoreEntity-Mechanismus
-    fuer input_select restauriert nach einem Neustart gelegentlich einen veralteten
-    Wert, noch bevor die Sync-Automation reagieren kann. Konsolidiert 31.08.2026 aus
-    13 Trigger-IDs + 13 choose-Zweigen zu 1 Trigger-Liste + 1 templated Aktion - neue
-    Presets/Sender brauchen jetzt nur einen Eintrag in der Trigger-entity_id-Liste,
-    keinen neuen choose-Zweig.'
+  description: '[18.11.2026 Claude, auf Wunsch des Nutzers: DEAKTIVIERT - die Template-Selects
+    select.radiosender_* / select.radiostream_preset_* (Paket radiostream.yaml) schreiben
+    ihre Auswahl selbst in letzter_sender_* / letzter_preset_*. Bleibt vorerst als Rueckweg
+    zu den input_select-Helfern stehen.] Schreibt bei JEDER echten Aenderung der 3 Hauptsender
+    + 10 Presets den neuen Wert sofort in den zugehoerigen input_text-Helfer (letzter_sender_X
+    / letzter_preset_N) - Zielname wird per Template aus dem Entity-Namen abgeleitet, statt
+    13 einzelne choose-Zweige zu pflegen. Hintergrund: HAs eigener RestoreEntity-Mechanismus
+    fuer input_select restauriert nach einem Neustart gelegentlich einen veralteten Wert,
+    noch bevor die Sync-Automation reagieren kann. Konsolidiert 31.08.2026 aus 13 Trigger-IDs
+    + 13 choose-Zweigen zu 1 Trigger-Liste + 1 templated Aktion - neue Presets/Sender brauchen
+    jetzt nur einen Eintrag in der Trigger-entity_id-Liste, keinen neuen choose-Zweig.'
   triggers:
   - entity_id:
     - input_select.radiosender_97_0
@@ -625,79 +627,78 @@
     data:
       value: '{{ trigger.to_state.state }}'
     target:
-      entity_id: '{{ ''input_text.letzter_preset_'' ~ trigger.entity_id.split(''_'')[-1]
-        if ''preset'' in trigger.entity_id else ''input_text.letzter_sender_'' ~ trigger.entity_id.split(''.'')[1].replace(''radiosender_'',
+      entity_id: '{{ ''input_text.letzter_preset_'' ~ trigger.entity_id.split(''_'')[-1] if
+        ''preset'' in trigger.entity_id else ''input_text.letzter_sender_'' ~ trigger.entity_id.split(''.'')[1].replace(''radiosender_'',
         '''') }}'
   max: 10
   mode: queued
 - id: '1787286971104'
   alias: Radiostream permanent (97.0/105.9/87.5)
   description: 'Konsolidierte Version der drei ehemals separaten ''..._permanent''-Automationen
-    (97.0, 105.9, 87.5). Spielt pro Player den gewaehlten Sender dauerhaft via MPD,
-    sofern input_boolean.radiostream_<player>_aktiv an ist. Startet beim HA-Neustart,
-    bei Senderwechsel sofort, bei Reaktivierung des Aktiv-Schalters sofort, und prueft
-    alle 5 Minuten per Watchdog je Player (nur falls aktiv), inkl. Stall-Erkennung
-    ueber media_position. Seit 31.08.2026 als repeat: for_each ueber die 3 Player-Suffixe
-    implementiert statt 3 kopierter Codebloecke - identisches Verhalten, deutlich
-    kompakter und leichter erweiterbar. [20.09.2026: 3s-Pause nach jedem play_media-Aufruf
-    ergaenzt - verhindert die am selben Tag entdeckte Race Condition im Add-on, die
-    auftrat wenn mehrere Player im selben Automationslauf (z.B. bei ha_start oder
-    Watchdog) nahezu gleichzeitig gestartet wurden und dadurch alle Streams auf einem
+    (97.0, 105.9, 87.5). Spielt pro Player den gewaehlten Sender dauerhaft via MPD, sofern
+    input_boolean.radiostream_<player>_aktiv an ist. Startet beim HA-Neustart, bei Senderwechsel
+    sofort, bei Reaktivierung des Aktiv-Schalters sofort, und prueft alle 5 Minuten per Watchdog
+    je Player (nur falls aktiv), inkl. Stall-Erkennung ueber media_position. Seit 31.08.2026
+    als repeat: for_each ueber die 3 Player-Suffixe implementiert statt 3 kopierter Codebloecke
+    - identisches Verhalten, deutlich kompakter und leichter erweiterbar. [20.09.2026: 3s-Pause
+    nach jedem play_media-Aufruf ergaenzt - verhindert die am selben Tag entdeckte Race Condition
+    im Add-on, die auftrat wenn mehrere Player im selben Automationslauf (z.B. bei ha_start
+    oder Watchdog) nahezu gleichzeitig gestartet wurden und dadurch alle Streams auf einem
     einzigen Audio-Sink landeten (Mixing-Bug) statt auf ihren jeweils eigenen.] [23.09.2026:
-    Stall-Pruefung um Falscher-Sender-Erkennung erweitert - vergleicht media_content_id
-    mit der URL des in input_select.radiosender_<n> gewaehlten Senders (aus sensor.radiostream_senderliste).
+    Stall-Pruefung um Falscher-Sender-Erkennung erweitert - vergleicht media_content_id mit
+    der URL des in input_select.radiosender_<n> gewaehlten Senders (aus sensor.radiostream_senderliste).
     Bei Abweichung wird der richtige Sender neu gestartet. Keine zusaetzliche BT-Aktivitaet,
-    reiner Vergleich. Bewusste Folge: manuell ueber den HA-Mediaplayer gestartete
-    fremde Inhalte werden innerhalb von 5 Min auf den gewaehlten Sender zurueckgesetzt
-    (Presets sind nicht betroffen, sie schreiben in die Senderauswahl).] [23.09.2026
-    Traegheits-Fix: (a) Modus ''single'' -> ''queued'' (max 10). Im single-Modus wurden
-    Preset-/Senderwechsel waehrend eines laufenden Durchgangs verworfen (Trace: failed_single,
-    mehrere 105.9-Presets verschluckt). (b) Ein Senderwechsel bzw. eine Reaktivierung
-    bearbeitet jetzt nur noch den betroffenen Player statt alle drei - vorher lief
-    jeder Wechsel durch alle drei Player inkl. moeglicher Neustarts mit je 3s Pause.
-    Die Gesamtpruefung aller aktiven Player bleibt fuer HA-Start, 5-Min-Watchdog und
-    manuelles automation.trigger erhalten. Die 3s-Pause nach jedem Start bleibt als
-    Mindestabstand gegen Mixing bestehen; durch queued greift sie auch zwischen schnell
-    aufeinanderfolgenden Tipps auf verschiedene Player.] [23.09.2026 Zapp-Fix: Die
-    feste 3s-Pause nach JEDEM Start ist ersetzt durch einen gezielten Mixing-Schutz:
-    gewartet wird nur, wenn innerhalb der letzten 3s ein ANDERER Player gestartet
-    wurde, und nur die Restzeit (gemerkt in input_text.radiostream_letzter_start als
-    ''player|zeitstempel''). Schnelles Durchzappen innerhalb eines Players laeuft
-    damit ohne Wartezeit. Zusaetzlich werden ueberholte Tipps uebersprungen: stimmt
-    die aktuelle Senderauswahl beim Abarbeiten nicht mehr mit dem Tipp ueberein, wird
-    dieser Zwischenschritt nicht mehr abgespielt.] [23.09.2026: max_exceeded: silent
-    ergaenzt (nur Log-Warnung bei >10 gleichzeitig wartenden Laeufen unterdrueckt).
-    Einen Vorschlag ''queued mit max: 2'' bewusst NICHT uebernommen: beim schnellen
-    Zappen wuerde ein dritter Tipp still verworfen - oft genau der letzte, also der
-    gewollte Sender. Die Logik zum Ueberspringen ueberholter Tipps setzt voraus, dass
-    der letzte Tipp in der Warteschlange ankommt.] [24.09.2026 Umzugs-Schutz: Neuer
-    Ausloeser ''reconnect'' (ein Player meldet sich nach unavailable zurueck, 20s
-    stabil). Dann werden ALLE aktiven Player gestaffelt neu gestartet, auch wenn sie
-    laut HA gesund wirken. Hintergrund: PulseAudio zieht beim Neuverbinden eines BT-Lautsprechers
-    laufende Streams auf den neuen Sink um (am 24.09. beobachtet: 105.9 spielte nach
-    Steckdosen-Reset den Stream von 97.0, obwohl HA fuer 105.9 den richtigen Sender
-    meldete). Das erklaert rueckblickend fast alle Mixing-Faelle. Entprellung: liegt
-    der letzte Gesamt-Neustart (reconnect oder ha_start, input_datetime.radiostream_letzter_gesamt_neustart)
-    weniger als 60s zurueck, wird der Lauf beendet - mehrere Rueckmeldungen z.B. nach
-    einer Voll-Reparatur ergeben so nur einen Neustart.] [01.11.2026 Testphase gepatchtes
-    Add-on 1b3a7c56 (Claude): Ausloeser reconnect deaktiviert (nicht geloescht), siehe
-    Notiz am Ausloeser.] [06.11.2026 Claude, auf Wunsch des Nutzers: Ausloeser ''reconnect''
-    samt Entprellung (Helfer input_datetime.radiostream_letzter_gesamt_neustart) endgueltig
-    entfernt - das gepatchte Add-on schiebt fehlgeleitete MPD-Streams selbst auf ihre
-    Box zurueck (#318); die Falscher-Sender-Erkennung im 5-Min-Watchdog bleibt als
-    Netz.] [06.11.2026 Claude, auf Wunsch des Nutzers: schlanker Ersatz fuer ''reconnect''
-    - neue Ausloeser ''zurueck_<player>'' (Player kommt aus unavailable zurueck, 20
-    s stabil). Bearbeitet wird nur dieser eine Player und nur, wenn er aktiv ist:
-    laeuft er nicht, steht er oder spielt den falschen Sender, wird er neu gestartet.
-    Die anderen Boxen bleiben unberuehrt. Vorher spielte eine zurueckgekehrte Box
-    erst beim naechsten 5-Min-Watchdog wieder.] [07.11.2026 Claude, auf Wunsch des
-    Nutzers: zusaetzliche Ausloeser ''gestoppt_<player>'' (Player geht von playing
-    auf off/idle/paused und bleibt 20 s so). Fall: nach einem Add-on-Update sprangen
-    105.9 und 97.0 direkt von playing auf off, ohne unavailable zu sein - ''zurueck''
-    griff nicht, erst der 5-Min-Watchdog startete sie neu. Behandelt wie ''zurueck'':
-    nur dieser Player, nur wenn er aktiv ist; ein absichtlicher Stopp ueber den Aktiv-Schalter
-    bleibt deshalb aus. Ein Stopp direkt am MPD-Player bei aktivem Schalter wird nach
-    20 s rueckgaengig gemacht (vorher spaetestens nach 5 Min durch den Watchdog).]'
+    reiner Vergleich. Bewusste Folge: manuell ueber den HA-Mediaplayer gestartete fremde Inhalte
+    werden innerhalb von 5 Min auf den gewaehlten Sender zurueckgesetzt (Presets sind nicht
+    betroffen, sie schreiben in die Senderauswahl).] [23.09.2026 Traegheits-Fix: (a) Modus
+    ''single'' -> ''queued'' (max 10). Im single-Modus wurden Preset-/Senderwechsel waehrend
+    eines laufenden Durchgangs verworfen (Trace: failed_single, mehrere 105.9-Presets verschluckt).
+    (b) Ein Senderwechsel bzw. eine Reaktivierung bearbeitet jetzt nur noch den betroffenen
+    Player statt alle drei - vorher lief jeder Wechsel durch alle drei Player inkl. moeglicher
+    Neustarts mit je 3s Pause. Die Gesamtpruefung aller aktiven Player bleibt fuer HA-Start,
+    5-Min-Watchdog und manuelles automation.trigger erhalten. Die 3s-Pause nach jedem Start
+    bleibt als Mindestabstand gegen Mixing bestehen; durch queued greift sie auch zwischen
+    schnell aufeinanderfolgenden Tipps auf verschiedene Player.] [23.09.2026 Zapp-Fix: Die
+    feste 3s-Pause nach JEDEM Start ist ersetzt durch einen gezielten Mixing-Schutz: gewartet
+    wird nur, wenn innerhalb der letzten 3s ein ANDERER Player gestartet wurde, und nur die
+    Restzeit (gemerkt in input_text.radiostream_letzter_start als ''player|zeitstempel'').
+    Schnelles Durchzappen innerhalb eines Players laeuft damit ohne Wartezeit. Zusaetzlich
+    werden ueberholte Tipps uebersprungen: stimmt die aktuelle Senderauswahl beim Abarbeiten
+    nicht mehr mit dem Tipp ueberein, wird dieser Zwischenschritt nicht mehr abgespielt.]
+    [23.09.2026: max_exceeded: silent ergaenzt (nur Log-Warnung bei >10 gleichzeitig wartenden
+    Laeufen unterdrueckt). Einen Vorschlag ''queued mit max: 2'' bewusst NICHT uebernommen:
+    beim schnellen Zappen wuerde ein dritter Tipp still verworfen - oft genau der letzte,
+    also der gewollte Sender. Die Logik zum Ueberspringen ueberholter Tipps setzt voraus,
+    dass der letzte Tipp in der Warteschlange ankommt.] [24.09.2026 Umzugs-Schutz: Neuer Ausloeser
+    ''reconnect'' (ein Player meldet sich nach unavailable zurueck, 20s stabil). Dann werden
+    ALLE aktiven Player gestaffelt neu gestartet, auch wenn sie laut HA gesund wirken. Hintergrund:
+    PulseAudio zieht beim Neuverbinden eines BT-Lautsprechers laufende Streams auf den neuen
+    Sink um (am 24.09. beobachtet: 105.9 spielte nach Steckdosen-Reset den Stream von 97.0,
+    obwohl HA fuer 105.9 den richtigen Sender meldete). Das erklaert rueckblickend fast alle
+    Mixing-Faelle. Entprellung: liegt der letzte Gesamt-Neustart (reconnect oder ha_start,
+    input_datetime.radiostream_letzter_gesamt_neustart) weniger als 60s zurueck, wird der
+    Lauf beendet - mehrere Rueckmeldungen z.B. nach einer Voll-Reparatur ergeben so nur einen
+    Neustart.] [01.11.2026 Testphase gepatchtes Add-on 1b3a7c56 (Claude): Ausloeser reconnect
+    deaktiviert (nicht geloescht), siehe Notiz am Ausloeser.] [06.11.2026 Claude, auf Wunsch
+    des Nutzers: Ausloeser ''reconnect'' samt Entprellung (Helfer input_datetime.radiostream_letzter_gesamt_neustart)
+    endgueltig entfernt - das gepatchte Add-on schiebt fehlgeleitete MPD-Streams selbst auf
+    ihre Box zurueck (#318); die Falscher-Sender-Erkennung im 5-Min-Watchdog bleibt als Netz.]
+    [06.11.2026 Claude, auf Wunsch des Nutzers: schlanker Ersatz fuer ''reconnect'' - neue
+    Ausloeser ''zurueck_<player>'' (Player kommt aus unavailable zurueck, 20 s stabil). Bearbeitet
+    wird nur dieser eine Player und nur, wenn er aktiv ist: laeuft er nicht, steht er oder
+    spielt den falschen Sender, wird er neu gestartet. Die anderen Boxen bleiben unberuehrt.
+    Vorher spielte eine zurueckgekehrte Box erst beim naechsten 5-Min-Watchdog wieder.] [07.11.2026
+    Claude, auf Wunsch des Nutzers: zusaetzliche Ausloeser ''gestoppt_<player>'' (Player geht
+    von playing auf off/idle/paused und bleibt 20 s so). Fall: nach einem Add-on-Update sprangen
+    105.9 und 97.0 direkt von playing auf off, ohne unavailable zu sein - ''zurueck'' griff
+    nicht, erst der 5-Min-Watchdog startete sie neu. Behandelt wie ''zurueck'': nur dieser
+    Player, nur wenn er aktiv ist; ein absichtlicher Stopp ueber den Aktiv-Schalter bleibt
+    deshalb aus. Ein Stopp direkt am MPD-Player bei aktivem Schalter wird nach 20 s rueckgaengig
+    gemacht (vorher spaetestens nach 5 Min durch den Watchdog).] [18.11.2026 Claude, auf Wunsch
+    des Nutzers: Senderwahl kommt aus den Template-Selects select.radiosender_<player> (Paket
+    radiostream.yaml) statt aus input_select.radiosender_<player> - deren gespeicherte Optionsliste
+    veraltete und liess die Auswahl beim Neustart auf den ersten Sender springen. Ausloeser
+    sender_gewechselt_* mit not_from unknown/unavailable.]'
   triggers:
   - event: start
     id: ha_start
@@ -706,26 +707,38 @@
     minutes: /5
     trigger: time_pattern
   - entity_id:
-    - input_select.radiosender_97_0
+    - select.radiosender_97_0
     id: sender_gewechselt_97_0
     trigger: state
-    to:
-    note: 'to: null = nur echte Zustandswechsel (anderer Sender), keine Attributaenderungen
-      wie eine geaenderte Optionsliste'
+    to: null
+    note: 'to: null = nur echte Zustandswechsel (anderer Sender), keine Attributaenderungen.
+      not_from: kein Ausloesen, wenn der Template-Select beim Start/Neuladen erst seinen Wert
+      bekommt (18.11.2026)'
+    not_from:
+    - unknown
+    - unavailable
   - entity_id:
-    - input_select.radiosender_105_9
+    - select.radiosender_105_9
     id: sender_gewechselt_105_9
     trigger: state
-    to:
-    note: 'to: null = nur echte Zustandswechsel (anderer Sender), keine Attributaenderungen
-      wie eine geaenderte Optionsliste'
+    to: null
+    note: 'to: null = nur echte Zustandswechsel (anderer Sender), keine Attributaenderungen.
+      not_from: kein Ausloesen, wenn der Template-Select beim Start/Neuladen erst seinen Wert
+      bekommt (18.11.2026)'
+    not_from:
+    - unknown
+    - unavailable
   - entity_id:
-    - input_select.radiosender_87_5
+    - select.radiosender_87_5
     id: sender_gewechselt_87_5
     trigger: state
-    to:
-    note: 'to: null = nur echte Zustandswechsel (anderer Sender), keine Attributaenderungen
-      wie eine geaenderte Optionsliste'
+    to: null
+    note: 'to: null = nur echte Zustandswechsel (anderer Sender), keine Attributaenderungen.
+      not_from: kein Ausloesen, wenn der Template-Select beim Start/Neuladen erst seinen Wert
+      bekommt (18.11.2026)'
+    not_from:
+    - unknown
+    - unavailable
   - entity_id:
     - input_boolean.radiostream_97_0_aktiv
     id: aktiviert_97_0
@@ -752,8 +765,8 @@
       seconds: 20
     id: zurueck_97_0
     note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur,
-      Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft
-      und bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
+      Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft und
+      bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
   - trigger: state
     entity_id:
     - media_player.musik_radiostream_105_9
@@ -765,8 +778,8 @@
       seconds: 20
     id: zurueck_105_9
     note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur,
-      Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft
-      und bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
+      Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft und
+      bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
   - trigger: state
     entity_id:
     - media_player.musik_radiostream_87_5
@@ -778,8 +791,8 @@
       seconds: 20
     id: zurueck_87_5
     note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur,
-      Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft
-      und bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
+      Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft und
+      bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
   - trigger: state
     entity_id:
     - media_player.musik_radiostream_97_0
@@ -791,10 +804,9 @@
     for:
       seconds: 20
     id: gestoppt_97_0
-    note: '07.11.2026 (Claude): Player hoert von selbst auf zu spielen, ohne vorher
-      unavailable zu sein (z.B. Add-on-Neustart oder -Update, MPD neu gestartet) -
-      nur DIESER Player wird geprueft und, wenn er aktiv ist, nach 20 s neu gestartet
-      statt erst beim naechsten 5-Min-Watchdog'
+    note: '07.11.2026 (Claude): Player hoert von selbst auf zu spielen, ohne vorher unavailable
+      zu sein (z.B. Add-on-Neustart oder -Update, MPD neu gestartet) - nur DIESER Player wird
+      geprueft und, wenn er aktiv ist, nach 20 s neu gestartet statt erst beim naechsten 5-Min-Watchdog'
   - trigger: state
     entity_id:
     - media_player.musik_radiostream_105_9
@@ -806,10 +818,9 @@
     for:
       seconds: 20
     id: gestoppt_105_9
-    note: '07.11.2026 (Claude): Player hoert von selbst auf zu spielen, ohne vorher
-      unavailable zu sein (z.B. Add-on-Neustart oder -Update, MPD neu gestartet) -
-      nur DIESER Player wird geprueft und, wenn er aktiv ist, nach 20 s neu gestartet
-      statt erst beim naechsten 5-Min-Watchdog'
+    note: '07.11.2026 (Claude): Player hoert von selbst auf zu spielen, ohne vorher unavailable
+      zu sein (z.B. Add-on-Neustart oder -Update, MPD neu gestartet) - nur DIESER Player wird
+      geprueft und, wenn er aktiv ist, nach 20 s neu gestartet statt erst beim naechsten 5-Min-Watchdog'
   - trigger: state
     entity_id:
     - media_player.musik_radiostream_87_5
@@ -821,10 +832,9 @@
     for:
       seconds: 20
     id: gestoppt_87_5
-    note: '07.11.2026 (Claude): Player hoert von selbst auf zu spielen, ohne vorher
-      unavailable zu sein (z.B. Add-on-Neustart oder -Update, MPD neu gestartet) -
-      nur DIESER Player wird geprueft und, wenn er aktiv ist, nach 20 s neu gestartet
-      statt erst beim naechsten 5-Min-Watchdog'
+    note: '07.11.2026 (Claude): Player hoert von selbst auf zu spielen, ohne vorher unavailable
+      zu sein (z.B. Add-on-Neustart oder -Update, MPD neu gestartet) - nur DIESER Player wird
+      geprueft und, wenn er aktiv ist, nach 20 s neu gestartet statt erst beim naechsten 5-Min-Watchdog'
   conditions: []
   actions:
   - repeat:
@@ -835,18 +845,16 @@
       sequence:
       - if:
         - condition: template
-          value_template: '{% set tid = trigger.id if (trigger is defined and trigger.id
-            is defined and trigger.id is string) else '''' %}{% set einzel = tid.startswith(''sender_gewechselt_'')
+          value_template: '{% set tid = trigger.id if (trigger is defined and trigger.id is
+            defined and trigger.id is string) else '''' %}{% set einzel = tid.startswith(''sender_gewechselt_'')
             or tid.startswith(''aktiviert_'') or tid.startswith(''zurueck_'') or tid.startswith(''gestoppt_'')
-            %}{% set aktiv = is_state(''input_boolean.radiostream_'' ~ repeat.item
-            ~ ''_aktiv'', ''on'') %}{{ (einzel and tid.endswith(''_'' ~ repeat.item)
-            and (aktiv or not (tid.startswith(''zurueck_'') or tid.startswith(''gestoppt_''))))
-            or ((not einzel) and aktiv) }}'
+            %}{% set aktiv = is_state(''input_boolean.radiostream_'' ~ repeat.item ~ ''_aktiv'',
+            ''on'') %}{{ (einzel and tid.endswith(''_'' ~ repeat.item) and (aktiv or not (tid.startswith(''zurueck_'')
+            or tid.startswith(''gestoppt_'')))) or ((not einzel) and aktiv) }}'
         then:
         - if:
           - condition: template
-            value_template: '{{ trigger.id == ''sender_gewechselt_'' ~ repeat.item
-              }}'
+            value_template: '{{ trigger.id == ''sender_gewechselt_'' ~ repeat.item }}'
           then:
           - if:
             - condition: template
@@ -857,25 +865,23 @@
                 == states(''input_select.radiosender_'' ~ repeat.item) }}'
             then:
             - variables:
-                warte: '{% set raw = states(''input_text.radiostream_letzter_start'')
-                  %}{% set parts = raw.split(''|'') if ''|'' in raw else ['''', ''0'']
-                  %}{% set diff = now().timestamp() - (parts[1] | float(0)) %}{{ (([3
-                  - diff, 0] | max) if parts[0] != repeat.item else 0) | round(1)
-                  }}'
+                warte: '{% set raw = states(''input_text.radiostream_letzter_start'') %}{%
+                  set parts = raw.split(''|'') if ''|'' in raw else ['''', ''0''] %}{% set
+                  diff = now().timestamp() - (parts[1] | float(0)) %}{{ (([3 - diff, 0] |
+                  max) if parts[0] != repeat.item else 0) | round(1) }}'
             - if:
               - condition: template
                 value_template: '{{ warte | float(0) > 0 }}'
               then:
               - delay:
                   seconds: '{{ warte | float(0) }}'
-              note: Mixing-Schutz nur, wenn innerhalb der letzten 3s ein ANDERER Player
-                gestartet wurde - und nur fuer die Restzeit. Zappen innerhalb eines
-                Players wartet nicht.
+              note: Mixing-Schutz nur, wenn innerhalb der letzten 3s ein ANDERER Player gestartet
+                wurde - und nur fuer die Restzeit. Zappen innerhalb eines Players wartet nicht.
             - action: media_player.play_media
               data:
                 media:
-                  media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'',
-                    states(''input_select.radiosender_'' ~ repeat.item)) }}'
+                  media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''input_select.radiosender_''
+                    ~ repeat.item)) }}'
                   media_content_type: music
                   metadata: {}
               target:
@@ -890,27 +896,26 @@
                 entity_id: input_text.radiostream_letzter_start
               data:
                 value: '{{ repeat.item }}|{{ now().timestamp() }}'
-              note: Merkt sich Player und Zeitpunkt dieses Starts fuer den Mixing-Schutz
-                des naechsten Starts
-            note: Nur abspielen, wenn der Player erreichbar ist UND dieser Tipp noch
-              aktuell ist - ueberholte Zwischentipps beim schnellen Zappen werden
-              uebersprungen
+              note: Merkt sich Player und Zeitpunkt dieses Starts fuer den Mixing-Schutz des
+                naechsten Starts
+            note: Nur abspielen, wenn der Player erreichbar ist UND dieser Tipp noch aktuell
+              ist - ueberholte Zwischentipps beim schnellen Zappen werden uebersprungen
           else:
           - variables:
               pos_jetzt: '{{ state_attr(''media_player.musik_radiostream_'' ~ repeat.item,
                 ''media_position'') | float(-1) }}'
-              pos_vorher: '{{ states(''input_number.radiostream_'' ~ repeat.item ~
-                ''_letzte_position'') | float(-2) }}'
+              pos_vorher: '{{ states(''input_number.radiostream_'' ~ repeat.item ~ ''_letzte_position'')
+                | float(-2) }}'
               url_soll: '{{ state_attr(''sensor.radiostream_senderliste'', states(''input_select.radiosender_''
                 ~ repeat.item)) }}'
-              url_ist: '{{ state_attr(''media_player.musik_radiostream_'' ~ repeat.item,
-                ''media_content_id'') }}'
+              url_ist: '{{ state_attr(''media_player.musik_radiostream_'' ~ repeat.item, ''media_content_id'')
+                }}'
           - if:
             - condition: template
               value_template: '{{ states(''media_player.musik_radiostream_'' ~ repeat.item)
-                != ''playing'' or (pos_jetzt == pos_vorher and pos_jetzt >= 0) or
-                (url_soll not in [none, ''''] and url_ist not in [none, ''''] and
-                url_soll != url_ist) }}'
+                != ''playing'' or (pos_jetzt == pos_vorher and pos_jetzt >= 0) or (url_soll
+                not in [none, ''''] and url_ist not in [none, ''''] and url_soll != url_ist)
+                }}'
             then:
             - if:
               - condition: template
@@ -918,25 +923,24 @@
                   != ''unavailable'' }}'
               then:
               - variables:
-                  warte: '{% set raw = states(''input_text.radiostream_letzter_start'')
-                    %}{% set parts = raw.split(''|'') if ''|'' in raw else ['''',
-                    ''0''] %}{% set diff = now().timestamp() - (parts[1] | float(0))
-                    %}{{ (([3 - diff, 0] | max) if parts[0] != repeat.item else 0)
-                    | round(1) }}'
+                  warte: '{% set raw = states(''input_text.radiostream_letzter_start'') %}{%
+                    set parts = raw.split(''|'') if ''|'' in raw else ['''', ''0''] %}{% set
+                    diff = now().timestamp() - (parts[1] | float(0)) %}{{ (([3 - diff, 0]
+                    | max) if parts[0] != repeat.item else 0) | round(1) }}'
               - if:
                 - condition: template
                   value_template: '{{ warte | float(0) > 0 }}'
                 then:
                 - delay:
                     seconds: '{{ warte | float(0) }}'
-                note: Mixing-Schutz nur, wenn innerhalb der letzten 3s ein ANDERER
-                  Player gestartet wurde - und nur fuer die Restzeit. Zappen innerhalb
-                  eines Players wartet nicht.
+                note: Mixing-Schutz nur, wenn innerhalb der letzten 3s ein ANDERER Player
+                  gestartet wurde - und nur fuer die Restzeit. Zappen innerhalb eines Players
+                  wartet nicht.
               - action: media_player.play_media
                 data:
                   media:
-                    media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'',
-                      states(''input_select.radiosender_'' ~ repeat.item)) }}'
+                    media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''input_select.radiosender_''
+                      ~ repeat.item)) }}'
                     media_content_type: music
                     metadata: {}
                 target:
@@ -960,16 +964,15 @@
                 value: '{{ pos_jetzt }}'
               target:
                 entity_id: input_number.radiostream_{{ repeat.item }}_letzte_position
-            note: 'Neu starten, wenn: nicht playing ODER Position steht (Stall) ODER
-              falscher Sender laeuft (media_content_id != URL des gewaehlten Senders
-              - z.B. nach Mixing-Rueckfall, 23.09.2026 real beobachtet: 87.5 spielte
-              den Stream von 97.0)'
-        note: Senderwechsel/Reaktivierung/Rueckkehr/Stopp eines Players -> NUR dieser
-          Player wird bearbeitet (schnelle Reaktion; bei Rueckkehr oder Stopp nur,
-          wenn er aktiv ist). HA-Start, 5-Min-Takt und manuelles Ausloesen -> alle
-          aktiven Player (Gesamtpruefung inkl. Stall- und Falscher-Sender-Erkennung).
-    note: 'Konsolidiert 31.08.2026: ersetzt 3 fast identische Top-Level-if-Bloecke
-      (97.0/105.9/87.5) durch einen repeat: for_each ueber die 3 Player-Suffixe.'
+            note: 'Neu starten, wenn: nicht playing ODER Position steht (Stall) ODER falscher
+              Sender laeuft (media_content_id != URL des gewaehlten Senders - z.B. nach Mixing-Rueckfall,
+              23.09.2026 real beobachtet: 87.5 spielte den Stream von 97.0)'
+        note: Senderwechsel/Reaktivierung/Rueckkehr/Stopp eines Players -> NUR dieser Player
+          wird bearbeitet (schnelle Reaktion; bei Rueckkehr oder Stopp nur, wenn er aktiv
+          ist). HA-Start, 5-Min-Takt und manuelles Ausloesen -> alle aktiven Player (Gesamtpruefung
+          inkl. Stall- und Falscher-Sender-Erkennung).
+    note: 'Konsolidiert 31.08.2026: ersetzt 3 fast identische Top-Level-if-Bloecke (97.0/105.9/87.5)
+      durch einen repeat: for_each ueber die 3 Player-Suffixe.'
   mode: queued
   max: 10
   max_exceeded: silent
