@@ -335,6 +335,15 @@ Full guide with automation examples and troubleshooting:
   app a few seconds later (at most two attempts per speaker in 10 minutes);
   re-opening only the stream could leave a speaker decoding at 48 kHz,
   about 9 % too fast.
+- **Lowest bitrate** — when a link cannot keep up, PulseAudio lowers the
+  SBC bitpool and raises it again step by step; a speaker that stays at the
+  lowest step (15 SBC frames per packet, `at_lowest_step` in
+  `GET /api/diagnostics/pulse-bluetooth`) keeps sounding bad and does not
+  recover by itself. The app looks once a minute and reconnects a playing
+  speaker that has been there for *Reconnect after minutes at the lowest
+  bitrate* (App Settings, 5 by default, 0 = off); the station plays on. At
+  most once per speaker in 30 minutes, so a link that is simply too weak
+  does not loop - move the adapter closer instead.
 - **Unreachable speaker, others on the same adapter** — every failed page
   ("page timeout") keeps the adapter's radio busy for about 5 s, and a
   speaker streaming on the same adapter overloads and loses bitrate. After

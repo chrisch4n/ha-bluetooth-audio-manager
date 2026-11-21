@@ -153,6 +153,10 @@ class BluetoothAudioManager:
         self._pulse_restore_task: asyncio.Task | None = None
         self._rate_fix_attempts: dict[str, list[float]] = {}
         self._rate_fix_running: set[str] = set()
+        # Lowest-bitrate watch (see check_lowest_bitrate)
+        self._lowest_since: dict[str, float] = {}  # addr -> monotonic, first seen at the lowest SBC step
+        self._bitrate_reconnects: dict[str, float] = {}  # addr -> monotonic of the last reconnect
+        self._bitrate_fix_running: set[str] = set()
         self._last_signaled_volume: dict[str, int] = {}  # addr → raw 0-127
         self._last_pa_volume: dict[str, int] = {}  # addr → last PA vol% synced to MPD
         self._device_connect_time: dict[str, float] = {}  # addr → time.time()
@@ -1491,6 +1495,7 @@ class BluetoothAudioManager:
         self._sink_poll_task = asyncio.create_task(self._sink_poll_loop())
         self._rssi_poll_task = asyncio.create_task(self._rssi_refresh_loop())
         self._playback_watch_task = asyncio.create_task(self._playback_watch_loop())
+        self._bitrate_watch_task = asyncio.create_task(self._bitrate_watch_loop())
 
         logger.info("Bluetooth Audio Manager started successfully")
 
@@ -1505,7 +1510,8 @@ class BluetoothAudioManager:
 
         # Stop sink and RSSI polling
         for task in (self._sink_poll_task, self._rssi_poll_task, self._pulse_restore_task,
-                     getattr(self, "_playback_watch_task", None)):
+                     getattr(self, "_playback_watch_task", None),
+                     getattr(self, "_bitrate_watch_task", None)):
             if task and not task.done():
                 task.cancel()
                 try:
@@ -3428,50 +3434,147 @@ class BluetoothAudioManager:
                 "%s set up its audio stream itself at 48 kHz — reconnecting it from here "
                 "so PulseAudio picks 44.1 kHz", address,
             )
-            # Stop MPD first so its stream does not wander to another
-            # speaker's sink while this one is briefly gone (#318).
-            mpd = self._mpd_instances.get(address)
-            playing_uri = None
-            if mpd is not None and mpd.is_running:
-                try:
-                    snap = await mpd.playback_snapshot()
-                except Exception:
-                    snap = None
-                if snap and snap["playing"]:
-                    playing_uri = snap["uri"]
-                    await mpd.handle_command("Stop", "")
             # A full disconnect + connect from this side.  Re-opening only the
             # A2DP stream (up to cc.24) let PulseAudio switch to 44.1 kHz, but
             # an ES-BT17 could keep playing at 48 kHz — the station then ran
             # ~9 % too fast (18 Nov 2026, 97.0).  A fresh connection set up
             # by the app has always come up clean.
-            try:
-                reconnected = await self.force_reconnect_device(address)
-            except Exception as e:
-                reconnected = False
-                logger.warning(
-                    "Reconnecting %s for 44.1 kHz failed: %s — automatic reconnect takes over",
-                    address, _err(e),
-                )
+            reconnected = await self._reconnect_keeping_station(address, "for 44.1 kHz")
             fmt = await self._a2dp_transport_format(address)
             new_rate = fmt[1] if fmt else None
             logger.info("A2DP for %s now at %s Hz (reconnected: %s)", address, new_rate, reconnected)
-            if playing_uri:
-                # The reconnect starts a new MPD daemon with an empty queue
-                # (stopped above, so nothing was noted for resuming): queue
-                # the station again and play it.  If the speaker is not back
-                # yet, note the station so the daemon plays it when the
-                # automatic reconnect brings the speaker back.
-                new_mpd = self._mpd_instances.get(address)
-                resumed = False
-                if new_mpd is not None and new_mpd.is_running:
-                    resumed = await new_mpd.resume(playing_uri)
-                if not resumed:
-                    self._resume_state()[address] = {"uri": playing_uri, "at": time.time()}
-                    self._save_resume_state()
             return f"reconnected ({new_rate})"
         finally:
             self._rate_fix_running.discard(address)
+
+    async def _reconnect_keeping_station(self, address: str, reason: str) -> bool:
+        """Disconnect and connect a speaker from this side; its station plays on.
+
+        MPD is stopped first so its stream does not wander to another
+        speaker's sink while this one is briefly gone (#318).  The reconnect
+        starts a new MPD daemon with an empty queue (stopped here, so nothing
+        was noted for resuming): the station is queued again and played.  If
+        the speaker is not back yet, the station is noted so the daemon plays
+        it when the automatic reconnect brings the speaker back.
+        """
+        mpd = self._mpd_instances.get(address)
+        playing_uri = None
+        if mpd is not None and mpd.is_running:
+            try:
+                snap = await mpd.playback_snapshot()
+            except Exception:
+                snap = None
+            if snap and snap["playing"]:
+                playing_uri = snap["uri"]
+                await mpd.handle_command("Stop", "")
+        try:
+            reconnected = await self.force_reconnect_device(address)
+        except Exception as e:
+            reconnected = False
+            logger.warning(
+                "Reconnecting %s %s failed: %s — automatic reconnect takes over",
+                address, reason, _err(e),
+            )
+        if playing_uri:
+            new_mpd = self._mpd_instances.get(address)
+            resumed = False
+            if new_mpd is not None and new_mpd.is_running:
+                resumed = await new_mpd.resume(playing_uri)
+            if not resumed:
+                self._resume_state()[address] = {"uri": playing_uri, "at": time.time()}
+                self._save_resume_state()
+        return reconnected
+
+    # -- Lowest SBC bitrate: reconnect ----------------------------------------
+    #
+    # When the link or the adapter cannot keep up, PulseAudio drops audio and
+    # lowers the SBC bitpool; it raises it again step by step (every 500 ms by
+    # default).  A speaker that stays at the lowest step for minutes keeps
+    # sounding bad - on an FM transmitter as hiss - and does not recover by
+    # itself, while a fresh connection from the app starts at full bitrate
+    # (21 Nov 2026: 87.5 hung at the lowest step with two 500 ms stalls per
+    # second; reconnecting it made it clean at once).
+
+    BITRATE_CHECK_INTERVAL = 60.0  # s between looks at the SBC step of every sink
+    BITRATE_RECONNECT_COOLDOWN = 1800.0  # s; a weak link would otherwise loop
+
+    @staticmethod
+    def address_from_bt_sink(sink: str) -> str | None:
+        """``bluez_sink.AA_BB_CC_DD_EE_FF.a2dp_sink`` -> ``AA:BB:CC:DD:EE:FF``."""
+        parts = (sink or "").split(".")
+        if len(parts) < 3 or parts[0] != "bluez_sink":
+            return None
+        mac = parts[1].replace("_", ":").upper()
+        return mac if len(mac) == 17 else None
+
+    async def _bitrate_watch_loop(self) -> None:
+        while True:
+            try:
+                await asyncio.sleep(self.BITRATE_CHECK_INTERVAL)
+                await self.check_lowest_bitrate()
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.debug("Bitrate watch: %s", _err(e))
+
+    async def check_lowest_bitrate(self) -> list[str]:
+        """Reconnect playing speakers that sat at the lowest SBC step too long.
+
+        The time comes from the setting ``lowest_bitrate_reconnect_minutes``
+        (0 = off).  At most one reconnect per speaker in
+        BITRATE_RECONNECT_COOLDOWN, and never while the 44.1 kHz fix
+        reconnects the same speaker.  Returns the speakers reconnected.
+        """
+        minutes = getattr(self.config, "lowest_bitrate_reconnect_minutes", 5)
+        since = self._lowest_since
+        if not minutes or not self.pulse:
+            since.clear()
+            return []
+        sinks = await self.pulse.bt_sink_encoder_estimates()
+        low = {
+            addr for addr in (
+                self.address_from_bt_sink(s.get("sink", "")) for s in sinks if s.get("at_lowest_step")
+            ) if addr
+        }
+        for addr in list(since):
+            if addr not in low:
+                since.pop(addr)
+        now = time.monotonic()
+        done = []
+        for addr in sorted(low):
+            first = since.setdefault(addr, now)
+            if now - first < minutes * 60:
+                continue
+            last = self._bitrate_reconnects.get(addr)
+            if last is not None and now - last < self.BITRATE_RECONNECT_COOLDOWN:
+                continue
+            if addr in self._rate_fix_running or addr in self._bitrate_fix_running:
+                continue
+            if addr not in self._device_connect_time:
+                continue
+            mpd = self._mpd_instances.get(addr)
+            snap = None
+            if mpd is not None and mpd.is_running:
+                try:
+                    snap = await mpd.playback_snapshot()
+                except Exception:
+                    snap = None
+            if not (snap and snap.get("playing")):
+                continue  # nothing plays: the bitrate does not matter now
+            self._bitrate_reconnects[addr] = now
+            since.pop(addr, None)
+            logger.warning(
+                "%s has been at the lowest SBC bitrate for %d min (an FM transmitter "
+                "hisses) — reconnecting it", addr, minutes,
+            )
+            self._bitrate_fix_running.add(addr)
+            try:
+                ok = await self._reconnect_keeping_station(addr, "after the lowest bitrate")
+            finally:
+                self._bitrate_fix_running.discard(addr)
+            logger.info("%s reconnected after the lowest bitrate (reconnected: %s)", addr, ok)
+            done.append(addr)
+        return done
 
     async def _log_transport_properties(self, address: str) -> bool:
         """Enumerate BlueZ objects to find and log MediaTransport1 for a device.
