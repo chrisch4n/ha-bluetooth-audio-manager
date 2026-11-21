@@ -1,4 +1,4 @@
-# Home-Assistant-Konfiguration „Radiostream" (Export, Stand 13.11.2026)
+# Home-Assistant-Konfiguration „Radiostream" (Export, Stand 21.11.2026)
 
 Anonymisierter Export der Home-Assistant-Teile, mit denen drei Internetradio-Streams
 über dieses Add-on dauerhaft an drei Bluetooth-UKW-Sender (ES-BT17) gehen. Was das
@@ -13,10 +13,10 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 
 | Datei | In HA | Inhalt |
 |-------|-------|--------|
-| [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 10 Radiostream-Automationen |
-| [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 10 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
+| [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 8 Radiostream-Automationen |
+| [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 11 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
 | [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver (Bedienung, Seite MEMORY für die Presets) und Reparatur (oben: „Wiedergabe" je Box, OK/Problem) |
-| [`packages/radiostream.yaml`](packages/radiostream.yaml) | Paket in `configuration_yaml/packages/` (seit 18.11.2026; `configuration.yaml` lädt den Ordner mit `homeassistant: packages: !include_dir_named configuration_yaml/packages/`) | Alles YAML-Seitige des Radiostreams in einer Datei: Universal-Media-Player `media_player.radiostream_<p>_sender`, `sensor.radiostream_bt_signal` (command_line), `rest_command.bt_audio_*` für die REST-API des Add-ons und `sensor.radiostream_senderliste` (Sendername → Stream-URL). Die Recorder-Ausschlüsse bleiben in der zentralen `recorder.yaml`. |
+| [`packages/radiostream.yaml`](packages/radiostream.yaml) | Paket in `configuration_yaml/packages/` (seit 18.11.2026; `configuration.yaml` lädt den Ordner mit `homeassistant: packages: !include_dir_named configuration_yaml/packages/`) | Alles YAML-Seitige des Radiostreams in einer Datei: Universal-Media-Player `media_player.radiostream_<p>_sender`, `sensor.radiostream_bt_signal` (command_line), `rest_command.bt_audio_*` für die REST-API des Add-ons, `sensor.radiostream_senderliste` (Sendername → Stream-URL), die Template-Selects für Senderwahl und Presets und der Bitrate-Wächter `binary_sensor.radiostream_<p>_bitrate_unten`. Die Recorder-Ausschlüsse bleiben in der zentralen `recorder.yaml`. |
 
 `<p>` steht für die Box: `87_5`, `105_9` oder `97_0`.
 
@@ -64,7 +64,6 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_text.radiostream_stick_mac_map` | Text | `{"Logilink alt": "<MAC_STICK_ALT>", "Logilink neu": "<MAC_STICK_NEU>"}` (Adapter-MAC je Stick-Name, für `radiostream_stick_zuruecksetzen`; seit 18.11.2026) |
 | `sensor.radiostream_bt_signal` | command_line (`packages/radiostream.yaml`, Skript `cli/bt_link_quality.py` → `/config/cli/`) | Verbindungsqualität je Box ohne Scan, alle 2 Min; Attribute `87_5`/`97_0`/`105_9` mit `rssi`, `tx`, `tx_max`, `adapter` (seit 18.11.2026) |
 | `input_text.radiostream_dose_switch_map` | Text | `{"97_0":"switch.dose_bt_97_0","105_9":"switch.dose_bt_105_9","87_5":"switch.dose_bt_87_5"}` |
-| `input_text.radiostream_schalter_map` | Text | `{"97_0":"switch.97_0_schalter","105_9":"switch.105_9_schalter","87_5":"switch.87_5_schalter"}` |
 | `input_text.radiostream_aktiv_map` | Text | `{"97_0":"input_boolean.radiostream_97_0_aktiv", …}` |
 | `input_text.radiostream_mpd_entry_map` | Text | `{"97_0":"<config_entry_id der MPD-Integration>", …}` |
 | `input_text.radiostream_letzter_start` | Text | leer (wird von „Radiostream permanent" geschrieben) |
@@ -75,14 +74,13 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `input_number.radiostream_lautstarke_alle_boxen` | Zahl (10–100 %, Schieberegler) | Wert, auf dem die Sperre die Boxen hält (Add-on-Einstellung `volume_lock_level`, ab cc.16) |
 | `input_boolean.radiostream_power_schaltet_steckdosen` | Schalter | „Aus" schaltet auch die Steckdose |
 | `select.radiosender_<p>`, `select.radiostream_preset_1..10` | Template-Select im Paket `packages/radiostream.yaml` (seit 18.11.2026) | Senderwahl je Box und die 10 Presets. Optionen immer aus `sensor.radiostream_senderliste`, der Wert steht in `input_text.letzter_sender_<p>` / `letzter_preset_<n>` (eine Auswahl schreibt dorthin, beim Neustart wird er sicher wiederhergestellt). Ersetzen die früheren `input_select`-Helfer, deren gespeicherte Optionsliste veraltete: nach einem Neustart sprang eine Auswahl, deren Sender dort fehlte, auf den ersten Eintrag (am 18.11.2026: 97.0 bis zu 80 s „Queen"). |
-| `input_select.radiostream_<p>_steckdose` | Dropdown | Optionen: die drei `switch.dose_bt_*` |
 | `input_number.radiostream_<p>_letzte_position` | Zahl | Stall-Erkennung (muss −1 und die Spielzeit in Sekunden aufnehmen können) |
 | `input_datetime.radiostream_letzte_automatische_voll_reparatur` | Datum + Zeit | Sperrzeit der Voll-Reparatur |
 | `binary_sensor.radiostream_<p>_spielt_nicht` (Anzeigename „Radiostream <p> Wiedergabe": *OK* / *Problem*) | Template-Binärsensor (Helfer), Geräteklasse *Problem*, **Ausschaltverzögerung 1:30 min** | `{{ is_state('input_boolean.radiostream_<p>_aktiv', 'on') and is_state('switch.dose_bt_<p>', 'on') and not is_state('media_player.musik_radiostream_<p>', 'playing') }}` – an, solange die Box spielen soll, es aber nicht tut; geht erst aus, wenn der Player 90 s durchgehend spielt (ab 11.11.2026) |
 | `switch.radiostream_steckdosen_alle` | Gruppe (Schalter), „Alle Mitglieder" an | Die drei `switch.dose_bt_*`; an, wenn alle drei an sind; Schalten wirkt auf alle drei (ab 11.11.2026) |
 | `sensor.radiostream_boxen_ohne_verbindung` | Template-Sensor (Helfer) | Anzahl der Boxen, die aktiv sind, deren Steckdose an ist und deren Player `unavailable` ist (aus `input_text.radiostream_aktiv_map` und `input_text.radiostream_dose_switch_map`); Anzeige im Dashboard; bis 18.11.2026 Auslöser des Stick-Resets (ab 2 für 4 Min) |
 | `sensor.radiostream_sticks_ohne_verbindung` | Template-Sensor (Helfer) | Sticks, an denen alle aktiven Boxen mit eingeschalteter Steckdose `unavailable` sind, kommagetrennt (z. B. `Logilink neu`), sonst `keine` (aus `input_text.radiostream_stick_map`, `…_aktiv_map`, `…_dose_switch_map`); für 4 Min ≠ `keine` startet die Automatik „Stick-Reset je Stick“ (seit 18.11.2026) |
-| `switch.<p>_schalter` | Template-Schalter (Helfer) | leitet an die in `input_select.radiostream_<p>_steckdose` gewählte Steckdose weiter |
+| `binary_sensor.radiostream_<p>_bitrate_unten` | Trigger-Template im Paket `packages/radiostream.yaml` (seit 21.11.2026) | an = Box hängt auf der untersten SBC-Bitrate (UKW rauscht); alle 5 Min aus `GET /api/diagnostics/pulse-bluetooth`, Attribut `sbc_frames_per_packet` |
 
 ## Einspielen
 

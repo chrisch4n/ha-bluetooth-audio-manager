@@ -324,11 +324,19 @@ rest_command:
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/adapters"
     method: get
 
+  # Hauptadapter wechseln (danach Add-on-Neustart noetig). Repariert 21.11.2026 von Claude auf Wunsch
+  # des Nutzers: Seit Add-on cc.24 braucht clean: true zusaetzlich confirm_unpair = Anzahl der Boxen,
+  # die dabei entkoppelt werden (aus rest_command.bt_audio_set_adapter_impact, Feld count) - ohne
+  # lehnt das Add-on mit 409 ab. Ohne clean ist keine Bestaetigung noetig.
   bt_audio_set_adapter:
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/set-adapter"
     method: post
     content_type: "application/json"
-    payload: '{"adapter": "{{ adapter }}", "clean": {{ "true" if clean | default(false) else "false" }}}'
+    payload: '{"adapter": "{{ adapter }}", "clean": {{ "true" if clean | default(false) else "false" }}{% if confirm_unpair is defined %}, "confirm_unpair": {{ confirm_unpair | int }}{% endif %}}'
+
+  bt_audio_set_adapter_impact:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/set-adapter/impact"
+    method: get
 
   bt_audio_restart:
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/restart"
@@ -364,6 +372,27 @@ rest_command:
 
   bt_audio_diagnostics_mpris:
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/diagnostics/mpris"
+    method: get
+
+  # Bitrate je Box (sbc_frames_per_packet, at_lowest_step), genutzt vom Bitrate-Waechter unten.
+  # Angelegt 21.11.2026 von Claude auf Wunsch des Nutzers.
+  bt_audio_pulse_bluetooth:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/diagnostics/pulse-bluetooth"
+    method: get
+    timeout: 20
+
+  # Aussetzer-Diagnose (Gap-Monitor, Add-on ab cc.9). Angelegt 21.11.2026 von Claude auf Wunsch des
+  # Nutzers, genutzt von script.radiostream_aussetzer_diagnose. Start mit minutes (0.5-60, Standard 10);
+  # Status/Ergebnis: events_per_sink (silence = Ton fehlte schon vor Bluetooth, stall = Bluetooth-Ausgang
+  # stockte) und stall_clusters (gleichzeitig auf mehreren Boxen = gemeinsamer Stick/USB-Weg).
+  bt_audio_gap_monitor_start:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/diagnostics/gap-monitor"
+    method: post
+    content_type: "application/json"
+    payload: '{"minutes": {{ minutes | default(10) | float }}}'
+
+  bt_audio_gap_monitor_status:
+    url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/diagnostics/gap-monitor"
     method: get
 
 #   bt_audio_debug_avrcp_cycle:
@@ -608,3 +637,43 @@ template:
               entity_id: input_text.letzter_preset_10
             data:
               value: "{{ option }}"
+
+  # Bitrate-Waechter, angelegt 21.11.2026 von Claude auf Wunsch des Nutzers. Das Add-on leitet aus
+  # PulseAudio ab, wie weit der SBC-Bitpool je Box gesenkt ist (sbc_frames_per_packet: 5-7 = volle
+  # Bitrate, 15 = unterste Stufe). Auf der untersten Stufe rauscht der UKW-Sender; ein Bluetooth-
+  # Neuverbinden behebt das (Automation "Radiostream Bitrate unten: BT-Reconnect").
+  # Alle 5 Minuten; am 21.11.2026 gemessen: die Abfrage stoert laufende Streams nicht (Gap-Monitor).
+  # an = Box haengt auf der untersten Stufe; aus = volle Bitrate oder Box nicht verbunden.
+  - triggers:
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    actions:
+      - action: rest_command.bt_audio_pulse_bluetooth
+        response_variable: pb
+        continue_on_error: true
+      - variables:
+          sinks: "{{ pb.content.sinks if (pb is defined and pb.status == 200 and pb.content is mapping) else [] }}"
+          macs: "{{ states('input_text.radiostream_address_map') | from_json(default={}) }}"
+    binary_sensor:
+      - name: "Radiostream 87.5 Bitrate unten"
+        unique_id: radiostream_87_5_bitrate_unten
+        device_class: problem
+        state: "{% set s = sinks | selectattr('sink', 'search', macs.get('87_5', '-') | replace(':', '_')) | list %}{{ s | count > 0 and s[0].at_lowest_step }}"
+        attributes:
+          sbc_frames_per_packet: "{% set s = sinks | selectattr('sink', 'search', macs.get('87_5', '-') | replace(':', '_')) | list %}{{ s[0].sbc_frames_per_packet if s else none }}"
+      - name: "Radiostream 97.0 Bitrate unten"
+        unique_id: radiostream_97_0_bitrate_unten
+        device_class: problem
+        state: "{% set s = sinks | selectattr('sink', 'search', macs.get('97_0', '-') | replace(':', '_')) | list %}{{ s | count > 0 and s[0].at_lowest_step }}"
+        attributes:
+          sbc_frames_per_packet: "{% set s = sinks | selectattr('sink', 'search', macs.get('97_0', '-') | replace(':', '_')) | list %}{{ s[0].sbc_frames_per_packet if s else none }}"
+      - name: "Radiostream 105.9 Bitrate unten"
+        unique_id: radiostream_105_9_bitrate_unten
+        device_class: problem
+        state: "{% set s = sinks | selectattr('sink', 'search', macs.get('105_9', '-') | replace(':', '_')) | list %}{{ s | count > 0 and s[0].at_lowest_step }}"
+        attributes:
+          sbc_frames_per_packet: "{% set s = sinks | selectattr('sink', 'search', macs.get('105_9', '-') | replace(':', '_')) | list %}{{ s[0].sbc_frames_per_packet if s else none }}"

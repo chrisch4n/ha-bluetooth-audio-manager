@@ -206,8 +206,12 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 ### Zentrale Helfer
 
 - `input_text.radiostream_address_map`, `..._port_map`, `..._dose_switch_map`,
-  `..._schalter_map`, `..._aktiv_map`, `..._mpd_entry_map` – JSON-Maps pro Box,
-  einzige Quelle für MACs, Ports, Steckdosen, Schalter und MPD-Config-Entries.
+  `..._aktiv_map`, `..._mpd_entry_map`, `..._stick_map`, `..._stick_mac_map` –
+  JSON-Maps pro Box bzw. Stick, einzige Quelle für MACs, Ports, Steckdosen,
+  MPD-Config-Entries und die Stick-Zuordnung. (Bis 21.11.2026 gab es zusätzlich
+  `..._schalter_map` mit drei Template-Schaltern `switch.<p>_schalter` und den
+  Auswahlhelfern `input_select.radiostream_<p>_steckdose` – ein Umweg zur selben
+  Steckdose, entfernt; `radiostream_power_toggle` nutzt `dose_switch_map`.)
 - `input_boolean.radiostream_<p>_aktiv` – soll die Box spielen.
 - `input_boolean.radiostream_ausfall_gemeldet_<p>` – für diese Box wurde ein
   Ausfall gemeldet (nur dann gibt es eine Entwarnung).
@@ -219,7 +223,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 - `select.radiosender_<p>`, `select.radiostream_preset_1..10` – Template-Selects
   im Paket `radiostream.yaml` (seit 18.11.2026, vorher `input_select`-Helfer):
   Optionen immer aus der Senderliste, Wert in `input_text.letzter_sender_<p>` /
-  `letzter_preset_<n>`. `input_select.radiostream_<p>_steckdose` bleibt ein Helfer.
+  `letzter_preset_<n>`. Die alten `input_select`-Helfer sind seit 21.11.2026 gelöscht.
 - `input_number.radiostream_<p>_letzte_position` – Stall-Erkennung des Watchdogs.
 - `input_text.radiostream_letzter_start` – Mixing-Schutz (zuletzt gestarteter
   Player + Zeit).
@@ -236,9 +240,15 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 | **Wieder verfügbar** | Player kommt aus `unavailable` zurück (20 s) oder „spielt nicht" geht aus (Player spielt 90 s durchgehend) | Entwarnung mit Ausfalldauer, ersetzt die Ausfallmeldung (gleicher Tag). Nur wenn vorher eine Meldung verschickt wurde. |
 | **Nach HA-Start prüfen** | 3 Min nach HA-Start | Box seit dem Start weg: Diagnose, bei getrennter Bluetooth-Verbindung einmal Steckdosen-Zyklus. Holt verpasste Entwarnungen nach. |
 | **Lautstärke-Sperre an Add-on übertragen** | Schalter `lautstarke_fest_100`, Wert `lautstarke_alle_boxen`, HA-Start | Gibt den Sperr-Wert (10–100 %) als `volume_lock_level` ans Add-on und setzt `volume_lock` für alle Boxen per REST (bei reiner Wert-Änderung nur den Wert). |
-| **Nächtlicher Steckdosen-Zyklus** (deaktiviert) | täglich 04:30 | Startet `radiostream_steckdosen_alle_zyklieren`. Am 13.11.2026 gegen das Rauschen eingerichtet, am 14.11. abgeschaltet: Das Rauschen kam von der abgesenkten Bluetooth-Bitrate (Abschnitt 3), und das Neuverbinden der Boxen senkt sie selbst ab. |
+| **Bitrate unten: BT-Reconnect** (seit 21.11.2026) | `binary_sensor.radiostream_<p>_bitrate_unten` seit 10 Min an; zusätzlich alle 15 Min eine Prüfung, falls der Sensor schon ohne Wechsel an war | Die Box hängt auf der untersten SBC-Bitrate, ihr UKW-Sender rauscht: `rest_command.bt_audio_force_reconnect` nur für diese Box, 30 s später `radiostream_mpd_sicherstellen`, Push (Tag `radiostream_bitrate`). Nicht während Voll-Reparatur, Stick-Reset oder Zyklus aller Boxen; höchstens einmal in 30 Min. |
 | **Stick-Reset je Stick** (Entity `automation.radiostream_stick_reset_bei_mehrfachausfall`) | `sensor.radiostream_sticks_ohne_verbindung` nennt seit 4 Min einen oder mehrere Sticks (alle aktiven Boxen mit Strom an diesem Stick: Player `unavailable`) | Startet `radiostream_stick_zuruecksetzen` mit Stufe *auto* nur für den genannten Stick (bei mehreren für alle). Nicht während Voll-Reparatur, Zyklus aller Boxen oder eines laufenden Stick-Resets; höchstens einmal in 30 Min (ab 13.11.2026, je Stick seit 18.11.2026; vorher: zwei Boxen ohne Verbindung). |
-| ~~Sender-Auswahl persistieren~~, ~~Senderlisten synchronisieren~~ | – | Seit 18.11.2026 deaktiviert (bleiben vorerst als Rückweg): Die Template-Selects schreiben ihre Auswahl selbst in `letzter_sender_*` / `letzter_preset_*` und holen die Optionen direkt aus der Senderliste. `input_select.set_options` wurde nie gespeichert – deshalb veralteten die Listen der alten Helfer, und nach einem Neustart sprang 97.0 kurz auf „Queen“. |
+
+Am 21.11.2026 gelöscht: *Sender-Auswahl persistieren* und *Senderlisten
+synchronisieren* (seit 18.11. aus; die Template-Selects schreiben ihre Auswahl selbst
+in `letzter_sender_*` / `letzter_preset_*` und holen die Optionen direkt aus der
+Senderliste – `input_select.set_options` wurde nie gespeichert, deshalb veralteten die
+alten Listen) sowie der *nächtliche Steckdosen-Zyklus* (13.–14.11.2026, aus: Das
+Rauschen kam von der abgesenkten Bitrate, nicht von den Boxen).
 
 ### Eskalationskette (Bug-Watch)
 
@@ -299,7 +309,8 @@ Meldung „bitte manuell prüfen" nach 40.
 | `radiostream_reparieren` („Voll-Reparatur") | Steckdose(n) aus, Add-on-Neustart, Steckdose(n) an, MPD-Integrationen neu laden, MPD sicherstellen. |
 | `radiostream_mpd_sicherstellen` | Startet einen fehlenden MPD-Dienst einer verbundenen Box. |
 | `radiostream_notfall_forget_pair` | Box entfernen, neu pairen, MPD zuweisen. Feld `player` (87_5/97_0/105_9) statt `address`/`mpd_port` – MAC und Port kommen dann aus den zentralen Maps (seit 19.11.2026). Koppelt am Stick der Box (`input_text.radiostream_stick_map` → `radiostream_stick_mac_map`, `rest_command.bt_audio_pair_device` mit `adapter`, Timeout 60 s); vorher landete eine vergessene Box immer am Hauptadapter. |
-| `radiostream_power_toggle` | An/Aus pro Box (Steckdose und Aktiv-Schalter). |
+| `radiostream_power_toggle` | An/Aus pro Box (Steckdose und Aktiv-Schalter); Steckdose aus `dose_switch_map` (seit 21.11.2026 direkt). |
+| `radiostream_aussetzer_diagnose` (seit 21.11.2026) | Gap-Monitor des Add-ons für einige Minuten (Feld `minuten`, Standard 10), Ergebnis als Push (Tag `radiostream_diagnose`): je Box Stockungen am Bluetooth-Ausgang und Stille im Stream, dazu wie oft mehrere Boxen gleichzeitig stockten (Stick/USB). Button in *Reparatur → Status*. |
 | `radiostream_preset_abspielen` | Preset auf eine Box legen. |
 
 Konvention: Ein Skript ruft ein anderes immer mit `script.turn_on` +
@@ -318,6 +329,25 @@ Bedarfsfall stehen.
 (`mode` *soft* oder *usb*, optional `adapter` = MAC eines Sticks, sonst alle;
 siehe `radiostream_stick_zuruecksetzen`). `bt_audio_put_settings` nimmt
 `payload` als Text oder Objekt (Objekte gehen per `to_json` raus).
+`bt_audio_set_adapter` (Hauptadapter wechseln) nimmt seit 21.11.2026 optional
+`confirm_unpair` – das Add-on verlangt es seit cc.24 bei `clean: true`; den Wert
+(Anzahl der Boxen) liefert `bt_audio_set_adapter_impact`. Neu am 21.11.2026:
+`bt_audio_pulse_bluetooth` (Bitrate je Box, für den Bitrate-Wächter) und
+`bt_audio_gap_monitor_start` / `_status` (Aussetzer-Diagnose).
+
+### Bitrate-Wächter
+
+`binary_sensor.radiostream_<p>_bitrate_unten` (Paket `radiostream.yaml`, seit
+21.11.2026): Trigger-Template, das alle 5 Minuten `GET /api/diagnostics/pulse-bluetooth`
+abfragt. *An* heißt: Die Box hängt auf der untersten SBC-Stufe (15 Frames pro Paket
+statt 5–7) – der UKW-Sender rauscht. Attribut `sbc_frames_per_packet`. Am 21.11.2026
+mit dem Gap-Monitor geprüft: fünf Abfragen in drei Minuten, auf den gesunden Boxen
+keine einzige Stockung. Die Automation *Bitrate unten: BT-Reconnect* verbindet eine
+betroffene Box nach 10 Minuten neu. Kacheln „Bitrate“ in *Reparatur → Status*.
+
+Die Signalstärke (`sensor.radiostream_bt_signal`) bleibt beim Skript in HA Core:
+`GET /api/diagnostics/link-quality` des Add-ons scheitert hier mit „Address family not
+supported“, das Add-on läuft ohne Host-Netzwerk.
 
 ### Dashboard `radio-streams`
 

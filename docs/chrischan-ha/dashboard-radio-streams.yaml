@@ -1,5 +1,5 @@
 # Dashboard "radio-streams" (Receiver, Reparatur),
-# Export der Rohkonfiguration aus Home Assistant, Stand 19.11.2026.
+# Export der Rohkonfiguration aus Home Assistant, Stand 21.11.2026.
 # Einfuegen ueber Dashboard > Bearbeiten > Rohkonfigurations-Editor.
 # Enthaelt keine MACs, IPs, Benutzer- oder Geraete-IDs. Braucht card-mod/UIX;
 # die Ansicht "Receiver" nutzt die eigene Karte custom:radiostream-receiver-card.
@@ -61,6 +61,36 @@ views:
       grid_options:
         columns: 4
     - type: tile
+      entity: binary_sensor.radiostream_87_5_bitrate_unten
+      name: Bitrate 87.5
+      icon: mdi:waveform
+      vertical: true
+      state_content:
+      - state
+      - sbc_frames_per_packet
+      grid_options:
+        columns: 4
+    - type: tile
+      entity: binary_sensor.radiostream_97_0_bitrate_unten
+      name: Bitrate 97.0
+      icon: mdi:waveform
+      vertical: true
+      state_content:
+      - state
+      - sbc_frames_per_packet
+      grid_options:
+        columns: 4
+    - type: tile
+      entity: binary_sensor.radiostream_105_9_bitrate_unten
+      name: Bitrate 105.9
+      icon: mdi:waveform
+      vertical: true
+      state_content:
+      - state
+      - sbc_frames_per_packet
+      grid_options:
+        columns: 4
+    - type: tile
       entity: sensor.radiostream_boxen_ohne_verbindung
       name: Boxen ohne Verbindung
       icon: m3o:sync-problem
@@ -72,6 +102,37 @@ views:
       icon: m3o:network-check
       grid_options:
         columns: 6
+    - type: tile
+      entity: script.radiostream_aussetzer_diagnose
+      name: Aussetzer messen (10 Min, Ergebnis per Push)
+      icon: m3o:monitor-heart
+      hide_state: true
+      grid_options:
+        columns: 12
+      tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_aussetzer_diagnose
+        data:
+          variables:
+            minuten: 10
+        confirmation:
+          text: 'Aussetzer-Diagnose: misst 10 Minuten lang jede Box (Stockungen am Bluetooth-Ausgang
+            und Stille im Stream) und schickt das Ergebnis als Push. Die Sender laufen dabei
+            normal weiter. Starten?'
+      icon_tap_action:
+        action: perform-action
+        perform_action: script.turn_on
+        target:
+          entity_id: script.radiostream_aussetzer_diagnose
+        data:
+          variables:
+            minuten: 10
+        confirmation:
+          text: 'Aussetzer-Diagnose: misst 10 Minuten lang jede Box (Stockungen am Bluetooth-Ausgang
+            und Stille im Stream) und schickt das Ergebnis als Push. Die Sender laufen dabei
+            normal weiter. Starten?'
     - type: markdown
       content: '**Frequenz** | **MAC** | **Port** | **Stick** | **Signal**
 
@@ -689,9 +750,9 @@ views:
       grid_options:
         columns: 6
     - type: tile
-      entity: automation.radiostream_nachtlicher_steckdosen_zyklus
-      name: Nachts zyklieren (04:30)
-      icon: m3o:bedtime
+      entity: automation.radiostream_bitrate_unten_bt_reconnect
+      name: Bei Rauschen neu verbinden
+      icon: mdi:waveform
       features:
       - type: toggle
       grid_options:
