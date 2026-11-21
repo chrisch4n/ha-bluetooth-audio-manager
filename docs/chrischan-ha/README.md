@@ -6,8 +6,8 @@ System macht und warum es so gebaut ist, steht in
 [`../chrischan-radiostream.md`](../chrischan-radiostream.md).
 
 Alle Dateien sind unverändert aus Home Assistant übernommen; nur persönliche Daten
-sind ersetzt (siehe unten). Die langen `description`-Texte der Automationen und
-Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
+sind ersetzt (siehe unten). Die `description`-Texte der Automationen und Skripte nennen seit 21.11.2026 nur den
+Zweck; die frühere Änderungsgeschichte steht in [`historie.md`](historie.md).
 
 ## Inhalt
 
@@ -15,6 +15,7 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 |-------|-------|--------|
 | [`automations.yaml`](automations.yaml) | `automations.yaml` (UI-Automationen) | Die 8 Radiostream-Automationen |
 | [`scripts.yaml`](scripts.yaml) | `scripts.yaml` (UI-Skripte) | Die 11 Radiostream-Skripte + `benachrichtigung_alle_geraete` |
+| [`historie.md`](historie.md) | – | Die langen `description`-Texte (Änderungsgeschichte) der Automationen und Skripte, Stand 21.11.2026; in HA stehen seitdem nur noch kurze Zwecktexte |
 | [`dashboard-radio-streams.yaml`](dashboard-radio-streams.yaml) | Dashboard `radio-streams` (Rohkonfiguration) | Ansichten Receiver (Bedienung, Seite MEMORY für die Presets) und Reparatur (oben: „Wiedergabe" je Box, OK/Problem) |
 | [`packages/radiostream.yaml`](packages/radiostream.yaml) | Paket in `configuration_yaml/packages/` (seit 18.11.2026; `configuration.yaml` lädt den Ordner mit `homeassistant: packages: !include_dir_named configuration_yaml/packages/`) | Alles YAML-Seitige des Radiostreams in einer Datei: Universal-Media-Player `media_player.radiostream_<p>_sender`, `sensor.radiostream_bt_signal` (command_line), `rest_command.bt_audio_*` für die REST-API des Add-ons, `sensor.radiostream_senderliste` (Sendername → Stream-URL), die Template-Selects für Senderwahl und Presets und der Bitrate-Wächter `binary_sensor.radiostream_<p>_bitrate_unten`. Die Recorder-Ausschlüsse bleiben in der zentralen `recorder.yaml`. |
 
@@ -25,7 +26,7 @@ Skripte enthalten die Änderungshistorie und sind bewusst drin geblieben.
 | Platzhalter | Bedeutung |
 |-------------|-----------|
 | `<MAC_87_5>`, `<MAC_105_9>`, `<MAC_97_0>` | Bluetooth-Adresse der jeweiligen Box |
-| `notify.mobile_app_geraet_1..3` | Benachrichtigungsdienste der drei Handys/Tablets (Companion-App) |
+| `notify.mobile_app_geraet_1..4` | Benachrichtigungsdienste der vier Handys/Tablets (Companion-App); `geraet_4` ist das eigene Handy, an das die Diagnose-Pushes gehen |
 
 Die Adresse des Add-ons in den REST-Befehlen
 (`http://1b3a7c56-bluetooth-audio-manager:8099`) und der Slug in

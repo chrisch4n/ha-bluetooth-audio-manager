@@ -11,6 +11,11 @@ Argument: the JSON of input_text.radiostream_address_map, e.g.
   '{"87_5": "AA:BB:CC:DD:EE:FF", ...}'
 Output (stdout, JSON): {"87_5": {"rssi": -2, "tx": 4, "tx_max": 10,
   "adapter": "AA:..."}, "97_0": null, ...}; null = not connected.
+A speaker no adapter could read although one of them did not answer
+"not connected" gets a text such as "Lesefehler: hci1: Failed (0x03)" instead
+of null, so the dashboard can tell a failed reading from a missing link; the
+sensor state still counts only real readings (mappings). Added 21.11.2026 by
+Claude: 87.5 played but showed as not connected.
 
 rssi on a classic (BR/EDR) link is NOT dBm: dB outside the controller's
 golden receive range, 0 = inside (good), negative = weaker.  tx = the
@@ -37,6 +42,10 @@ OP_GET_CONN_INFO = 0x0031
 EV_CMD_COMPLETE = 0x0001
 EV_CMD_STATUS = 0x0002
 INVALID = 127
+NOT_CONNECTED = 0x02
+STATUS_NAMES = {0x01: "Unknown Command", 0x03: "Failed", 0x0A: "Busy",
+                0x0C: "Not Supported", 0x0D: "Invalid Parameters",
+                0x0F: "Not Powered", 0x11: "Invalid Index"}
 
 
 def open_socket():
@@ -101,10 +110,19 @@ def main():
                 adapters[index] = mac_from_le(data)
         for key, address in boxes.items():
             bdaddr = bytes(int(p, 16) for p in reversed(address.split(":")))
+            failures = []
             for index in indexes:
-                status, data = command(sock, OP_GET_CONN_INFO, index, bdaddr + b"\x00")
+                try:
+                    status, data = command(sock, OP_GET_CONN_INFO, index, bdaddr + b"\x00")
+                except TimeoutError:
+                    failures.append(f"hci{index}: keine Antwort")
+                    continue
+                if status == NOT_CONNECTED:
+                    continue
                 if status != 0 or len(data) < 10:
-                    continue  # 0x02 = not connected on this adapter
+                    name = STATUS_NAMES.get(status, "Status")
+                    failures.append(f"hci{index}: {name} (0x{status:02x})")
+                    continue
                 result[key] = {
                     "rssi": signed(data[7]),
                     "tx": signed(data[8]),
@@ -112,6 +130,9 @@ def main():
                     "adapter": adapters.get(index, f"hci{index}"),
                 }
                 break
+            else:
+                if failures:
+                    result[key] = "Lesefehler: " + ", ".join(failures)
     print(json.dumps(result))
 
 

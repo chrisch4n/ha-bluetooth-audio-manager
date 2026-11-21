@@ -233,6 +233,13 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 
 ### Automationen
 
+Die `description` jeder Automation und jedes Skripts nennt seit 21.11.2026 nur noch den
+Zweck; die frühere Änderungsgeschichte steht in [`chrischan-ha/historie.md`](chrischan-ha/historie.md).
+Boxenlisten in Vorlagen kommen aus `input_text.radiostream_address_map` (bzw.
+`dose_switch_map`, `mpd_entry_map`), nur Auslöser und Entitäten je Box sind fest eingetragen.
+*Radiostream permanent* und die Bitrate-Absicherung behalten 30 statt 5 Traces, weil ihre
+regelmäßigen Prüfungen sonst echte Läufe verdrängen.
+
 | Automation | Auslöser | Aufgabe |
 |------------|----------|---------|
 | **Radiostream permanent** | HA-Start, alle 5 Min, Senderwechsel, Aktiv-Schalter an, Rückkehr eines Players (20 s stabil), Player hört von selbst auf zu spielen (20 s) | Spielt den gewählten Sender. Watchdog startet neu, wenn ein aktiver Player nicht spielt, seine Position steht oder ein falscher Sender läuft. Senderwechsel, Aktivierung, Rückkehr und Stopp betreffen nur die eine Box; Rückkehr und Stopp nur, wenn sie aktiv ist. Zwischen Starts verschiedener Boxen 3 s Abstand (Mixing-Schutz). Modus `queued`. |
@@ -241,7 +248,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 | **Wieder verfügbar** | Player kommt aus `unavailable` zurück (20 s) oder „spielt nicht" geht aus (Player spielt 90 s durchgehend) | Entwarnung mit Ausfalldauer, ersetzt die Ausfallmeldung (gleicher Tag). Nur wenn vorher eine Meldung verschickt wurde. |
 | **Nach HA-Start prüfen** | 3 Min nach HA-Start | Box seit dem Start weg: Diagnose, bei getrennter Bluetooth-Verbindung einmal Steckdosen-Zyklus. Holt verpasste Entwarnungen nach. |
 | **Lautstärke-Sperre an Add-on übertragen** | Schalter `lautstarke_fest_100`, Wert `lautstarke_alle_boxen`, HA-Start | Gibt den Sperr-Wert (10–100 %) als `volume_lock_level` ans Add-on und setzt `volume_lock` für alle Boxen per REST (bei reiner Wert-Änderung nur den Wert). |
-| **Bitrate unten: BT-Reconnect** (seit 21.11.2026) | `binary_sensor.radiostream_<p>_bitrate_unten` seit 10 Min an; zusätzlich alle 15 Min eine Prüfung, falls der Sensor schon ohne Wechsel an war | Die Box hängt auf der untersten SBC-Bitrate, ihr UKW-Sender rauscht: `rest_command.bt_audio_force_reconnect` nur für diese Box, 30 s später `radiostream_mpd_sicherstellen`, Push (Tag `radiostream_bitrate`). Nicht während Voll-Reparatur, Stick-Reset oder Zyklus aller Boxen; höchstens einmal in 30 Min. |
+| **Bitrate unten: BT-Reconnect** (seit 21.11.2026, Absicherung) | `binary_sensor.radiostream_<p>_bitrate_unten` seit 40 Min an; zusätzlich alle 15 Min eine Prüfung, falls der Sensor schon ohne Wechsel an war | Normalerweise verbindet das Add-on (ab cc.30) eine Box nach 5 Min auf der untersten Bitrate selbst neu. Hängt sie trotzdem 40 Min unten: `rest_command.bt_audio_force_reconnect` nur für diese Box, 30 s später `radiostream_mpd_sicherstellen`, Push nur an das eigene Handy (Tag `radiostream_bitrate`). Nicht während Voll-Reparatur, Stick-Reset oder Zyklus aller Boxen; höchstens einmal in 30 Min; 30 Traces. |
 | **Stick-Reset je Stick** (Entity `automation.radiostream_stick_reset_bei_mehrfachausfall`) | `sensor.radiostream_sticks_ohne_verbindung` nennt seit 4 Min einen oder mehrere Sticks (alle aktiven Boxen mit Strom an diesem Stick: Player `unavailable`) | Startet `radiostream_stick_zuruecksetzen` mit Stufe *auto* nur für den genannten Stick (bei mehreren für alle). Nicht während Voll-Reparatur, Zyklus aller Boxen oder eines laufenden Stick-Resets; höchstens einmal in 30 Min (ab 13.11.2026, je Stick seit 18.11.2026; vorher: zwei Boxen ohne Verbindung). |
 
 Am 21.11.2026 gelöscht: *Sender-Auswahl persistieren* und *Senderlisten
@@ -311,7 +318,7 @@ Meldung „bitte manuell prüfen" nach 40.
 | `radiostream_mpd_sicherstellen` | Startet einen fehlenden MPD-Dienst einer verbundenen Box. |
 | `radiostream_notfall_forget_pair` | Box entfernen, neu pairen, MPD zuweisen. Feld `player` (87_5/97_0/105_9) statt `address`/`mpd_port` – MAC und Port kommen dann aus den zentralen Maps (seit 19.11.2026). Koppelt am Stick der Box (`input_text.radiostream_stick_map` → `radiostream_stick_mac_map`, `rest_command.bt_audio_pair_device` mit `adapter`, Timeout 60 s); vorher landete eine vergessene Box immer am Hauptadapter. |
 | `radiostream_power_toggle` | An/Aus pro Box (Steckdose und Aktiv-Schalter); Steckdose aus `dose_switch_map` (seit 21.11.2026 direkt). |
-| `radiostream_aussetzer_diagnose` (seit 21.11.2026) | Gap-Monitor des Add-ons für einige Minuten (Feld `minuten`, Standard 10), Ergebnis als Push (Tag `radiostream_diagnose`): je Box Stockungen am Bluetooth-Ausgang und Stille im Stream, dazu wie oft mehrere Boxen gleichzeitig stockten (Stick/USB). Button in *Reparatur → Status*. |
+| `radiostream_aussetzer_diagnose` (seit 21.11.2026) | Gap-Monitor des Add-ons für einige Minuten (Feld `minuten`, Standard 10), Ergebnis als Push nur an das eigene Handy (Tag `radiostream_diagnose`): je Box Stockungen am Bluetooth-Ausgang und Stille im Stream, dazu wie oft mehrere Boxen gleichzeitig stockten (Stick/USB). Button in *Reparatur → Status*. |
 | `radiostream_preset_abspielen` | Preset auf eine Box legen. |
 
 Konvention: Ein Skript ruft ein anderes immer mit `script.turn_on` +
@@ -344,9 +351,13 @@ abfragt. *An* heißt: Die Box hängt auf der untersten SBC-Stufe (15 Frames pro 
 statt 5–7) – der UKW-Sender rauscht. Attribut `sbc_frames_per_packet`. Am 21.11.2026
 mit dem Gap-Monitor geprüft: fünf Abfragen in drei Minuten, auf den gesunden Boxen
 keine einzige Stockung. Die Automation *Bitrate unten: BT-Reconnect* verbindet eine
-betroffene Box nach 10 Minuten neu. Kacheln „Bitrate“ in *Reparatur → Status*.
+betroffene Box nach 40 Minuten neu – als Absicherung, denn ab cc.30 verbindet das Add-on
+selbst eine spielende Box neu, die 5 Minuten auf der untersten Stufe hängt (Einstellung
+*Reconnect after minutes at the lowest bitrate*). Kacheln „Bitrate“ in *Reparatur → Status*.
 
-Die Signalstärke (`sensor.radiostream_bt_signal`) bleibt beim Skript in HA Core:
+Die Signalstärke (`sensor.radiostream_bt_signal`) bleibt beim Skript in HA Core (seit
+21.11.2026 meldet es eine verbundene, aber nicht lesbare Box als „Lesefehler: …“ statt als
+nicht verbunden; die Statustabelle zeigt das an):
 `GET /api/diagnostics/link-quality` des Add-ons scheitert hier mit „Address family not
 supported“, das Add-on läuft ohne Host-Netzwerk.
 

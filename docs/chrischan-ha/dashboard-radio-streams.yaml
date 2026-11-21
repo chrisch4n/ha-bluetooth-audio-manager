@@ -146,13 +146,13 @@ views:
         is number %}{% set w = ''gut'' if sig.rssi >= -5 else (''mäßig'' if sig.rssi >= -15
         else (''schwach'' if sig.rssi >= -25 else ''kritisch'')) %}{{ sig.rssi }} dB · {{
         w }}{% else %}?{% endif %}{% if sig.tx_max %} · TX {{ sig.tx }}/{{ sig.tx_max }} dBm{%
-        endif %}{% else %}–{% endif %}
+        endif %}{% elif sig is string %}{{ sig }}{% else %}–{% endif %}
 
         {% endfor %}
 
         _MAC, Port und Stick live aus den zentralen Maps. Signal: Abstand zum Idealbereich
         des Sticks in dB, alle 2 Minuten ohne Scan gemessen; gut bis −5, mäßig bis −15, schwach
-        bis −25, darunter kritisch._'
+        bis −25, darunter kritisch; „Lesefehler“ = verbunden, aber nicht messbar._'
       entity_id:
       - input_text.radiostream_address_map
       - input_text.radiostream_port_map
@@ -751,7 +751,7 @@ views:
         columns: 6
     - type: tile
       entity: automation.radiostream_bitrate_unten_bt_reconnect
-      name: Bei Rauschen neu verbinden
+      name: 'Rauschen: Absicherung in HA (40 Min)'
       icon: mdi:waveform
       features:
       - type: toggle
