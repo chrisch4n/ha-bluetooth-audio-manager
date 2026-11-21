@@ -342,6 +342,20 @@
             </div>
           </div>
 
+          <!-- Lowest SBC bitrate -->
+          <div class="mb-3">
+            <label for="setting-lowest-bitrate-minutes" class="form-label">
+              <strong>Reconnect after minutes at the lowest bitrate</strong>
+            </label>
+            <input type="number" class="form-control" id="setting-lowest-bitrate-minutes" min="0" max="60">
+            <div class="form-text">
+              When the link cannot keep up, PulseAudio lowers the Bluetooth bitrate; a speaker
+              that stays at the lowest step sounds bad (an FM transmitter hisses) and does not
+              recover by itself. A playing speaker stuck there this long is reconnected from here
+              and its station plays on - at most once in 30&nbsp;minutes. 0 switches it off.
+            </div>
+          </div>
+
           <hr>
 
           <!-- Volume lock (all devices) -->

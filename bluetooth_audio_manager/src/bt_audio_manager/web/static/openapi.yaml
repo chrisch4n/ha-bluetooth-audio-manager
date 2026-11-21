@@ -1633,6 +1633,17 @@ components:
             close and re-open it from the app so PulseAudio picks 44.1 kHz
             (no resampling of 44.1 kHz sources, about 9 % less airtime).
             At most two attempts per speaker in 10 minutes.
+        lowest_bitrate_reconnect_minutes:
+          type: integer
+          minimum: 0
+          maximum: 60
+          default: 5
+          description: >
+            Reconnect a playing speaker whose SBC bitrate has stayed at
+            PulseAudio's lowest step for this many minutes (an FM transmitter
+            then hisses); the station plays on afterwards. Checked once a
+            minute, at most one such reconnect per speaker in 30 minutes.
+            0 switches it off.
         volume_lock_level:
           type: integer
           minimum: 10

@@ -1129,6 +1129,8 @@ async function openSettingsModal() {
     $("#setting-reconnect-max-backoff").value = data.reconnect_max_backoff_seconds;
     $("#setting-scan-duration").value = data.scan_duration_seconds;
     $("#setting-a2dp-prefer-44k").checked = data.a2dp_prefer_44k !== false;
+    $("#setting-lowest-bitrate-minutes").value =
+      Number.isInteger(data.lowest_bitrate_reconnect_minutes) ? data.lowest_bitrate_reconnect_minutes : 5;
     const lockAll = $("#setting-volume-lock-all");
     lockAll.checked = !!data.volume_lock_all;
     lockAll.indeterminate = !!data.volume_lock_any && !data.volume_lock_all;
@@ -1147,6 +1149,8 @@ async function saveSettings() {
     reconnect_max_backoff_seconds: parseInt($("#setting-reconnect-max-backoff").value, 10),
     scan_duration_seconds: parseInt($("#setting-scan-duration").value, 10),
     a2dp_prefer_44k: $("#setting-a2dp-prefer-44k").checked,
+    lowest_bitrate_reconnect_minutes: Math.min(60, Math.max(0,
+      parseInt($("#setting-lowest-bitrate-minutes").value, 10) || 0)),
     volume_lock_level: Math.min(100, Math.max(10,
       parseInt($("#setting-volume-lock-level").value, 10) || 100)),
   };

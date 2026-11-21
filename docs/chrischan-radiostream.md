@@ -90,6 +90,7 @@ das Einspielen.
 | cc.27 | 18.11. | Fußzeile der Oberfläche nennt alle Sticks, die das Add-on nutzt (Hauptadapter zuerst); `/api/info` liefert dafür `adapter_labels` |
 | cc.28 | 18.11. | Fortsetzen nach Neustart robuster: Der laufende Sender wird alle 30 s notiert; ist ein MPD beim Beenden schon weg (das Stopp-Signal des Containers erreicht MPD und Add-on gleichzeitig), bleibt die Notiz erhalten. Beim cc.27-Neustart hatte das gefehlt, die Sender startete erst „Radiostream permanent“ |
 | cc.29 | 18.11. | Kleine Korrekturen aus der Durchsicht: Klappt das Neuverbinden einer 48-kHz-Box nicht sofort, wird der Sender notiert und beim Wiederverbinden fortgesetzt (vorher wartete er auf HA); ein Fehler beim Fortsetzen erscheint als solcher im Log statt als „MPD start failed“. |
+| cc.30 | 21.11. | Hängt eine spielende Box 5 Minuten (Einstellung *Reconnect after minutes at the lowest bitrate*, 0 = aus) auf der untersten SBC-Bitrate, verbindet das Add-on sie neu; der Sender läuft danach weiter. Höchstens einmal je Box in 30 Minuten. Anlass: 87.5 hing am 21.11. mit zwei Stockungen pro Sekunde auf der untersten Stufe, ein Neuverbinden machte sie sofort sauber. |
 
 ### Basis und übernommene Arbeit aus anderen Forks
 

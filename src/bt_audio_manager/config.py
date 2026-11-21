@@ -28,7 +28,12 @@ _SETTINGS_KEYS = {
     "scan_duration_seconds",
     "a2dp_prefer_44k",
     "volume_lock_level",
+    "lowest_bitrate_reconnect_minutes",
 }
+
+# Minutes a playing speaker may sit at the lowest SBC bitrate before the app
+# reconnects it (0 = never).
+LOWEST_BITRATE_RECONNECT_MAX = 60
 
 # Volume the lock holds MPD at (percent); the stream and the speaker stay at 100.
 VOLUME_LOCK_LEVEL_MIN = 10
@@ -54,6 +59,9 @@ class AppConfig:
     # Level the per-device volume lock holds MPD's volume at, for every
     # locked speaker (e.g. below 100 to avoid over-driving an FM transmitter).
     volume_lock_level: int = 100
+    # Reconnect a playing speaker that stayed this many minutes at the lowest
+    # SBC bitrate (FM transmitters then hiss); 0 = off.
+    lowest_bitrate_reconnect_minutes: int = 5
 
     @property
     def bt_adapter_is_mac(self) -> bool:
@@ -75,6 +83,7 @@ class AppConfig:
             "scan_duration_seconds": self.scan_duration_seconds,
             "a2dp_prefer_44k": self.a2dp_prefer_44k,
             "volume_lock_level": self.volume_lock_level,
+            "lowest_bitrate_reconnect_minutes": self.lowest_bitrate_reconnect_minutes,
         }
 
     def save_settings(self) -> None:
@@ -124,6 +133,12 @@ class AppConfig:
                     level if isinstance(level, int) and not isinstance(level, bool)
                     and VOLUME_LOCK_LEVEL_MIN <= level <= VOLUME_LOCK_LEVEL_MAX
                     else 100
+                )
+                minutes = settings.get("lowest_bitrate_reconnect_minutes", 5)
+                config.lowest_bitrate_reconnect_minutes = (
+                    minutes if isinstance(minutes, int) and not isinstance(minutes, bool)
+                    and 0 <= minutes <= LOWEST_BITRATE_RECONNECT_MAX
+                    else 5
                 )
                 logger.info("Loaded settings from %s", SETTINGS_PATH)
                 return config

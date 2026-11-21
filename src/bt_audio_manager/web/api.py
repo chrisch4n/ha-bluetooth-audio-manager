@@ -11,7 +11,7 @@ from aiohttp import web
 from aiohttp.web import WebSocketResponse
 from dbus_next.errors import DBusError
 
-from ..config import VOLUME_LOCK_LEVEL_MAX, VOLUME_LOCK_LEVEL_MIN
+from ..config import LOWEST_BITRATE_RECONNECT_MAX, VOLUME_LOCK_LEVEL_MAX, VOLUME_LOCK_LEVEL_MIN
 from ..reconnect import ConnectDeferred
 from ..persistence.store import FRIENDLY_NAME_MAX_LEN, normalize_address
 
@@ -664,6 +664,14 @@ def create_api_routes(
             errors.append("volume_lock_all must be a boolean")
         if "a2dp_prefer_44k" in body and not isinstance(body["a2dp_prefer_44k"], bool):
             errors.append("a2dp_prefer_44k must be a boolean")
+        if "lowest_bitrate_reconnect_minutes" in body:
+            v = body["lowest_bitrate_reconnect_minutes"]
+            if (not isinstance(v, int) or isinstance(v, bool)
+                    or v < 0 or v > LOWEST_BITRATE_RECONNECT_MAX):
+                errors.append(
+                    f"lowest_bitrate_reconnect_minutes must be an integer between 0 and "
+                    f"{LOWEST_BITRATE_RECONNECT_MAX}"
+                )
         if "volume_lock_level" in body:
             v = body["volume_lock_level"]
             if (not isinstance(v, int) or isinstance(v, bool)
@@ -679,7 +687,7 @@ def create_api_routes(
         # Apply to live config
         allowed = {"auto_reconnect", "reconnect_interval_seconds",
                     "reconnect_max_backoff_seconds", "scan_duration_seconds",
-                    "a2dp_prefer_44k"}
+                    "a2dp_prefer_44k", "lowest_bitrate_reconnect_minutes"}
         was_auto_reconnect = manager.config.auto_reconnect
         for key in allowed:
             if key in body:
@@ -872,12 +880,14 @@ def create_api_routes(
         except Exception as e:
             logger.debug("SBC estimate failed: %s", e)
             sinks = []
+        minutes = getattr(manager.config, "lowest_bitrate_reconnect_minutes", None)
         return web.json_response({
             "modules": modules,
             "output_rate_refresh_interval_ms": interval,
             "effective_interval_ms": interval or pulse.RATE_REFRESH_DEFAULT_MS,
             "custom": interval is not None,
             "sinks": sinks,
+            "lowest_bitrate_reconnect_minutes": minutes if isinstance(minutes, int) else None,
         })
 
     @routes.get("/api/diagnostics/link-quality")

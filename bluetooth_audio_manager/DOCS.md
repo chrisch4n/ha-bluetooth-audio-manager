@@ -96,6 +96,16 @@
 >   10 minutes. Up to cc.24 only the A2DP stream was re-opened, which could
 >   leave a speaker decoding at 48 kHz — it then played about 9 % too fast.
 >
+> - **Reconnect after minutes at the lowest bitrate** (App Settings, 5 by
+>   default, 0 = off) — when a link cannot keep up, PulseAudio lowers the
+>   SBC bitpool and raises it again step by step; a speaker that stays at
+>   the lowest step (15 SBC frames per packet, `at_lowest_step` in
+>   `GET /api/diagnostics/pulse-bluetooth`) keeps sounding bad and an FM
+>   transmitter hisses. The app looks once a minute and reconnects a
+>   playing speaker that has been there this long; the station plays on.
+>   At most once per speaker in 30 minutes, so a link that is simply too
+>   weak does not loop — move the adapter closer (USB extension) instead.
+>
 > Optimisations:
 >
 > - **Repeat for live radio** — MPD runs with repeat on, so a stream the
