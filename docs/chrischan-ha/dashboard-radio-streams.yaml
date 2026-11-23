@@ -90,6 +90,18 @@ views:
       - sbc_frames_per_packet
       grid_options:
         columns: 4
+    - type: history-graph
+      title: BT-Signal in dB (0 = gut, negativer = schwächer)
+      hours_to_show: 72
+      grid_options:
+        columns: full
+      entities:
+      - entity: sensor.radiostream_87_5_signal
+        name: '87.5'
+      - entity: sensor.radiostream_97_0_signal
+        name: '97.0'
+      - entity: sensor.radiostream_105_9_signal
+        name: '105.9'
     - type: tile
       entity: sensor.radiostream_boxen_ohne_verbindung
       name: Boxen ohne Verbindung

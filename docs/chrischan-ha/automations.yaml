@@ -1,4 +1,4 @@
-# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 21.11.2026.
+# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 23.11.2026.
 # Anonymisiert: Box-MACs -> <MAC_87_5>/<MAC_105_9>/<MAC_97_0>, Mobilgeraete -> geraet_1..4.
 # Beschreibung des Systems: ../chrischan-radiostream.md
 - id: '1786256754488'
@@ -10,10 +10,10 @@
     Box mit Nachdiagnose (wartet einen laufenden Stick-Reset ab und entfaellt, wenn die Box
     danach wieder da ist), 3 Voll-Reparatur mit Add-on-Neustart (hoechstens alle 30 Min, input_datetime.radiostream_letzte_automatische_voll_reparatur),
     4 nur Meldung "bitte manuell pruefen". Jede Stufe setzt den Merker input_boolean.radiostream_ausfall_gemeldet_<p>
-    und schickt einen Push an alle Geraete mit tag radiostream_<p> (ersetzt die vorige Meldung);
+    und schickt einen Push mit tag radiostream_<p> (Stufe 1 nur ans eigene Handy, ab Stufe 2 an alle Geraete; ersetzt die vorige Meldung);
     die Entwarnung kommt von automation.radiostream_player_wieder_verfugbar_benachrichtigung_loschen.
     Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
-    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt.]'
+    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt. 23.11.2026 Claude, auf Wunsch des Nutzers: Stufe 1 nur ans eigene Handy.]'
   triggers:
   - entity_id:
     - media_player.musik_radiostream_87_5
@@ -126,25 +126,51 @@
       entity_id: input_boolean.radiostream_ausfall_gemeldet_{{ p }}
     note: 'Merker: fuer diese Box wurde eine Ausfall-Meldung verschickt - nur dann gibt es
       spaeter eine Entwarnung'
-  - note: 'Push pro Geraet ueber die Mobile-App-Dienste mit tag radiostream_<player>: gleiche
-      Markierung ersetzt die vorige Meldung, pro Box gibt es also immer nur EINE Meldung,
-      die sich von Stufe zu Stufe aktualisiert und am Ende durch die Entwarnung ersetzt wird'
-    action: script.benachrichtigung_alle_geraete
-    data:
-      message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
-        ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }})
-        {{ stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche
-        ggf. nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'', ''steckdosen_zyklus'':
-        ''Diagnose hat nicht geholfen, zyklisiere gezielt nur die betroffene Steckdose (ohne
-        Add-on-Neustart) und pruefe danach erneut.'', ''addon_neustart'': ''Steckdosen-Zyklus
-        hat nicht geholfen, eskaliere auf volle Reparatur (Steckdosen-Zyklus + Add-on-Neustart,
-        betrifft kurz alle drei Boxen).'', ''manuell_pruefen'': ''Auch die volle Reparatur
-        hat nicht geholfen. Bitte manuell pruefen (Strom, Box, Adapter).''}[trigger.id] }}'
-      title: '{{ ''Radiostream spielt nicht'' if spielt_nicht else ''Radiostream ausgefallen''
-        }}'
-      daten:
-        tag: radiostream_{{ p }}
-    continue_on_error: true
+  - if:
+    - condition: trigger
+      id:
+      - diagnose
+    then:
+    - action: notify.mobile_app_geraet_4
+      continue_on_error: true
+      data:
+        message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
+          ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }}) {{
+          stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche ggf.
+          nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'', ''steckdosen_zyklus'':
+          ''Diagnose hat nicht geholfen, zyklisiere gezielt nur die betroffene Steckdose (ohne
+          Add-on-Neustart) und pruefe danach erneut.'', ''addon_neustart'': ''Steckdosen-Zyklus
+          hat nicht geholfen, eskaliere auf volle Reparatur (Steckdosen-Zyklus + Add-on-Neustart,
+          betrifft kurz alle drei Boxen).'', ''manuell_pruefen'': ''Auch die volle Reparatur hat
+          nicht geholfen. Bitte manuell pruefen (Strom, Box, Adapter).''}[trigger.id] }}'
+        title: '{{ ''Radiostream spielt nicht'' if spielt_nicht else ''Radiostream ausgefallen''
+          }}'
+        data:
+          tag: radiostream_{{ p }}
+    else:
+    - note: 'Push pro Geraet ueber die Mobile-App-Dienste mit tag radiostream_<player>: gleiche
+        Markierung ersetzt die vorige Meldung, pro Box gibt es also immer nur EINE Meldung, die
+        sich von Stufe zu Stufe aktualisiert und am Ende durch die Entwarnung ersetzt wird'
+      action: script.benachrichtigung_alle_geraete
+      data:
+        message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
+          ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }}) {{
+          stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche ggf.
+          nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'', ''steckdosen_zyklus'':
+          ''Diagnose hat nicht geholfen, zyklisiere gezielt nur die betroffene Steckdose (ohne
+          Add-on-Neustart) und pruefe danach erneut.'', ''addon_neustart'': ''Steckdosen-Zyklus
+          hat nicht geholfen, eskaliere auf volle Reparatur (Steckdosen-Zyklus + Add-on-Neustart,
+          betrifft kurz alle drei Boxen).'', ''manuell_pruefen'': ''Auch die volle Reparatur hat
+          nicht geholfen. Bitte manuell pruefen (Strom, Box, Adapter).''}[trigger.id] }}'
+        title: '{{ ''Radiostream spielt nicht'' if spielt_nicht else ''Radiostream ausgefallen''
+          }}'
+        daten:
+          tag: radiostream_{{ p }}
+      continue_on_error: true
+    note: '23.11.2026 (Claude, auf Wunsch des Nutzers): Stufe 1 nur ans eigene Handy (Poco) -
+      am 23.11. um 01:45 ging sie nachts an alle 4 Geraete, eine Minute spaeter spielte die Box
+      wieder. Ab Stufe 2 an alle Geraete; gleicher tag radiostream_<p>, die Entwarnung ersetzt
+      beide.'
   - action: persistent_notification.create
     continue_on_error: true
     data:

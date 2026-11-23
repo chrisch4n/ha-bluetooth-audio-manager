@@ -82,6 +82,7 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `sensor.radiostream_boxen_ohne_verbindung` | Template-Sensor (Helfer) | Anzahl der Boxen, die aktiv sind, deren Steckdose an ist und deren Player `unavailable` ist (aus `input_text.radiostream_aktiv_map` und `input_text.radiostream_dose_switch_map`); Anzeige im Dashboard; bis 18.11.2026 Auslöser des Stick-Resets (ab 2 für 4 Min) |
 | `sensor.radiostream_sticks_ohne_verbindung` | Template-Sensor (Helfer) | Sticks, an denen alle aktiven Boxen mit eingeschalteter Steckdose `unavailable` sind, kommagetrennt (z. B. `Logilink neu`), sonst `keine` (aus `input_text.radiostream_stick_map`, `…_aktiv_map`, `…_dose_switch_map`); für 4 Min ≠ `keine` startet die Automatik „Stick-Reset je Stick“ (seit 18.11.2026) |
 | `binary_sensor.radiostream_<p>_bitrate_unten` | Trigger-Template im Paket `packages/radiostream.yaml` (seit 21.11.2026) | an = Box hängt auf der untersten SBC-Bitrate (UKW rauscht); alle 5 Min aus `GET /api/diagnostics/pulse-bluetooth`, Attribut `sbc_frames_per_packet` |
+| `sensor.radiostream_<p>_signal` (Anzeigename „Radiostream <p> Signal“) | Template-Sensor (Helfer, UI; seit 23.11.2026) | `rssi` der Box aus `sensor.radiostream_bt_signal` als Messwert in dB (Geräteklasse *Signalstärke*, `state_class: measurement`) – anders als die Attribute des command_line-Sensors mit Verlauf und Langzeitstatistik; leer = nicht verbunden oder Lesefehler. Verlauf 72 h in *Reparatur → Status* |
 
 ## Einspielen
 

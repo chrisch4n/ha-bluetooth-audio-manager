@@ -263,7 +263,7 @@ Rauschen kam von der abgesenkten Bitrate, nicht von den Boxen).
 
 | Stufe | Nach | Aktion |
 |-------|------|--------|
-| 1 diagnose | 3 Min | `script.radiostream_reparieren_ultralight`: prüft per API, ob Bluetooth gesund ist; lädt ggf. nur die MPD-Integration neu oder macht einen Force-Reconnect. |
+| 1 diagnose | 3 Min | `script.radiostream_reparieren_ultralight`: prüft per API, ob Bluetooth gesund ist; lädt ggf. nur die MPD-Integration neu oder macht einen Force-Reconnect. Push nur ans eigene Handy (seit 23.11.2026), ab Stufe 2 an alle Geräte. |
 | 2 steckdosen_zyklus | 5 Min | Nur die betroffene Steckdose 30 s aus, danach 60 s warten und Nachdiagnose. Stört die anderen Boxen nicht. |
 | 3 addon_neustart | 20 Min | `script.radiostream_reparieren`: Steckdose aus, Add-on-Neustart, Steckdose an, MPD sicherstellen. Betrifft kurz alle Boxen, höchstens alle 30 Min. |
 | 4 manuell_pruefen | 30 Min | Nur Meldung „bitte manuell prüfen". |
