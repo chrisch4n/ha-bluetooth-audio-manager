@@ -355,6 +355,22 @@ Full guide with automation examples and troubleshooting:
   stops a daemon) in `/data/playback_resume.json` and plays it again when
   that speaker's daemon is back (entries older than 30 minutes are
   dropped). Stopped, forgotten or MPD-disabled speakers are not resumed.
+  When a speaker drops, MPD has already paused itself on the vanished sink
+  ("Failed to open audio output"); that pause keeps the station noted (only
+  a real stop clears it), so the station resumes as soon as the speaker is
+  back. The BlueZ disconnect reason is logged with the drop
+  (`reason=org.bluez.Reason.Timeout` = radio link lost, `Remote` = the
+  speaker ended it).
+- **Streams stay on their speaker** — an MPD stream that PulseAudio moves
+  onto another speaker's sink is moved straight back. In PulseAudio 17 a
+  stream whose client names the sink gets no preferred sink, so the stream
+  on whichever speaker's sink is the default follows every default-sink
+  change (another speaker reconnecting drags it over; after the move back
+  it is re-opened, about 3 s of silence). Each MPD stream is therefore
+  bound once to its speaker's sink: its module-stream-restore entry gets
+  that sink as device and is applied, which sets the preferred sink.
+  `GET /api/diagnostics/pulse-bluetooth` shows `default_sink` and, per
+  stream, `on_own_sink` and `bound`.
 - **Lowered SBC bitrate** — PulseAudio lowers a speaker's SBC bitpool after
   an overload and raises it again slowly. `GET /api/diagnostics/pulse-bluetooth`
   shows per speaker `sbc_frames_per_packet` (the value at full bitrate

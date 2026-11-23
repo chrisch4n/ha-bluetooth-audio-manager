@@ -1227,6 +1227,21 @@ class BluetoothAudioManager:
                                         "AVRCP disabled for %s — skipping PlaybackStatus=Playing",
                                         transport_addr,
                                     )
+                elif (
+                    msg.member == "Disconnected"
+                    and msg.interface == "org.bluez.Device1"
+                    and msg.body
+                ):
+                    # Device1.Disconnected(string reason, string message):
+                    # Timeout = link supervision timeout (radio link lost),
+                    # Remote = the speaker ended it, Local = this host did.
+                    reason = str(msg.body[0])
+                    detail = str(msg.body[1]) if len(msg.body) > 1 else ""
+                    logger.info(
+                        "BlueZ signal: %s.%s path=%s reason=%s%s",
+                        msg.interface, msg.member, msg.path, reason,
+                        f" ({detail})" if detail else "",
+                    )
                 else:
                     # Log ALL other BlueZ signals (InterfacesAdded, etc.)
                     logger.info(
@@ -3256,7 +3271,7 @@ class BluetoothAudioManager:
         """
         async with self._device_lock(address):
             await self._stop_idle_handler(address)
-            await self._stop_mpd(address, remember=True)
+            await self._stop_mpd(address, remember=True, speaker_dropped=True)
 
     def _on_device_connected(self, address: str) -> None:
         """Handle device connection event (D-Bus signal)."""
@@ -4903,12 +4918,14 @@ class BluetoothAudioManager:
 
     PLAYBACK_WATCH_INTERVAL = 30.0  # seconds between notes of what each MPD plays
 
-    async def _observe_playback(self, address: str, mpd) -> bool | None:
+    async def _observe_playback(self, address: str, mpd, *, keep_note: bool = False) -> bool | None:
         """Note what *mpd* plays now; True/False = playing/stopped, None = unknown.
 
         Only a definite answer changes the note: a daemon that is already gone
         (the container's stop signal reaches the MPD processes at the same time
         as the app) must not erase the station noted while it was playing.
+        With *keep_note*, "paused" leaves the note alone; only a real stop
+        clears it.
         """
         snap = await mpd.playback_snapshot() if mpd.is_running else None
         if snap is None:
@@ -4919,14 +4936,22 @@ class BluetoothAudioManager:
             if entry.get("uri") != snap["uri"] or entry.get("at") is not None:
                 state[address] = {"uri": snap["uri"], "at": None}
                 self._save_resume_state()
-        elif address in state:
+        elif address in state and not (keep_note and snap.get("state") != "stop"):
             state.pop(address, None)
             self._save_resume_state()
         return snap["playing"]
 
-    async def _remember_playback(self, address: str, mpd) -> None:
-        """The daemon is being stopped: stamp the noted station with the time."""
-        await self._observe_playback(address, mpd)
+    async def _remember_playback(self, address: str, mpd, *, speaker_dropped: bool = False) -> None:
+        """The daemon is being stopped: stamp the noted station with the time.
+
+        *speaker_dropped*: the speaker's link went down.  MPD has then already
+        failed on the vanished sink ("Failed to open audio output") and
+        paused itself — that is not a stop by anyone, so the station noted by
+        the last check is kept unless MPD reports a real stop.  23.11.2026:
+        without this, 87.5 came back after a drop but stayed silent until
+        Home Assistant started it again (24 s later both times).
+        """
+        await self._observe_playback(address, mpd, keep_note=speaker_dropped)
         state = self._resume_state()
         if address in state:
             state[address]["at"] = time.time()
@@ -4964,7 +4989,8 @@ class BluetoothAudioManager:
             return True
         return False
 
-    async def _stop_mpd(self, address: str, *, remember: bool = False) -> None:
+    async def _stop_mpd(self, address: str, *, remember: bool = False,
+                        speaker_dropped: bool = False) -> None:
         """Stop the MPD instance for a specific device (keeps port assigned).
 
         With *remember*, a station that is playing is noted and started again
@@ -4973,7 +4999,7 @@ class BluetoothAudioManager:
         mpd = self._mpd_instances.pop(address, None)
         if mpd and remember:
             try:
-                await self._remember_playback(address, mpd)
+                await self._remember_playback(address, mpd, speaker_dropped=speaker_dropped)
             except Exception as e:
                 logger.debug("Could not note playback of %s: %s", address, e)
         if mpd:

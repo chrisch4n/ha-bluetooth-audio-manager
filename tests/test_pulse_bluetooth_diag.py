@@ -59,6 +59,18 @@ class DiagnosticsApiTest(AioHTTPTestCase):
         self.assertEqual(data["effective_interval_ms"], 500)
         self.assertFalse(data["custom"])
 
+    async def test_reports_default_sink_and_mpd_streams(self):
+        sink = "bluez_sink.41_42_00_00_08_75.a2dp_sink"
+        self.pa._pulse.server_info = AsyncMock(return_value=SimpleNamespace(default_sink_name=sink))
+        self.pa._pulse.sink_list = AsyncMock(return_value=[SimpleNamespace(index=1, name=sink)])
+        self.pa._pulse.sink_input_list = AsyncMock(return_value=[SimpleNamespace(
+            index=10, sink=1,
+            proplist={"module-stream-restore.id": "bt-audio-manager:41:42:00:00:08:75"})])
+        data = await (await self.client.get("/api/diagnostics/pulse-bluetooth")).json()
+        self.assertEqual(data["default_sink"], sink)
+        self.assertEqual(data["mpd_streams"], [{
+            "speaker": "41:42:00:00:08:75", "sink": sink, "on_own_sink": True, "bound": False}])
+
     async def test_no_pulse(self):
         self.manager.pulse = None
         resp = await self.client.get("/api/diagnostics/pulse-bluetooth")

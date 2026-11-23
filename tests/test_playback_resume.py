@@ -90,6 +90,44 @@ class ResumeTest(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(await m._resume_playback(A, mpd()))
 
 
+class SpeakerDropTest(unittest.IsolatedAsyncioTestCase):
+    """23.11.2026: MPD pauses itself when the speaker's sink vanishes, so it is
+    no longer playing when the app stops it — the station must still resume."""
+
+    async def asyncSetUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    async def test_station_survives_the_pause_after_a_drop(self):
+        m = build(self.tmp.name)
+        await m._observe_playback(A, mpd(playing=True))          # periodic note
+        paused = mpd(playing=False)
+        paused.playback_snapshot.return_value["state"] = "pause"  # failed output
+        m._mpd_instances[A] = paused
+        await m._stop_mpd(A, remember=True, speaker_dropped=True)
+        new = mpd()
+        self.assertTrue(await m._resume_playback(A, new))
+        new.resume.assert_awaited_once_with(URI)
+
+    async def test_a_real_stop_before_the_drop_is_respected(self):
+        m = build(self.tmp.name)
+        await m._observe_playback(A, mpd(playing=True))
+        stopped = mpd(playing=False)
+        stopped.playback_snapshot.return_value["state"] = "stop"
+        m._mpd_instances[A] = stopped
+        await m._stop_mpd(A, remember=True, speaker_dropped=True)
+        self.assertFalse(await m._resume_playback(A, mpd()))
+
+    async def test_without_a_drop_a_pause_still_clears_the_note(self):
+        m = build(self.tmp.name)
+        await m._observe_playback(A, mpd(playing=True))
+        paused = mpd(playing=False)
+        paused.playback_snapshot.return_value["state"] = "pause"
+        m._mpd_instances[A] = paused
+        await m._stop_mpd(A, remember=True)
+        self.assertFalse(await m._resume_playback(A, mpd()))
+
+
 class ShutdownRaceTest(unittest.IsolatedAsyncioTestCase):
     """The container's stop signal reaches the MPD processes at the same time
     as the app: by the time the app stops a daemon it may already be gone."""

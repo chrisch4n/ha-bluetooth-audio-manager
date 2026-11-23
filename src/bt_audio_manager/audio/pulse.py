@@ -12,6 +12,7 @@ import logging
 import os
 from collections.abc import Awaitable, Callable
 
+import pulsectl
 from pulsectl_asyncio import PulseAsync
 
 logger = logging.getLogger(__name__)
@@ -111,6 +112,8 @@ class PulseAudioManager:
         self._idle_callback = None
         # stream index → monotonic times we moved it back to its own sink (#318)
         self._pin_history: dict[int, list[float]] = {}
+        # stream indexes already bound to their speaker's sink (stream-restore)
+        self._bound_streams: set[int] = set()
         # Optional fallback for _stream_owner(): proplist → speaker MAC
         self._stream_owner_resolver: Callable[[dict], str | None] | None = None
         self._stream_moved_callback: Callable[[str], None] | None = None
@@ -210,6 +213,7 @@ class PulseAudioManager:
             self._spec_sink_index = {}
             self._spec_failed_at = None
             self._pin_history.clear()
+            self._bound_streams.clear()
 
             for attempt in range(1, retries + 1):
                 try:
@@ -326,6 +330,7 @@ class PulseAudioManager:
                             await self._enforce_locked_stream_volume(event.index)
                         elif event.facility == "sink_input" and event.t == "remove":
                             self._pin_history.pop(event.index, None)
+                            self._bound_streams.discard(event.index)
                 finally:
                     _pe.close()
             except asyncio.CancelledError:
@@ -670,6 +675,27 @@ class PulseAudioManager:
     # correctly.  Each of our MPD streams carries its owner's MAC in
     # module-stream-restore.id (see MPDManager._daemon_env), so a stream on
     # the wrong sink can be recognised and moved straight back.
+    #
+    # Why it moves at all (PulseAudio 17 source, checked 23.11.2026): a sink
+    # a client names when it opens a stream is taken with save=false
+    # (protocol-native), so the stream gets no preferred sink.  Moving it
+    # with save=true onto the sink that is the default right then clears the
+    # preferred sink as well.  When the default sink changes, every stream on
+    # the old default whose preferred sink is not that sink follows the new
+    # default (pa_sink_move_streams_to_default_sink).  So whichever speaker's
+    # sink is the default, its MPD stream floats — seen 13.11. and twice on
+    # 23.11.2026: 87.5 reconnects, the 97.0 stream jumps onto it, comes back
+    # and has to be re-opened (about 3 s of silence on 97.0).
+    #
+    # The fix binds each MPD stream to its speaker's sink once: writing the
+    # stream's module-stream-restore entry with that sink as device and
+    # apply_immediately makes PulseAudio call
+    # pa_sink_input_set_preferred_sink(), which sets the preferred sink even
+    # when it is the default.  A stream with a preferred sink stays put when
+    # the default changes, and PulseAudio itself brings it back when its sink
+    # returns.  The entry is written in REPLACE mode (MERGE does not update an
+    # existing entry, so nothing would be applied); the existing entry's
+    # volume and mute are kept, so applying it changes nothing else.
 
     MPD_STREAM_ID_PREFIX = "bt-audio-manager:"
     PIN_MAX_MOVES = 3  # moves per stream within PIN_WINDOW before giving up
@@ -793,6 +819,7 @@ class PulseAudioManager:
         own_prefix = f"bluez_sink.{address.replace(':', '_')}."
         current = await self._pulse.sink_info(stream.sink)
         if current.name.upper().startswith(own_prefix.upper()):
+            await self._bind_stream(stream, address, current.name)
             return False
         target = next(
             (s for s in await self._pulse.sink_list()
@@ -825,15 +852,73 @@ class PulseAudioManager:
 
         await self._pulse.sink_input_move(stream.index, target.index)
         logger.warning(
-            "MPD stream for %s was playing on %s — moved back to %s",
-            address, current.name, target.name,
+            "MPD stream for %s was playing on %s — moved back to %s (default sink: %s)",
+            address, current.name, target.name, await self.default_sink_name() or "?",
         )
+        await self._bind_stream(stream, address, target.name)
         if self._stream_moved_callback:
             try:
                 self._stream_moved_callback(address)
             except Exception as e:
                 logger.debug("Stream-moved callback failed for %s: %s", address, e)
         return True
+
+    async def _bind_stream(self, stream, address: str, sink_name: str) -> bool:
+        """Give one MPD stream its speaker's sink as preferred sink (once per stream)."""
+        if stream.index in self._bound_streams:
+            return False
+        # Marked first: a failure is not retried on every "change" event.
+        self._bound_streams.add(stream.index)
+        name = f"{self.MPD_STREAM_ID_PREFIX}{address}"
+        try:
+            entry = next(
+                (e for e in await self._pulse.stream_restore_read() if e.name == name),
+                None,
+            )
+            if entry is None:
+                entry = pulsectl.PulseExtStreamRestoreInfo(
+                    name, volume=list(stream.volume.values),
+                    channel_list=stream.channel_list, mute=bool(stream.mute),
+                    device=sink_name,
+                )
+            else:
+                entry.device = sink_name
+            await self._pulse.stream_restore_write(entry, mode="replace", apply_immediately=True)
+        except Exception as e:
+            logger.info("Could not bind the MPD stream for %s to %s: %s", address, sink_name, e)
+            return False
+        logger.info("MPD stream for %s bound to %s (stays there when the default sink changes)",
+                    address, sink_name)
+        return True
+
+    async def default_sink_name(self) -> str | None:
+        """PulseAudio's current default sink, or None if unknown."""
+        if not self._pulse:
+            return None
+        try:
+            return (await self._pulse.server_info()).default_sink_name or None
+        except Exception as e:
+            logger.debug("Reading the default sink failed: %s", e)
+            return None
+
+    async def mpd_stream_routing(self) -> dict:
+        """Default sink and where each MPD stream plays (diagnostics, read-only)."""
+        streams = []
+        if self._pulse:
+            sinks = {s.index: s.name for s in await self._pulse.sink_list()}
+            for stream in await self._pulse.sink_input_list():
+                address = self._stream_owner(getattr(stream, "proplist", None))
+                if not address:
+                    continue
+                sink = sinks.get(stream.sink, "")
+                streams.append({
+                    "speaker": address,
+                    "sink": sink,
+                    "on_own_sink": sink.upper().startswith(
+                        f"bluez_sink.{address.replace(':', '_')}.".upper()),
+                    "bound": stream.index in self._bound_streams,
+                })
+        return {"default_sink": await self.default_sink_name(), "mpd_streams": streams}
 
     async def _normalize_new_mpd_stream(self, stream_index: int) -> bool:
         """Set a newly-created MPD stream to full volume on a Bluetooth sink.

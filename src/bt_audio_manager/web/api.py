@@ -881,7 +881,16 @@ def create_api_routes(
             logger.debug("SBC estimate failed: %s", e)
             sinks = []
         minutes = getattr(manager.config, "lowest_bitrate_reconnect_minutes", None)
+        try:
+            routing = await pulse.mpd_stream_routing()
+        except Exception as e:
+            logger.debug("Stream routing failed: %s", e)
+            routing = {"default_sink": None, "mpd_streams": []}
+        if not isinstance(routing, dict):
+            routing = {"default_sink": None, "mpd_streams": []}
         return web.json_response({
+            "default_sink": routing.get("default_sink"),
+            "mpd_streams": routing.get("mpd_streams", []),
             "modules": modules,
             "output_rate_refresh_interval_ms": interval,
             "effective_interval_ms": interval or pulse.RATE_REFRESH_DEFAULT_MS,
