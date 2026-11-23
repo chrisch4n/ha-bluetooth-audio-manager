@@ -1,5 +1,6 @@
 import unittest
 from types import SimpleNamespace
+import pulsectl
 
 from bt_audio_manager.audio.pulse import PulseAudioManager
 
@@ -119,14 +120,28 @@ def _mpd_stream(index, sink, mac=None, pid=None):
         props["module-stream-restore.id"] = f"bt-audio-manager:{mac}"
     if pid:
         props["application.process.id"] = str(pid)
-    return SimpleNamespace(index=index, sink=sink, proplist=props)
+    return SimpleNamespace(index=index, sink=sink, proplist=props,
+                           volume=SimpleNamespace(values=[1.0, 1.0]),
+                           channel_list=["front-left", "front-right"], mute=0)
 
 
 class FakePinPulse:
-    def __init__(self, sinks, streams):
+    def __init__(self, sinks, streams, entries=(), default_sink=None):
         self.sinks = sinks
         self.streams = {s.index: s for s in streams}
         self.moves = []
+        self.entries = list(entries)
+        self.writes = []
+        self.default_sink = default_sink
+
+    async def stream_restore_read(self):
+        return list(self.entries)
+
+    async def stream_restore_write(self, entry, mode="merge", apply_immediately=False):
+        self.writes.append((entry.name, entry.device, mode, apply_immediately))
+
+    async def server_info(self):
+        return SimpleNamespace(default_sink_name=self.default_sink)
 
     async def sink_input_info(self, index):
         return self.streams[index]
@@ -223,6 +238,78 @@ class TestMpdStreamPinning(unittest.IsolatedAsyncioTestCase):
             manager._pulse.streams[10].sink = 3  # moved away again
         self.assertFalse(await manager._pin_mpd_stream(10))
         self.assertEqual(len(manager._pulse.moves), manager.PIN_MAX_MOVES)
+
+
+class TestMpdStreamBinding(unittest.IsolatedAsyncioTestCase):
+    """23.11.2026: a stream that names its sink gets no preferred sink in
+    PulseAudio 17 and follows the default sink — bind it to its speaker."""
+
+    def build(self, sinks, streams, entries=(), default_sink=None):
+        manager = PulseAudioManager()
+        manager._pulse = FakePinPulse(sinks, streams, entries, default_sink)
+        return manager
+
+    async def test_stream_on_its_own_sink_is_bound_once(self):
+        manager = self.build([_sink(1, A)], [_mpd_stream(10, sink=1, mac=A)])
+        await manager._pin_mpd_stream(10)
+        await manager._pin_mpd_stream(10)  # a later "change" event
+        self.assertEqual(manager._pulse.writes, [
+            (f"bt-audio-manager:{A}", _sink(1, A).name, "replace", True),
+        ])
+        self.assertEqual(manager._pulse.moves, [])
+
+    async def test_existing_entry_keeps_its_volume_and_gets_the_device(self):
+        entry = pulsectl.PulseExtStreamRestoreInfo(
+            f"bt-audio-manager:{A}", volume=[0.5, 0.5],
+            channel_list=["front-left", "front-right"], mute=False, device=None)
+        manager = self.build([_sink(1, A)], [_mpd_stream(10, sink=1, mac=A)], entries=[entry])
+        await manager._pin_mpd_stream(10)
+        self.assertEqual(entry.device, _sink(1, A).name)
+        self.assertEqual([round(v, 2) for v in entry.volume.values], [0.5, 0.5])
+
+    async def test_moved_back_stream_is_bound_too(self):
+        manager = self.build([_sink(1, A), _sink(3, C)], [_mpd_stream(10, sink=3, mac=A)],
+                             default_sink=_sink(3, C).name)
+        self.assertTrue(await manager._pin_mpd_stream(10))
+        self.assertEqual([w[1] for w in manager._pulse.writes], [_sink(1, A).name])
+
+    async def test_foreign_stream_is_not_bound(self):
+        foreign = SimpleNamespace(index=20, sink=1, proplist={"application.name": "Music Assistant"})
+        manager = self.build([_sink(1, A)], [foreign])
+        await manager._pin_mpd_stream(20)
+        self.assertEqual(manager._pulse.writes, [])
+
+    async def test_a_failing_write_is_not_retried_on_every_event(self):
+        manager = self.build([_sink(1, A)], [_mpd_stream(10, sink=1, mac=A)])
+        calls = []
+
+        async def broken(*a, **kw):
+            calls.append(1)
+            raise RuntimeError("no stream-restore")
+        manager._pulse.stream_restore_write = broken
+        await manager._pin_mpd_stream(10)
+        await manager._pin_mpd_stream(10)
+        self.assertEqual(len(calls), 1)
+
+    async def test_a_new_stream_index_is_bound_again(self):
+        manager = self.build([_sink(1, A)], [_mpd_stream(10, sink=1, mac=A)])
+        await manager._pin_mpd_stream(10)
+        manager._bound_streams.discard(10)  # "remove" event
+        manager._pulse.streams[11] = _mpd_stream(11, sink=1, mac=A)
+        await manager._pin_mpd_stream(11)
+        self.assertEqual(len(manager._pulse.writes), 2)
+
+    async def test_routing_shows_default_sink_and_streams(self):
+        manager = self.build([_sink(1, A), _sink(3, C)],
+                             [_mpd_stream(10, sink=1, mac=A), _mpd_stream(12, sink=1, mac=C)],
+                             default_sink=_sink(1, A).name)
+        await manager._pin_mpd_stream(10)
+        routing = await manager.mpd_stream_routing()
+        self.assertEqual(routing["default_sink"], _sink(1, A).name)
+        self.assertEqual(
+            [(s["speaker"], s["on_own_sink"], s["bound"]) for s in routing["mpd_streams"]],
+            [(A, True, True), (C, False, False)],
+        )
 
 
 if __name__ == "__main__":

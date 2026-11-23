@@ -575,7 +575,7 @@ class MPDManager:
                 self._disconnect_client()
 
     async def playback_snapshot(self) -> dict | None:
-        """``{"uri", "playing"}`` of the current entry, or None (nothing queued)."""
+        """``{"uri", "playing", "state"}`` of the current entry, or None (nothing queued)."""
         await self._ensure_connected()
         if not self._client:
             return None
@@ -589,7 +589,7 @@ class MPDManager:
         uri = (song or {}).get("file")
         if not uri:
             return None
-        return {"uri": uri, "playing": status.get("state") == "play"}
+        return {"uri": uri, "playing": status.get("state") == "play", "state": status.get("state")}
 
     async def resume(self, uri: str) -> bool:
         """Queue *uri* alone and play it (used after a restart of the daemon)."""

@@ -983,6 +983,24 @@ paths:
                         configured_latency_ms: { type: number, example: 45.3 }
                         sbc_frames_per_packet: { type: integer, nullable: true, example: 7 }
                         at_lowest_step: { type: boolean }
+                  lowest_bitrate_reconnect_minutes: { type: integer, nullable: true }
+                  default_sink:
+                    type: string
+                    nullable: true
+                    description: PulseAudio's default sink right now.
+                  mpd_streams:
+                    type: array
+                    description: >
+                      Where each MPD stream plays. `bound` = the stream has its
+                      speaker's sink as preferred sink and stays there when the
+                      default sink changes.
+                    items:
+                      type: object
+                      properties:
+                        speaker: { type: string }
+                        sink: { type: string }
+                        on_own_sink: { type: boolean }
+                        bound: { type: boolean }
         "503":
           description: PulseAudio not connected.
           content:

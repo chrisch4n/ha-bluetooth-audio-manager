@@ -17,7 +17,15 @@
 >   flag expires after 30 s instead of swallowing an unrelated later drop.
 > - **#318 Streams mixing on one speaker** — an MPD stream that PulseAudio
 >   moves onto another speaker's sink is moved straight back to its own
->   (at most 3 times per minute per stream).
+>   (at most 3 times per minute per stream). Since cc.31 every MPD stream
+>   is also bound to its speaker's sink (its module-stream-restore entry
+>   gets that sink as device and is applied, which sets PulseAudio's
+>   preferred sink): in PulseAudio 17 a stream whose client names the sink
+>   gets no preferred sink, so the stream on whichever speaker's sink was
+>   the default followed every default-sink change — when another speaker
+>   reconnected it jumped over and had to be re-opened (about 3 s of
+>   silence). `GET /api/diagnostics/pulse-bluetooth` shows `default_sink`
+>   and, per stream, `on_own_sink` and `bound`.
 > - **#319 Discovery vs. playback** — no silent RSSI discovery bursts while
 >   audio is running (these caused a short dropout about once a minute);
 >   streams playing during a manual scan are restarted one by one when it
@@ -123,7 +131,14 @@
 >   its speaker dropped, it notes the station that was playing
 >   (`/data/playback_resume.json`) and plays it again as soon as that
 >   speaker's daemon is back (entries older than 30 minutes are dropped).
->   Stopped, forgotten or MPD-disabled speakers are not resumed.
+>   Stopped, forgotten or MPD-disabled speakers are not resumed. When a
+>   speaker drops, MPD has already paused itself on the vanished sink
+>   ("Failed to open audio output"); since cc.31 that pause keeps the
+>   station noted (only a real stop clears it), so the station resumes as
+>   soon as the speaker is back — before, it stayed silent until Home
+>   Assistant started it again. The BlueZ disconnect reason is logged too
+>   (`reason=org.bluez.Reason.Timeout` = radio link lost, `Remote` = the
+>   speaker ended it).
 > - **Unreachable speaker, others on the same adapter** — every failed page
 >   ("page timeout") keeps the adapter's radio busy for about 5 s, and a
 >   speaker streaming on the same adapter overloads and loses bitrate. After
