@@ -156,6 +156,33 @@ class BindTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn(STICK2_PATH, m._add_bluez_match.await_args.args[0])
         m.media_player.add_adapter.assert_awaited_once_with(STICK2_PATH)
 
+    async def test_adapter_that_appears_later_restarts_its_speakers_reconnect(self):
+        """24.11.2026: 87.5 stayed down 4 minutes after its stick reappeared."""
+        m = make_manager(bound=False)
+        m.media_player = None
+        m.reconnect_service = MagicMock()
+        wrapper = MagicMock()
+        wrapper.initialize = AsyncMock()
+        with patch("bt_audio_manager.manager.BluezAdapter") as BA, \
+                patch("bt_audio_manager.manager.asyncio.sleep", AsyncMock()):
+            BA.list_all = AsyncMock(return_value=adapters_listing((MAIN_PATH, MAIN), (STICK2_PATH, STICK2)))
+            BA.return_value = wrapper
+            await m._bind_extra_adapters(settle=True)
+        m.reconnect_service.cancel_reconnect.assert_called_once_with(BOX_B)
+        m.reconnect_service.handle_disconnect.assert_called_once_with(BOX_B)
+
+    async def test_binding_at_startup_leaves_reconnects_to_the_startup_path(self):
+        m = make_manager(bound=False)
+        m.media_player = None
+        m.reconnect_service = MagicMock()
+        wrapper = MagicMock()
+        wrapper.initialize = AsyncMock()
+        with patch("bt_audio_manager.manager.BluezAdapter") as BA:
+            BA.list_all = AsyncMock(return_value=adapters_listing((MAIN_PATH, MAIN), (STICK2_PATH, STICK2)))
+            BA.return_value = wrapper
+            await m._bind_extra_adapters()
+        m.reconnect_service.handle_disconnect.assert_not_called()
+
     async def test_missing_adapter_is_remembered_not_fatal(self):
         m = make_manager(bound=False)
         with patch("bt_audio_manager.manager.BluezAdapter") as BA:

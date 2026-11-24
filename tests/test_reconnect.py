@@ -337,5 +337,30 @@ class UserDisconnectFlagTest(unittest.TestCase):
         manager.reconnect_service.handle_disconnect.assert_called_once_with(ADDR)
 
 
+class UnexpectedErrorTest(unittest.IsolatedAsyncioTestCase):
+    """24.11.2026: dbus_next's InterfaceNotFoundError is no DBusError.  Raised
+    while the speaker's adapter was not back yet, it ended the reconnect loop,
+    and the speaker stayed down until an adapter reset."""
+
+    async def test_loop_keeps_trying_after_an_unexpected_error(self):
+        from dbus_next.errors import InterfaceNotFoundError
+
+        mgr = make_manager()
+        calls = []
+
+        async def connect(address, _from_reconnect=False):
+            calls.append(address)
+            if len(calls) < 3:
+                raise InterfaceNotFoundError("interface not found on this object: org.bluez.Device1")
+            return True
+
+        mgr.connect_device = connect
+        svc = ReconnectService(mgr)
+        svc._running = True
+        with patch("bt_audio_manager.reconnect.asyncio.sleep", AsyncMock()):
+            await svc._reconnect_loop(ADDR)
+        self.assertEqual(len(calls), 3)  # quick attempt, attempt 1, attempt 2 succeeds
+
+
 if __name__ == "__main__":
     unittest.main()

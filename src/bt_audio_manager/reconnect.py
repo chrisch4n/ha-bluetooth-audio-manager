@@ -226,6 +226,15 @@ class ReconnectService:
                 "Quick reconnect to %s failed: %s — falling back to backoff",
                 address, e,
             )
+        except Exception as e:
+            # 24.11.2026: dbus_next's InterfaceNotFoundError (no DBusError) on
+            # a speaker whose adapter was not back yet ended this loop for
+            # good — the speaker stayed down until something else reset the
+            # adapter.  Any failure only means "try again later".
+            logger.warning(
+                "Quick reconnect to %s failed (%s: %s) — falling back to backoff",
+                address, type(e).__name__, e,
+            )
 
         interval = self._manager.config.reconnect_interval_seconds
         max_backoff = self._manager.config.reconnect_max_backoff_seconds
@@ -265,10 +274,12 @@ class ReconnectService:
                     return
             except ConnectDeferred as e:
                 logger.info("Reconnect attempt %d skipped: %s", attempt + 1, e)
-            except (DBusError, asyncio.TimeoutError, OSError) as e:
+            except Exception as e:  # DBusError, timeouts, OSError and the rest
                 logger.warning(
                     "Reconnect attempt %d for %s failed: %s",
-                    attempt + 1, address, e,
+                    attempt + 1, address,
+                    e if isinstance(e, (DBusError, asyncio.TimeoutError, OSError))
+                    else f"{type(e).__name__}: {e}",
                 )
                 self._manager._broadcast_status(
                     f"Reconnect attempt {attempt + 1} for {address} failed"
