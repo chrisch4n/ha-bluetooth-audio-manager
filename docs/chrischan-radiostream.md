@@ -37,6 +37,9 @@ das Einspielen.
     neu" (seit 18.11.2026) trägt 87.5 über die Box-Einstellung *Bluetooth
     adapter* (Abschnitt 6). Beide sind in der HA-Bluetooth-Integration
     ignoriert (Doppelzugriff HA + Add-on führte früher zu Kernel-Abstürzen).
+    Am 24.11.2026 umgesteckt, „Logilink neu" per Verlängerung näher an 87.5:
+    Signal 87.5 von etwa −22 auf −2 bis −4 dB, 105.9 von −17 auf −5 bis −9,
+    97.0 von −3 auf −8 bis −10 (`sensor.radiostream_<p>_signal`).
   - Intel AX210 (intern) – gehört HA, passives Scannen.
 - **Streams:** RADIO BOB! über die MPD-Instanzen des Add-ons. In HA gibt es pro
   Box zwei Player: `media_player.musik_radiostream_<p>` (MPD-Integration, wird
