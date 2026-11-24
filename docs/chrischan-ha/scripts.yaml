@@ -617,7 +617,7 @@ radiostream_reparieren_ultralight:
           continue_on_error: true
           note: 'HAs eigene MPD-Integration neu einlesen, falls die selbst haengt. 25.11.2026
             (Claude, auf Wunsch des Nutzers): Eintrag per config_entry_id(player_entity) statt
-            der Entry-Map - die Map hatte noch die IDs von vor der Neuanlage Ende Oktober (UnknownEntry,
+            der frueheren Entry-Map (geloescht) - die Map hatte noch die IDs von vor der Neuanlage Ende Oktober (UnknownEntry,
             Abbruch am 24.11. 16:49). continue_on_error: ein Fehlschlag hier soll die Wiederholungen
             danach nicht verhindern.'
         note: BT nicht gesund -> BT-Reconnect; BT gesund, aber Player/Sink nicht -> MPD-Toggle
@@ -754,7 +754,7 @@ radiostream_mpd_sicherstellen:
         data:
           entry_id: '{{ config_entry_id(player_entity) }}'
         note: '25.11.2026 (Claude, auf Wunsch des Nutzers): Eintrag per config_entry_id(player_entity)
-          statt der Entry-Map (die Map hatte noch die IDs von vor der Neuanlage Ende Oktober).'
+          statt der frueheren Entry-Map (geloescht) (die Map hatte noch die IDs von vor der Neuanlage Ende Oktober).'
 benachrichtigung_alle_geraete:
   alias: Benachrichtigung alle Geräte
   description: 'Zentrale Benachrichtigung an die vier Mobilgeräte (geraet_1..4). Ersetzt die
@@ -881,7 +881,7 @@ radiostream_reparieren:
   - note: 'MPD-Integrationen nacheinander mit 3 s Abstand neu laden (seit 20.09.2026 sequenziell,
       vorsorglich gegen dieselbe Race-Condition-Klasse wie beim Mixing-Bug). 25.11.2026 (Claude,
       auf Wunsch des Nutzers): Boxen aus der switch_map, Eintrag je Box per config_entry_id() statt
-      der Entry-Map (veraltete IDs von vor Ende Oktober); continue_on_error, damit ein Fehlschlag
+      der frueheren Entry-Map (geloescht) (veraltete IDs von vor Ende Oktober); continue_on_error, damit ein Fehlschlag
       MPD sicherstellen danach nicht verhindert.'
     repeat:
       for_each: '{{ switch_map | list }}'
