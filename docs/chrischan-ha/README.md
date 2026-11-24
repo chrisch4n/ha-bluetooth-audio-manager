@@ -66,7 +66,6 @@ anpassen (siehe [`../api.md`](../api.md)).
 | `sensor.radiostream_bt_signal` | command_line (`packages/radiostream.yaml`, Skript `cli/bt_link_quality.py` → `/config/cli/`) | Verbindungsqualität je Box ohne Scan, alle 2 Min; Attribute `87_5`/`97_0`/`105_9` mit `rssi`, `tx`, `tx_max`, `adapter` (seit 18.11.2026) |
 | `input_text.radiostream_dose_switch_map` | Text | `{"97_0":"switch.dose_bt_97_0","105_9":"switch.dose_bt_105_9","87_5":"switch.dose_bt_87_5"}` |
 | `input_text.radiostream_aktiv_map` | Text | `{"97_0":"input_boolean.radiostream_97_0_aktiv", …}` |
-| `input_text.radiostream_mpd_entry_map` | Text | `{"97_0":"<config_entry_id der MPD-Integration>", …}` |
 | `input_text.radiostream_letzter_start` | Text | leer (wird von „Radiostream permanent" geschrieben) |
 | `input_text.letzter_sender_<p>`, `input_text.letzter_preset_1..10` | Text (max. 60) | Wert der Template-Selects (Senderwahl, Presets) |
 | `input_boolean.radiostream_<p>_aktiv` | Schalter | soll die Box spielen |
@@ -92,8 +91,8 @@ anpassen (siehe [`../api.md`](../api.md)).
    `homeassistant: packages: !include_dir_named configuration_yaml/packages/`
    eintragen), `cli/bt_link_quality.py` nach `/config/cli/` legen.
    Konfiguration prüfen, Home Assistant neu starten.
-3. Die drei MPD-Integrationen einrichten und ihre Config-Entry-IDs in
-   `input_text.radiostream_mpd_entry_map` eintragen.
+3. Die drei MPD-Integrationen einrichten (Player `media_player.musik_radiostream_<p>`;
+   die Skripte finden ihre Config-Entry-ID selbst per `config_entry_id()`).
 4. Helfer anlegen (Tabelle oben), Platzhalter durch die echten Werte ersetzen.
 5. `scripts.yaml` und danach `automations.yaml` übernehmen (Inhalte an die
    eigenen Dateien anhängen oder einzeln im UI-Editor über „In YAML bearbeiten"

@@ -499,7 +499,8 @@ radiostream_reparieren_ultralight:
     plus Neuladen der MPD-Integration. Bleibt der Player unavailable, bis zu 3 Wiederholungen
     aus BT-Reconnect und script.radiostream_mpd_sicherstellen. Modus queued. Aenderungsgeschichte
     bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
-    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt.]'
+    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt.
+    25.11.2026 Claude, auf Wunsch des Nutzers: MPD-Eintrag per config_entry_id() statt Entry-Map.]'
   fields:
     player:
       description: 97_0, 105_9 oder 87_5
@@ -515,7 +516,6 @@ radiostream_reparieren_ultralight:
   sequence:
   - variables:
       address_map: '{{ states(''input_text.radiostream_address_map'') | from_json }}'
-      entry_map: '{{ states(''input_text.radiostream_mpd_entry_map'') | from_json }}'
       player_entity: media_player.musik_radiostream_{{ player }}
       sink_name: bluez_sink.{{ address_map[player].replace(':', '_') }}.a2dp_sink
   - variables:
@@ -613,8 +613,13 @@ radiostream_reparieren_ultralight:
             seconds: 2
         - action: homeassistant.reload_config_entry
           data:
-            entry_id: '{{ entry_map[player] }}'
-          note: HAs eigene MPD-Integration neu einlesen, falls die selbst haengt
+            entry_id: '{{ config_entry_id(player_entity) }}'
+          continue_on_error: true
+          note: 'HAs eigene MPD-Integration neu einlesen, falls die selbst haengt. 25.11.2026
+            (Claude, auf Wunsch des Nutzers): Eintrag per config_entry_id(player_entity) statt
+            der Entry-Map - die Map hatte noch die IDs von vor der Neuanlage Ende Oktober (UnknownEntry,
+            Abbruch am 24.11. 16:49). continue_on_error: ein Fehlschlag hier soll die Wiederholungen
+            danach nicht verhindern.'
         note: BT nicht gesund -> BT-Reconnect; BT gesund, aber Player/Sink nicht -> MPD-Toggle
           + Reload
       - delay:
@@ -673,7 +678,8 @@ radiostream_mpd_sicherstellen:
     abfragen (get_devices, keine Sink-Abfrage = kein Stocken); ist die Box verbunden mit Audio-Transport,
     MPD-Dienst aus/an (Port aus radiostream_port_map) und HA-MPD-Integration neu laden. Ist
     die Box noch nicht per Bluetooth da, passiert nichts (das ist Sache von BT-Reconnect/Watchdog).
-    Wird aufgerufen von: Power-Ein, Voll-Reparatur, Neu koppeln, Diagnose-Retries.'
+    Wird aufgerufen von: Power-Ein, Voll-Reparatur, Neu koppeln, Diagnose-Retries. [25.11.2026
+    Claude, auf Wunsch des Nutzers: MPD-Eintrag per config_entry_id() statt Entry-Map.]'
   fields:
     player:
       description: 97_0, 105_9 oder 87_5
@@ -690,7 +696,6 @@ radiostream_mpd_sicherstellen:
   sequence:
   - variables:
       address_map: '{{ states(''input_text.radiostream_address_map'') | from_json }}'
-      entry_map: '{{ states(''input_text.radiostream_mpd_entry_map'') | from_json }}'
       player_entity: media_player.musik_radiostream_{{ player }}
       port_map: '{{ states(''input_text.radiostream_port_map'') | from_json }}'
   - continue_on_timeout: true
@@ -747,7 +752,9 @@ radiostream_mpd_sicherstellen:
       - action: homeassistant.reload_config_entry
         continue_on_error: true
         data:
-          entry_id: '{{ entry_map[player] }}'
+          entry_id: '{{ config_entry_id(player_entity) }}'
+        note: '25.11.2026 (Claude, auf Wunsch des Nutzers): Eintrag per config_entry_id(player_entity)
+          statt der Entry-Map (die Map hatte noch die IDs von vor der Neuanlage Ende Oktober).'
 benachrichtigung_alle_geraete:
   alias: Benachrichtigung alle Geräte
   description: 'Zentrale Benachrichtigung an die vier Mobilgeräte (geraet_1..4). Ersetzt die
@@ -803,10 +810,12 @@ radiostream_reparieren:
     1b3a7c56_bluetooth_audio_manager neu und schaltet danach wieder ein - bei allen nacheinander
     mit 20 s Abstand, nur die vorher eingeschalteten. Der Add-on-Neustart betrifft immer alle
     Boxen. Danach die MPD-Integrationen nacheinander neu laden und je Box script.radiostream_mpd_sicherstellen.
-    Steckdosen und MPD-Eintraege aus input_text.radiostream_dose_switch_map / _mpd_entry_map.
+    Steckdosen aus input_text.radiostream_dose_switch_map, MPD-Eintraege per config_entry_id()
+    des Players.
     Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
     (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt,
-    Boxenlisten aus den Maps.]'
+    Boxenlisten aus den Maps. 25.11.2026 Claude, auf Wunsch des Nutzers: MPD-Eintrag per config_entry_id()
+    statt Entry-Map.]'
   fields:
     player:
       description: 97_0, 105_9 oder 87_5 - leer lassen fuer alle drei (Totalausfall)
@@ -821,7 +830,6 @@ radiostream_reparieren:
   mode: single
   sequence:
   - variables:
-      entry_map: '{{ states(''input_text.radiostream_mpd_entry_map'') | from_json }}'
       switch_map: '{{ states(''input_text.radiostream_dose_switch_map'') | from_json }}'
       vorher_an: '{% set ns = namespace(l=[]) %}{% for p in switch_map %}{% if is_state(switch_map[p],
         ''on'') %}{% set ns.l = ns.l + [p] %}{% endif %}{% endfor %}{{ ns.l }}'
@@ -870,14 +878,18 @@ radiostream_reparieren:
         entity_id: '{{ switch_map[player] }}'
   - delay:
       seconds: 20
-  - note: MPD-Integrationen nacheinander mit 3 s Abstand neu laden (seit 20.09.2026 sequenziell,
-      vorsorglich gegen dieselbe Race-Condition-Klasse wie beim Mixing-Bug); Boxen aus input_text.radiostream_mpd_entry_map
+  - note: 'MPD-Integrationen nacheinander mit 3 s Abstand neu laden (seit 20.09.2026 sequenziell,
+      vorsorglich gegen dieselbe Race-Condition-Klasse wie beim Mixing-Bug). 25.11.2026 (Claude,
+      auf Wunsch des Nutzers): Boxen aus der switch_map, Eintrag je Box per config_entry_id() statt
+      der Entry-Map (veraltete IDs von vor Ende Oktober); continue_on_error, damit ein Fehlschlag
+      MPD sicherstellen danach nicht verhindert.'
     repeat:
-      for_each: '{{ entry_map | list }}'
+      for_each: '{{ switch_map | list }}'
       sequence:
       - action: homeassistant.reload_config_entry
         data:
-          entry_id: '{{ entry_map[repeat.item] }}'
+          entry_id: '{{ config_entry_id(''media_player.musik_radiostream_'' ~ repeat.item) }}'
+        continue_on_error: true
       - delay:
           seconds: 3
   - variables:

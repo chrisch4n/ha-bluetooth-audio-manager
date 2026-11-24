@@ -212,9 +212,12 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 ### Zentrale Helfer
 
 - `input_text.radiostream_address_map`, `..._port_map`, `..._dose_switch_map`,
-  `..._aktiv_map`, `..._mpd_entry_map`, `..._stick_map`, `..._stick_mac_map` –
-  JSON-Maps pro Box bzw. Stick, einzige Quelle für MACs, Ports, Steckdosen,
-  MPD-Config-Entries und die Stick-Zuordnung. (Bis 21.11.2026 gab es zusätzlich
+  `..._aktiv_map`, `..._stick_map`, `..._stick_mac_map` –
+  JSON-Maps pro Box bzw. Stick, einzige Quelle für MACs, Ports, Steckdosen
+  und die Stick-Zuordnung. Die Config-Entry-ID der MPD-Integration holen die
+  Skripte seit 25.11.2026 per `config_entry_id('media_player.musik_radiostream_<p>')`;
+  die frühere `..._mpd_entry_map` hatte noch die IDs von vor der Neuanlage der
+  MPD-Integrationen Ende Oktober (Neuladen brach mit UnknownEntry ab) und ist gelöscht. (Bis 21.11.2026 gab es zusätzlich
   `..._schalter_map` mit drei Template-Schaltern `switch.<p>_schalter` und den
   Auswahlhelfern `input_select.radiostream_<p>_steckdose` – ein Umweg zur selben
   Steckdose, entfernt; `radiostream_power_toggle` nutzt `dose_switch_map`.)
@@ -241,7 +244,7 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 Die `description` jeder Automation und jedes Skripts nennt seit 21.11.2026 nur noch den
 Zweck; die frühere Änderungsgeschichte steht in [`chrischan-ha/historie.md`](chrischan-ha/historie.md).
 Boxenlisten in Vorlagen kommen aus `input_text.radiostream_address_map` (bzw.
-`dose_switch_map`, `mpd_entry_map`), nur Auslöser und Entitäten je Box sind fest eingetragen.
+`dose_switch_map`), nur Auslöser und Entitäten je Box sind fest eingetragen.
 *Radiostream permanent* und die Bitrate-Absicherung behalten 30 statt 5 Traces, weil ihre
 regelmäßigen Prüfungen sonst echte Läufe verdrängen.
 
