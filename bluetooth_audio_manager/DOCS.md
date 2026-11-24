@@ -263,7 +263,10 @@ the adapter is watched like the main one (unplugged and back → the app
 restarts), `POST /api/adapter/reset` resets all adapters or the one given as
 `adapter`, and `POST /api/scan` takes an `adapter` too. If an additional
 adapter is missing at startup the app does not wait for it — its speakers are
-unavailable until it appears, then it is used without a restart. Changing the
+unavailable until it appears, then it is used without a restart and its
+speakers' reconnects start afresh at once. Any error in a reconnect attempt
+only means "try again later" (a D-Bus `InterfaceNotFoundError` on a speaker
+whose adapter was not back yet used to end its reconnect loop for good). Changing the
 setting alone does not move a speaker; it keeps its old pairing until it is
 paired on the new adapter.
 

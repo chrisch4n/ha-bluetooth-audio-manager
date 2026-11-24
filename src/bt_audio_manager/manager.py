@@ -601,7 +601,16 @@ class BluetoothAudioManager:
                         mac, ", ".join(speakers),
                     )
                 continue
-            await self._bind_adapter(mac, match["path"], speakers)
+            if await self._bind_adapter(mac, match["path"], speakers) and settle:
+                # The adapter came (back) while the app was running: its
+                # speakers' reconnect attempts may have failed, given up or
+                # backed off for minutes while it was missing (24.11.2026: 87.5
+                # stayed down 4 minutes after its stick reappeared).  Start
+                # them afresh now (the loop skips a speaker that is connected).
+                service = getattr(self, "reconnect_service", None)
+                for address in speakers if service is not None else []:
+                    service.cancel_reconnect(address)
+                    service.handle_disconnect(address)
 
     async def _bind_adapter(self, mac: str, path: str, speakers: list[str] | None = None) -> BluezAdapter | None:
         mac = mac.upper()
