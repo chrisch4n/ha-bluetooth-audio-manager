@@ -16,7 +16,10 @@
     (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt. 23.11.2026
     Claude, auf Wunsch des Nutzers: Stufe 1 nur ans eigene Handy. 25.11.2026 Claude, auf Wunsch
     des Nutzers: Aktiv-Schalter und Steckdose nach Namensmuster (input_boolean.radiostream_<p>_aktiv,
-    switch.dose_bt_<p>) statt aktiv_map/dose_switch_map.]'
+    switch.dose_bt_<p>) statt aktiv_map/dose_switch_map. 25.11.2026 Claude, auf Wunsch des Nutzers:
+    Vorstufe Stille - meldet das Add-on die Box bei zwei Abfragen in Folge als stumm (Attribut
+    stumm am Bitrate-Sensor, 5:30 Min), startet der Bug-Watch einmal je Ausfall nur den MPD-Dienst
+    der Box neu; Push wie Stufe 1 nur ans eigene Handy.]'
   triggers:
   - entity_id:
     - media_player.musik_radiostream_87_5
@@ -102,6 +105,21 @@
     note: '11.11.2026 (Claude): Einstieg ''spielt nicht'' - Box aktiv, Steckdose an, Player
       seit 40 Min nicht (stabil) ''playing''. Gleiche id wie die Stufe fuer Ausfaelle, damit
       dieselben Schritte laufen; unterschieden wird ueber die Variable spielt_nicht'
+  - trigger: state
+    entity_id:
+    - binary_sensor.radiostream_87_5_bitrate_unten
+    - binary_sensor.radiostream_97_0_bitrate_unten
+    - binary_sensor.radiostream_105_9_bitrate_unten
+    attribute: stumm
+    to: true
+    for:
+      minutes: 5
+      seconds: 30
+    id: stumm_mpd
+    note: '25.11.2026 Claude, auf Wunsch des Nutzers: Vorstufe Stille - das Add-on (ab cc.36)
+      meldet die Box bei zwei Abfragen in Folge als stumm (Attribut stumm am Bitrate-Sensor,
+      Abfrage alle 5 Min): MPD spielt, aber nur Stille, Stream schon einmal vergeblich neu geoeffnet.
+      5:30 Min, damit die zweite Abfrage die Stille bestaetigt.'
   conditions:
   - condition: template
     value_template: '{{ is_state(''input_boolean.radiostream_'' ~ p ~ ''_aktiv'', ''on'') and
@@ -123,6 +141,12 @@
     note: '11.11.2026 (Claude): Einstieg ''spielt nicht'' nur mit Internet (binary_sensor.internet
       an, und zwar seit mindestens 5 Min) - ohne Internet kann kein Stream spielen, Diagnose/Steckdosen-Zyklus/Add-on-Neustart
       wuerden nichts beheben. Ist der Sensor unbekannt, wird nicht gesperrt'
+  - condition: template
+    value_template: '{{ trigger.id != ''stumm_mpd'' or is_state(''input_boolean.radiostream_ausfall_gemeldet_''
+      ~ p, ''off'') }}'
+    note: '25.11.2026 Claude, auf Wunsch des Nutzers: Vorstufe Stille nur einmal je Ausfall
+      - ist fuer die Box schon eine Meldung offen (Merker an), laeuft nur die normale Stufenleiter
+      weiter (spielt nicht nach 15/20/30/40 Min)'
   actions:
   - action: input_boolean.turn_on
     target:
@@ -133,13 +157,14 @@
     - condition: trigger
       id:
       - diagnose
+      - stumm_mpd
     then:
     - action: notify.mobile_app_geraet_4
       continue_on_error: true
       data:
-        message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
-          ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }})
-          {{ stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche
+        message: '{{ stufe }}: {{ box_name }} ({{ player }}) {{ stoerung }}. {{ {''stumm_mpd'':
+          ''Starte den MPD-Dienst der Box neu (das Add-on hat den Stream schon einmal vergeblich
+          neu geoeffnet).'', ''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche
           ggf. nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'', ''steckdosen_zyklus'':
           ''Diagnose hat nicht geholfen, zyklisiere gezielt nur die betroffene Steckdose (ohne
           Add-on-Neustart) und pruefe danach erneut.'', ''addon_neustart'': ''Steckdosen-Zyklus
@@ -156,9 +181,9 @@
         die sich von Stufe zu Stufe aktualisiert und am Ende durch die Entwarnung ersetzt wird'
       action: script.benachrichtigung_alle_geraete
       data:
-        message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
-          ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }})
-          {{ stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche
+        message: '{{ stufe }}: {{ box_name }} ({{ player }}) {{ stoerung }}. {{ {''stumm_mpd'':
+          ''Starte den MPD-Dienst der Box neu (das Add-on hat den Stream schon einmal vergeblich
+          neu geoeffnet).'', ''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche
           ggf. nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'', ''steckdosen_zyklus'':
           ''Diagnose hat nicht geholfen, zyklisiere gezielt nur die betroffene Steckdose (ohne
           Add-on-Neustart) und pruefe danach erneut.'', ''addon_neustart'': ''Steckdosen-Zyklus
@@ -177,9 +202,7 @@
   - action: persistent_notification.create
     continue_on_error: true
     data:
-      message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
-        ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }}) {{
-        stoerung }}.'
+      message: '{{ stufe }}: {{ box_name }} ({{ player }}) {{ stoerung }}.'
       notification_id: radiostream_ausfall_musik_radiostream_{{ p }}
       title: '{{ ''Radiostream spielt nicht'' if spielt_nicht else ''Radiostream ausgefallen''
         }}'
@@ -293,6 +316,21 @@
             der Entwarnung ersetzt'
         note: 'Sperrzeit 30 Min: verhindert eine Schleife aus Voll-Reparatur -> gleichzeitiger
           Reconnect -> Mixing -> erneute Voll-Reparatur'
+    - conditions:
+      - condition: trigger
+        id:
+        - stumm_mpd
+      sequence:
+      - action: rest_command.bt_audio_set_mpd
+        continue_on_error: true
+        data:
+          address: '{{ (states(''input_text.radiostream_address_map'') | from_json)[p] }}'
+          mpd_enabled: true
+          mpd_port: '{{ (states(''input_text.radiostream_port_map'') | from_json)[p] | int }}'
+        note: '25.11.2026 Claude, auf Wunsch des Nutzers: Vorstufe Stille - startet nur den
+          MPD-Dienst dieser Box neu (Add-on stoppt und startet ihn, setzt die Lautstaerke-Sperre
+          und den Sender selbst fort; Test 25.11.2026: etwa 1 s Unterbrechung, Player bleibt
+          playing). Die anderen Boxen bleiben unberuehrt.'
   max: 10
   mode: parallel
   variables:
@@ -300,9 +338,13 @@
     player: media_player.musik_radiostream_{{ p }}
     spielt_nicht: '{{ trigger.entity_id.startswith(''binary_sensor.'') }}'
     box_name: '{{ state_attr(player, ''friendly_name'') or player }}'
-    stoerung: '{% set m = {''diagnose'': [3, 15], ''steckdosen_zyklus'': [5, 20], ''addon_neustart'':
+    stoerung: '{% if trigger.id == ''stumm_mpd'' %}spielt seit über 5 Minuten nur Stille{% else
+      %}{% set m = {''diagnose'': [3, 15], ''steckdosen_zyklus'': [5, 20], ''addon_neustart'':
       [20, 30], ''manuell_pruefen'': [30, 40]}[trigger.id] %}{{ (''spielt seit über '' ~ m[1]
       ~ '' Minuten nicht'') if spielt_nicht else (''ist seit über '' ~ m[0] ~ '' Minuten unavailable'')
+      }}{% endif %}'
+    stufe: '{{ {''stumm_mpd'': ''Vorstufe'', ''diagnose'': ''Stufe 1/4'', ''steckdosen_zyklus'':
+      ''Stufe 2/4'', ''addon_neustart'': ''Stufe 3/4'', ''manuell_pruefen'': ''Stufe 4/4''}[trigger.id]
       }}'
 - id: '1786706796964'
   alias: Radiostream Player wieder verfügbar (Benachrichtigung löschen)
