@@ -192,11 +192,10 @@
 >   Bluetooth) and every ≥60 ms pause of PulseAudio's Bluetooth output
 >   (`Bluetooth output stalled: ...`, the link/adapter/USB stopped taking
 >   data). `stall_clusters` groups stalls that hit several speakers at once
->   (shared path) and gives the spacing between them. Since cc.34 each
->   recorder stays on its own speaker (`parec --no-move`): when a speaker
->   dropped, its recorder used to follow onto another speaker's monitor and
->   reported that speaker twice. A recorder whose sink vanished starts again
->   when the sink is back (`restarts`).
+>   (shared path) and gives the spacing between them. A recorder whose sink
+>   vanished starts again when the sink is back (`restarts`, since cc.35).
+>   While a speaker is gone, PulseAudio moves its recorder onto the default
+>   sink's monitor, so its entries can repeat another speaker's.
 >
 > Known limitations of this build:
 >

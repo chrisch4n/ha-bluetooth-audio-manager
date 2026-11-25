@@ -87,9 +87,11 @@ class PeakTest(unittest.TestCase):
         self.assertEqual(gap_monitor.peak_of(b"\x10\x00\xf0\xff"), 16)  # 16 and -16
         self.assertEqual(gap_monitor.peak_of(b""), 0)
 
-    def test_recorders_are_pinned_to_their_sink(self):
-        self.assertIn("--no-move", gap_monitor.parec_command(SINK, "x"))
-        self.assertIn(f"--device={SINK}.monitor", gap_monitor.parec_command(SINK, "x"))
+    def test_recorder_command(self):
+        cmd = gap_monitor.parec_command(SINK, "x")
+        self.assertIn(f"--device={SINK}.monitor", cmd)
+        # cc.34: the add-on's parec exits at once on --no-move
+        self.assertNotIn("--no-move", cmd)
 
 
 class GapMonitorRestartTest(unittest.TestCase):

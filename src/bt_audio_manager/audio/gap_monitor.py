@@ -22,10 +22,11 @@ An audible dropout with neither happened inside the speaker or on the
 radio without backing up the adapter.
 
 Each monitor is read by a plain thread so a busy event loop cannot fake a
-stall.  The recorders are pinned to their sink (``--no-move``): when a
-speaker drops, PulseAudio would otherwise move its recorder onto another
-speaker's monitor and report that speaker's audio twice (25.11.2026).  A
-recorder whose sink vanished is started again when the sink is back.
+stall.  A recorder whose recording ends early is started again (every
+2 s until its sink is back).  Known limit: when a speaker drops, PulseAudio
+moves its recorder onto the default sink's monitor, so while it is gone its
+entries can repeat another speaker's (seen 25.11.2026; ``parec`` has no
+option to forbid the move).
 """
 
 from __future__ import annotations
@@ -49,11 +50,15 @@ _ZERO_BYTES = re.compile(rb"\x00+")
 
 
 def parec_command(sink: str, client: str, latency_ms: int = 20) -> list[str]:
-    """``parec`` reading *sink*'s monitor at 8 kHz mono, never moved elsewhere."""
+    """``parec`` reading *sink*'s monitor at 8 kHz mono.
+
+    No ``--no-move``: the add-on's parec rejects it and exits at once
+    (cc.34 recorded nothing).
+    """
     return [
         "parec", f"--device={sink}.monitor",
         "--format=s16le", f"--rate={RATE}", "--channels=1", "--raw",
-        f"--latency-msec={latency_ms}", "--no-move", f"--client-name={client}",
+        f"--latency-msec={latency_ms}", f"--client-name={client}",
     ]
 
 
