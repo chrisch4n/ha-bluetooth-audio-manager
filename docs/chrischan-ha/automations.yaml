@@ -348,14 +348,16 @@
       }}'
 - id: '1786706796964'
   alias: Radiostream Player wieder verfügbar (Benachrichtigung löschen)
-  description: 'Entwarnung nach einem gemeldeten Ausfall: Ein Player kommt aus unavailable
-    zurueck (20 s stabil) oder binary_sensor.radiostream_<p>_spielt_nicht geht aus (Player
-    spielt 90 s durchgehend). Nur wenn der Merker input_boolean.radiostream_ausfall_gemeldet_<p>
-    an ist, also wirklich eine Ausfall-Meldung verschickt wurde: Merker aus, persistente Meldung
-    loeschen, Push an alle Geraete mit Ausfalldauer und gleichem Tag (radiostream_<p>), der
-    die Ausfall-Meldung ersetzt. Kurze Aussetzer ohne Meldung loesen nichts aus. Aenderungsgeschichte
-    bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
-    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt.]'
+  description: 'Entwarnung nach einem gemeldeten Ausfall: Ein Player kommt aus unavailable zurueck
+    (20 s stabil) oder binary_sensor.radiostream_<p>_spielt_nicht geht aus (Player spielt 90
+    s durchgehend). Nur wenn der Merker input_boolean.radiostream_ausfall_gemeldet_<p> an ist,
+    also wirklich eine Ausfall-Meldung verschickt wurde: Merker aus, persistente Meldung loeschen,
+    Push mit Ausfalldauer und gleichem Tag (radiostream_<p>), der die Ausfall-Meldung ersetzt.
+    Kurze Aussetzer ohne Meldung loesen nichts aus. Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md
+    im Repo chrisch4n/ha-bluetooth-audio-manager (Branch chrischan). [21.11.2026 Claude, auf
+    Wunsch des Nutzers: Beschreibung gekuerzt. 25.11.2026 Claude, auf Wunsch des Nutzers: Entwarnung
+    nur ans eigene Handy, wenn vorher nur Vorstufe oder Stufe 1 gemeldet wurde (Ausfall unter
+    5 Min unavailable bzw. unter 20 Min spielt nicht), sonst an alle Geraete.]'
   triggers:
   - entity_id:
     - media_player.musik_radiostream_87_5
@@ -378,8 +380,8 @@
     id: spielt_wieder
     note: '11.11.2026 (Claude): Entwarnung fuer den Einstieg ''spielt nicht'' des Bug-Watch
       - der Helfer geht aus, sobald der Player 90 s durchgehend spielt. Ohne gesetzten Merker
-      passiert nichts (z.B. wenn die Entwarnung nach einem Ausfall schon ueber den ersten
-      Ausloeser lief)'
+      passiert nichts (z.B. wenn die Entwarnung nach einem Ausfall schon ueber den ersten Ausloeser
+      lief)'
   actions:
   - variables:
       dauer: '{{ ((as_timestamp(trigger.to_state.last_changed) - as_timestamp(trigger.from_state.last_changed))
@@ -389,6 +391,8 @@
       merker: '{{ ''input_boolean.radiostream_ausfall_gemeldet_'' ~ (trigger.entity_id | regex_findall_index(''[0-9]+_[0-9]+''))
         }}'
       p: '{{ (trigger.entity_id | regex_findall_index(''[0-9]+_[0-9]+'')) }}'
+      alle_geraete: '{{ (as_timestamp(trigger.to_state.last_changed) - as_timestamp(trigger.from_state.last_changed))
+        >= (1200 if trigger.id == ''spielt_wieder'' else 300) }}'
   - condition: template
     note: Nur wenn fuer diese Box wirklich eine Ausfall-Meldung verschickt wurde - sonst keine
       Entwarnung (kein Spam bei kurzen Aussetzern)
@@ -405,17 +409,34 @@
       ~ p, ''playing'') }}'
     note: '11.11.2026 (Claude): Beim Ausloeser ''spielt_wieder'' nur dann ''laeuft wieder''
       melden, wenn der Player wirklich spielt. Geht der Helfer aus, weil die Box ausgeschaltet
-      oder deaktiviert wurde, sind Merker und persistente Meldung bereits zurueckgesetzt,
-      eine Entwarnung waere aber falsch'
-  - note: Gleiche Markierung wie die Ausfall-Meldung des Watchdogs - ersetzt sie auf dem Handy,
-      statt eine weitere Meldung hinzuzufuegen
-    action: script.benachrichtigung_alle_geraete
-    data:
-      message: '{{ label }} läuft wieder (Ausfall ca. {{ dauer }} Min).'
-      title: Radiostream wieder da
-      daten:
-        tag: radiostream_{{ p }}
-    continue_on_error: true
+      oder deaktiviert wurde, sind Merker und persistente Meldung bereits zurueckgesetzt, eine
+      Entwarnung waere aber falsch'
+  - if:
+    - condition: template
+      value_template: '{{ alle_geraete }}'
+    then:
+    - note: Gleiche Markierung wie die Ausfall-Meldung des Watchdogs - ersetzt sie auf dem Handy,
+        statt eine weitere Meldung hinzuzufuegen
+      action: script.benachrichtigung_alle_geraete
+      data:
+        message: '{{ label }} läuft wieder (Ausfall ca. {{ dauer }} Min).'
+        title: Radiostream wieder da
+        daten:
+          tag: radiostream_{{ p }}
+      continue_on_error: true
+    else:
+    - action: notify.mobile_app_geraet_4
+      continue_on_error: true
+      data:
+        message: '{{ label }} läuft wieder (Ausfall ca. {{ dauer }} Min).'
+        title: Radiostream wieder da
+        data:
+          tag: radiostream_{{ p }}
+    note: '25.11.2026 Claude, auf Wunsch des Nutzers: Entwarnung nur ans eigene Handy (Poco),
+      wenn vorher nur Vorstufe oder Stufe 1 gemeldet wurde - die gingen auch nur dorthin. An
+      alle Geraete erst, wenn die Stufe 2 des Bug-Watch erreicht war: unavailable ab 5 Min,
+      spielt nicht ab 20 Min (Schwellen wie die Stufe-2-Ausloeser im Bug-Watch; bei einer Aenderung
+      dort hier mit anpassen).'
   max: 10
   mode: parallel
 - id: '1787286971104'
