@@ -807,14 +807,15 @@ radiostream_reparieren:
   description: 'Stufe 3 (Voll-Reparatur): schaltet die Steckdose der Box (Feld player) oder
     alle eingeschalteten Steckdosen aus, startet waehrend der 30 s Stromlosigkeit das Add-on
     1b3a7c56_bluetooth_audio_manager neu und schaltet danach wieder ein - bei allen nacheinander
-    mit 20 s Abstand, nur die vorher eingeschalteten. Der Add-on-Neustart betrifft immer alle
+    mit 90 s Abstand, nur die vorher eingeschalteten. Der Add-on-Neustart betrifft immer alle
     Boxen. Danach die MPD-Integrationen nacheinander neu laden und je Box script.radiostream_mpd_sicherstellen.
     Steckdosen switch.dose_bt_<p> fuer die Boxen aus input_text.radiostream_address_map, MPD-Eintraege
     per config_entry_id() des Players. Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md
     im Repo chrisch4n/ha-bluetooth-audio-manager (Branch chrischan). [21.11.2026 Claude, auf
     Wunsch des Nutzers: Beschreibung gekuerzt, Boxenlisten aus den Maps. 25.11.2026 Claude,
     auf Wunsch des Nutzers: MPD-Eintrag per config_entry_id() statt Entry-Map; Steckdosen nach
-    Namensmuster statt dose_switch_map.]'
+    Namensmuster statt dose_switch_map; 90 s statt 20 s Abstand beim Wiedereinschalten aller
+    Boxen.]'
   fields:
     player:
       description: 97_0, 105_9 oder 87_5 - leer lassen fuer alle drei (Totalausfall)
@@ -849,8 +850,11 @@ radiostream_reparieren:
         auf 3 Geraete gleichzeitig trifft
     - delay:
         seconds: 25
-    - note: Nur die Steckdosen wieder einschalten, die vor der Reparatur an waren - eine bewusst
-        ausgeschaltete Box bleibt aus. Reihenfolge 97.0, 105.9, 87.5 mit 20s Abstand wie bisher.
+    - note: 'Nur die Steckdosen wieder einschalten, die vor der Reparatur an waren - eine bewusst
+        ausgeschaltete Box bleibt aus. 25.11.2026 (Claude, auf Wunsch des Nutzers): 90 s statt
+        20 s Abstand wie beim Steckdosen-Zyklus - kommen die Boxen fast gleichzeitig zurueck,
+        kann der Stick durcheinander geraten (13.11.2026); nach der letzten Box folgen ohnehin
+        20 s Pause.'
       repeat:
         for_each: '{{ vorher_an }}'
         sequence:
@@ -858,7 +862,7 @@ radiostream_reparieren:
           target:
             entity_id: '{{ switch_map[repeat.item] }}'
         - delay:
-            seconds: 20
+            seconds: '{{ 0 if repeat.last else 90 }}'
     if:
     - condition: template
       value_template: '{{ player is defined and player not in [none, ''''] }}'
