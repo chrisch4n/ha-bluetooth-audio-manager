@@ -432,7 +432,7 @@
         title: Radiostream wieder da
         data:
           tag: radiostream_{{ p }}
-    note: '25.11.2026 Claude, auf Wunsch des Nutzers: Entwarnung nur ans eigene Handy (Poco),
+    note: '25.11.2026 Claude, auf Wunsch des Nutzers: Entwarnung nur ans eigene Handy,
       wenn vorher nur Vorstufe oder Stufe 1 gemeldet wurde - die gingen auch nur dorthin. An
       alle Geraete erst, wenn die Stufe 2 des Bug-Watch erreicht war: unavailable ab 5 Min,
       spielt nicht ab 20 Min (Schwellen wie die Stufe-2-Ausloeser im Bug-Watch; bei einer Aenderung
