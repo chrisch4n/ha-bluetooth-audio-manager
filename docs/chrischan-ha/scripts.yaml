@@ -55,13 +55,14 @@ radiostream_notfall_forget_pair:
   alias: 'Radiostream Notfall: Forget + Pair + MPD zuweisen'
   description: 'Manueller Nothelfer fuer eine haengende Box (Dashboard Reparatur, Notfall):
     vergisst sie im Add-on, scannt, koppelt sie neu - am Stick der Box (input_text.radiostream_stick_map
-    -> radiostream_stick_mac_map), bis zu 3 Versuche mit Kontrolle - und setzt danach MPD
-    an mit dem Port der Box, zuletzt script.radiostream_mpd_sicherstellen. Aufruf mit player
-    (87_5/97_0/105_9; MAC und Port aus den zentralen Maps) oder mit address und mpd_port.
-    Wird die Box nicht gefunden: Steckdose aus und wieder an (die ES-BT17 hat keine Kopplungstaste).
-    Keine automatische Ausloesung. Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md
-    im Repo chrisch4n/ha-bluetooth-audio-manager (Branch chrischan). [21.11.2026 Claude, auf
-    Wunsch des Nutzers: Beschreibung gekuerzt.]'
+    -> radiostream_stick_mac_map), bis zu 3 Versuche mit Kontrolle - und setzt danach MPD an
+    mit dem Port der Box, zuletzt script.radiostream_mpd_sicherstellen. Aufruf mit player (87_5/97_0/105_9;
+    MAC und Port aus den zentralen Maps) oder mit address und mpd_port. Wird die Box nicht gefunden:
+    Steckdose aus und wieder an (die ES-BT17 hat keine Kopplungstaste). Keine automatische Ausloesung.
+    Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
+    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt.]
+    [25.11.2026 Claude, auf Wunsch des Nutzers: stellt nach dem Koppeln auch die feste Lautstaerke
+    wieder her.]'
   fields:
     address:
       description: Bluetooth-Adresse der Box (statt player)
@@ -99,14 +100,12 @@ radiostream_notfall_forget_pair:
       port_map: '{{ states(''input_text.radiostream_port_map'') | from_json(default={}) }}'
       box: '{{ player | default('''') }}'
   - variables:
-      address: '{{ (address_map[box] if box in address_map else (address | default('''')))
-        | upper }}'
-      mpd_port: '{{ (port_map[box] if box in port_map else (mpd_port | default(0))) | int
-        }}'
+      address: '{{ (address_map[box] if box in address_map else (address | default(''''))) |
+        upper }}'
+      mpd_port: '{{ (port_map[box] if box in port_map else (mpd_port | default(0))) | int }}'
   - variables:
-      player_key: '{% set ns = namespace(k='''') %}{% for k, v in address_map.items() %}{%
-        if v | upper == address | upper %}{% set ns.k = k %}{% endif %}{% endfor %}{{ ns.k
-        }}'
+      player_key: '{% set ns = namespace(k='''') %}{% for k, v in address_map.items() %}{% if
+        v | upper == address | upper %}{% set ns.k = k %}{% endif %}{% endfor %}{{ ns.k }}'
   - variables:
       adapter: '{% set sm = states(''input_text.radiostream_stick_map'') | from_json(default={})
         %}{% set mm = states(''input_text.radiostream_stick_mac_map'') | from_json(default={})
@@ -148,8 +147,8 @@ radiostream_notfall_forget_pair:
       until:
       - condition: template
         value_template: '{{ gekoppelt or repeat.index >= 3 }}'
-    note: Bis zu 3 Kopplungsversuche im 10s-Abstand, bis das Geraet als verbunden gemeldet
-      wird - vorher gab es nur einen Versuch mit fester Wartezeit, der oft zu frueh kam
+    note: Bis zu 3 Kopplungsversuche im 10s-Abstand, bis das Geraet als verbunden gemeldet wird
+      - vorher gab es nur einen Versuch mit fester Wartezeit, der oft zu frueh kam
   - action: rest_command.bt_audio_set_mpd
     continue_on_error: true
     data:
@@ -158,6 +157,14 @@ radiostream_notfall_forget_pair:
       mpd_port: '{{ mpd_port | int }}'
     note: mpd_enabled MUSS mitgegeben werden - ein frisch gekoppeltes Geraet startet mit MPD
       aus. Fehlte bisher, die Box blieb dann stumm.
+  - action: rest_command.bt_audio_set_volume_lock
+    continue_on_error: true
+    data:
+      address: '{{ address }}'
+      lock: '{{ is_state(''input_boolean.radiostream_lautstarke_fest_100'', ''on'') }}'
+    note: '25.11.2026 Claude, auf Wunsch des Nutzers: Neu-Koppeln setzt die Geraete-Einstellungen
+      im Add-on zurueck (volume_lock aus) - hier wieder wie der Schalter Lautstaerke fest 100
+      %. AVRCP hat keinen rest_command, das bei Bedarf im Add-on von Hand wieder einschalten.'
   - if:
     - condition: template
       value_template: '{{ player_key != '''' }}'
@@ -500,8 +507,10 @@ radiostream_reparieren_ultralight:
     plus Neuladen der MPD-Integration. Bleibt der Player unavailable, bis zu 3 Wiederholungen
     aus BT-Reconnect und script.radiostream_mpd_sicherstellen. Modus queued. Aenderungsgeschichte
     bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
-    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt.
-    25.11.2026 Claude, auf Wunsch des Nutzers: MPD-Eintrag per config_entry_id() statt Entry-Map.]'
+    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt. 25.11.2026
+    Claude, auf Wunsch des Nutzers: MPD-Eintrag per config_entry_id() statt Entry-Map; MPD-Port
+    fuer den Neustart aus input_text.radiostream_port_map (der Port im Add-on ist leer, wenn
+    MPD dort aus ist - Test 25.11.2026).]'
   fields:
     player:
       description: 97_0, 105_9 oder 87_5
@@ -521,10 +530,9 @@ radiostream_reparieren_ultralight:
       sink_name: bluez_sink.{{ address_map[player].replace(':', '_') }}.a2dp_sink
   - variables:
       mit_sinks: '{{ is_state(player_entity, ''playing'') }}'
-    note: '06.10.2026: Sink-Daten werden nur gebraucht, wenn der Player ''playing'' meldet
-      - nur dann die volle Abfrage (get_state inkl. Sinks, stockt hoerbar). In jedem anderen
-      Zustand reicht get_devices (connected/has_transport/mpd_port), ohne die gesunden Boxen
-      zu stoeren.'
+    note: '06.10.2026: Sink-Daten werden nur gebraucht, wenn der Player ''playing'' meldet -
+      nur dann die volle Abfrage (get_state inkl. Sinks, stockt hoerbar). In jedem anderen Zustand
+      reicht get_devices (connected/has_transport/mpd_port), ohne die gesunden Boxen zu stoeren.'
   - action: '{{ ''rest_command.bt_audio_get_state'' if mit_sinks else ''rest_command.bt_audio_get_devices''
       }}'
     response_variable: state_result
@@ -561,8 +569,7 @@ radiostream_reparieren_ultralight:
         device: '{{ (state_result.content.devices | selectattr(''address'', ''equalto'', address_map[player])
           | list | first | default(none)) if state_result is defined else none }}'
         sink: '{{ (state_result.content.sinks | default([]) | selectattr(''name'', ''equalto'',
-          sink_name) | list | first | default(none)) if state_result is defined else none
-          }}'
+          sink_name) | list | first | default(none)) if state_result is defined else none }}'
     - variables:
         bt_healthy: '{{ device is not none and device.connected and device.has_transport }}'
         sink_healthy: '{{ sink is not none and sink.state == ''running'' }}'
@@ -571,8 +578,8 @@ radiostream_reparieren_ultralight:
         value_template: '{{ not (states(player_entity) == ''playing'' and bt_healthy and (sink_healthy
           or not mit_sinks)) }}'
       note: Zweitpruefung nach 2s - bestaetigt, dass es kein kurzer Status-Wackler war (z.B.
-        durch den stuendlichen RSSI-Scan oder eine normale Trackpause), bevor tatsaechlich
-        eingegriffen wird
+        durch den stuendlichen RSSI-Scan oder eine normale Trackpause), bevor tatsaechlich eingegriffen
+        wird
       then:
       - if:
         - condition: template
@@ -584,8 +591,8 @@ radiostream_reparieren_ultralight:
           data:
             variables:
               player: '{{ player }}'
-          note: Bluetooth ist NICHT gesund - an BT-Reconnect delegieren (MPD/Reload waeren
-            ohne Verbindung sinnlos)
+          note: Bluetooth ist NICHT gesund - an BT-Reconnect delegieren (MPD/Reload waeren ohne
+            Verbindung sinnlos)
         - delay:
             seconds: 1
         - wait_template: '{{ is_state(''script.radiostream_reparieren_light'', ''off'') }}'
@@ -599,7 +606,8 @@ radiostream_reparieren_ultralight:
           data:
             address: '{{ address_map[player] }}'
             mpd_enabled: false
-            mpd_port: '{{ device.mpd_port }}'
+            mpd_port: '{{ (states(''input_text.radiostream_port_map'') | from_json)[player]
+              | int }}'
           note: MPD-Daemon stoppen - deckt toten Daemon, nie gestarteten Daemon nach verzoegertem
             Reconnect, UND den Audio-Routing/Sink-Bug ab (sink_healthy war false)
         - delay:
@@ -608,7 +616,8 @@ radiostream_reparieren_ultralight:
           data:
             address: '{{ address_map[player] }}'
             mpd_enabled: true
-            mpd_port: '{{ device.mpd_port }}'
+            mpd_port: '{{ (states(''input_text.radiostream_port_map'') | from_json)[player]
+              | int }}'
           note: MPD-Daemon wieder starten
         - delay:
             seconds: 2
@@ -618,9 +627,9 @@ radiostream_reparieren_ultralight:
           continue_on_error: true
           note: 'HAs eigene MPD-Integration neu einlesen, falls die selbst haengt. 25.11.2026
             (Claude, auf Wunsch des Nutzers): Eintrag per config_entry_id(player_entity) statt
-            der frueheren Entry-Map (geloescht) - die Map hatte noch die IDs von vor der Neuanlage Ende Oktober (UnknownEntry,
-            Abbruch am 24.11. 16:49). continue_on_error: ein Fehlschlag hier soll die Wiederholungen
-            danach nicht verhindern.'
+            der frueheren Entry-Map (geloescht) - die Map hatte noch die IDs von vor der Neuanlage
+            Ende Oktober (UnknownEntry, Abbruch am 24.11. 16:49). continue_on_error: ein Fehlschlag
+            hier soll die Wiederholungen danach nicht verhindern.'
         note: BT nicht gesund -> BT-Reconnect; BT gesund, aber Player/Sink nicht -> MPD-Toggle
           + Reload
       - delay:
@@ -636,12 +645,11 @@ radiostream_reparieren_ultralight:
             data:
               variables:
                 player: '{{ player }}'
-            note: Retry - dank Gesundheits-Schutz in BT-Reconnect ungefaehrlich fuer eine
-              bereits gesunde Verbindung
+            note: Retry - dank Gesundheits-Schutz in BT-Reconnect ungefaehrlich fuer eine bereits
+              gesunde Verbindung
           - delay:
               seconds: 1
-          - wait_template: '{{ is_state(''script.radiostream_reparieren_light'', ''off'')
-              }}'
+          - wait_template: '{{ is_state(''script.radiostream_reparieren_light'', ''off'') }}'
             timeout:
               seconds: 60
             continue_on_timeout: true
@@ -654,12 +662,11 @@ radiostream_reparieren_ultralight:
               variables:
                 player: '{{ player }}'
             note: Ist die Box nach BT-Reconnect wieder verbunden, fehlt oft nur der MPD-Dienst
-              (#316) - BT-Reconnect sieht dann eine gesunde Verbindung und tut nichts. MPD
-              sicherstellen startet den Dienst nach (ohne Sink-Abfrage).
+              (#316) - BT-Reconnect sieht dann eine gesunde Verbindung und tut nichts. MPD sicherstellen
+              startet den Dienst nach (ohne Sink-Abfrage).
           - delay:
               seconds: 1
-          - wait_template: '{{ is_state(''script.radiostream_mpd_sicherstellen'', ''off'')
-              }}'
+          - wait_template: '{{ is_state(''script.radiostream_mpd_sicherstellen'', ''off'') }}'
             timeout:
               seconds: 60
             continue_on_timeout: true
@@ -667,8 +674,8 @@ radiostream_reparieren_ultralight:
               seconds: 6
           while:
           - condition: template
-            value_template: '{{ states(player_entity) == ''unavailable'' and repeat.index
-              <= 3 }}'
+            value_template: '{{ states(player_entity) == ''unavailable'' and repeat.index <=
+              3 }}'
   max: 5
 radiostream_mpd_sicherstellen:
   alias: Radiostream MPD sicherstellen

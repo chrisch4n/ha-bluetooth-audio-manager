@@ -649,6 +649,9 @@ template:
   # Neuverbinden behebt das (Automation "Radiostream Bitrate unten: BT-Reconnect").
   # Alle 5 Minuten; am 21.11.2026 gemessen: die Abfrage stoert laufende Streams nicht (Gap-Monitor).
   # an = Box haengt auf der untersten Stufe; aus = volle Bitrate oder Box nicht verbunden.
+  # Attribut stumm (25.11.2026 Claude, auf Wunsch des Nutzers, Add-on ab cc.36): true, solange das
+  # Add-on die Box in silent_speakers fuehrt (spielt laut MPD, aber nur Stille, Stream schon einmal neu
+  # geoeffnet). binary_sensor.radiostream_<p>_spielt_nicht wertet es aus -> Bug-Watch "spielt nicht".
   - triggers:
       - trigger: time_pattern
         minutes: "/5"
@@ -663,6 +666,7 @@ template:
       - variables:
           sinks: "{{ pb.content.sinks if (pb is defined and pb.status == 200 and pb.content is mapping) else [] }}"
           macs: "{{ states('input_text.radiostream_address_map') | from_json(default={}) }}"
+          stille: "{{ pb.content.silent_speakers if (pb is defined and pb.status == 200 and pb.content is mapping and pb.content.silent_speakers is defined) else [] }}"
     binary_sensor:
       - name: "Radiostream 87.5 Bitrate unten"
         unique_id: radiostream_87_5_bitrate_unten
@@ -670,15 +674,18 @@ template:
         state: "{% set s = sinks | selectattr('sink', 'search', macs.get('87_5', '-') | replace(':', '_')) | list %}{{ s | count > 0 and s[0].at_lowest_step }}"
         attributes:
           sbc_frames_per_packet: "{% set s = sinks | selectattr('sink', 'search', macs.get('87_5', '-') | replace(':', '_')) | list %}{{ s[0].sbc_frames_per_packet if s else none }}"
+          stumm: "{{ stille | selectattr('address', 'equalto', macs.get('87_5', '-')) | list | count > 0 }}"
       - name: "Radiostream 97.0 Bitrate unten"
         unique_id: radiostream_97_0_bitrate_unten
         device_class: problem
         state: "{% set s = sinks | selectattr('sink', 'search', macs.get('97_0', '-') | replace(':', '_')) | list %}{{ s | count > 0 and s[0].at_lowest_step }}"
         attributes:
           sbc_frames_per_packet: "{% set s = sinks | selectattr('sink', 'search', macs.get('97_0', '-') | replace(':', '_')) | list %}{{ s[0].sbc_frames_per_packet if s else none }}"
+          stumm: "{{ stille | selectattr('address', 'equalto', macs.get('97_0', '-')) | list | count > 0 }}"
       - name: "Radiostream 105.9 Bitrate unten"
         unique_id: radiostream_105_9_bitrate_unten
         device_class: problem
         state: "{% set s = sinks | selectattr('sink', 'search', macs.get('105_9', '-') | replace(':', '_')) | list %}{{ s | count > 0 and s[0].at_lowest_step }}"
         attributes:
           sbc_frames_per_packet: "{% set s = sinks | selectattr('sink', 'search', macs.get('105_9', '-') | replace(':', '_')) | list %}{{ s[0].sbc_frames_per_packet if s else none }}"
+          stumm: "{{ stille | selectattr('address', 'equalto', macs.get('105_9', '-')) | list | count > 0 }}"
