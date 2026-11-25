@@ -886,11 +886,14 @@ def create_api_routes(
         minutes = getattr(manager.config, "lowest_bitrate_reconnect_minutes", None)
         try:
             silent = manager.silent_speakers()
+            watch = manager.silence_watch_status()
         except Exception as e:
             logger.debug("Silence watch state failed: %s", e)
-            silent = []
+            silent, watch = [], None
         if not isinstance(silent, list):
             silent = []
+        if not isinstance(watch, dict):
+            watch = None
         try:
             routing = await pulse.mpd_stream_routing()
         except Exception as e:
@@ -908,6 +911,7 @@ def create_api_routes(
             "sinks": sinks,
             "lowest_bitrate_reconnect_minutes": minutes if isinstance(minutes, int) else None,
             "silent_speakers": silent,
+            "silence_watch": watch,
         })
 
     @routes.get("/api/diagnostics/link-quality")

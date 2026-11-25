@@ -160,11 +160,14 @@
 >   every 3 s); tested 25 Nov 2026: reconnected after 2 s, before cc.34
 >   the stations waited 19–25 s for Home Assistant.
 > - **Silence watch** — every 20 s the app records one second of each
->   playing speaker's PulseAudio monitor. Three samples of exact digital
->   silence in a row (radio practically never has a whole second of zeros)
->   re-open that MPD stream (at most once per 10 minutes), and the speaker
->   is listed in `silent_speakers` of `GET /api/diagnostics/pulse-bluetooth`
->   until there is sound again. Before, a speaker could stay silent while
+>   playing speaker's PulseAudio monitor. Three silent samples in a row (no
+>   sample above about −54 dBFS; radio is never that quiet for a whole second
+>   three times 20 s apart) re-open that MPD stream (at most once per 10
+>   minutes), and the speaker is listed in `silent_speakers` of
+>   `GET /api/diagnostics/pulse-bluetooth` until there is sound again;
+>   `silence_watch` there shows the threshold and the last peak per speaker
+>   (since cc.36; cc.34/35 only counted exact zeros, and a "silent" MP3 decodes
+>   to faint noise). Before, a speaker could stay silent while
 >   Home Assistant showed *playing* with a running position.
 > - **Configured adapter missing at startup** — the app waits for the
 >   adapter configured by MAC instead of binding to the first powered one

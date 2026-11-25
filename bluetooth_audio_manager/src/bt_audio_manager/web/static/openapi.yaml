@@ -1007,9 +1007,9 @@ paths:
                   silent_speakers:
                     type: array
                     description: >
-                      Speakers whose MPD is playing but whose sink renders digital
-                      silence (silence watch: one second sampled every 20 s, listed
-                      after three silent samples in a row; the stream is re-opened
+                      Speakers whose MPD is playing but whose sink renders silence
+                      (silence watch: one second sampled every 20 s, no sample above
+                      about -54 dBFS three times in a row; the stream is re-opened
                       once per 10 minutes). Empty when everything is audible.
                     items:
                       type: object
@@ -1019,6 +1019,17 @@ paths:
                         since: { type: number, description: Unix time of the first silent sample }
                         seconds: { type: integer }
                         reopened_at: { type: number, nullable: true }
+                  silence_watch:
+                    type: object
+                    nullable: true
+                    description: >
+                      Silence watch threshold (`peak_max`, largest sample 0-32767 that
+                      counts as silence) and the last peak measured per playing speaker.
+                    properties:
+                      peak_max: { type: integer, example: 64 }
+                      last_peak:
+                        type: object
+                        additionalProperties: { type: integer }
         "503":
           description: PulseAudio not connected.
           content:

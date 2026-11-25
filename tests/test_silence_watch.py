@@ -42,6 +42,14 @@ class SilenceWatchTest(unittest.IsolatedAsyncioTestCase):
         mpd.restart_playback.assert_awaited_once()
         self.assertEqual([s["address"] for s in m.silent_speakers()], [A])
 
+    async def test_faint_noise_counts_as_silence(self):
+        # a "silent" MP3 decodes to faint noise (test on 25.11.2026)
+        m, mpd, p = build([12, 30, 64])
+        with p:
+            results = await self.run_checks(m, 3)
+        self.assertEqual(results[-1], [A])
+        self.assertEqual(m.silence_watch_status()["last_peak"], {A: 64})
+
     async def test_music_resets_the_count(self):
         m, mpd, p = build([0, 0, 1200, 0, 0])
         with p:

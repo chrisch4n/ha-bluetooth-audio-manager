@@ -3655,15 +3655,17 @@ class BluetoothAudioManager:
     # silent for 5 minutes while Home Assistant showed "playing" with a
     # running position - nothing noticed it.  Every SILENCE_CHECK_INTERVAL
     # the app records one second of each playing speaker's sink monitor.
-    # Exact digital silence SILENCE_CHECKS_BEFORE_ACTION times in a row
-    # (radio streams practically never contain a whole second of zeros)
-    # re-opens that MPD stream, at most once per SILENCE_REOPEN_COOLDOWN,
-    # and lists the speaker in /api/diagnostics/pulse-bluetooth
-    # (``silent_speakers``) until there is sound again.
+    # Silence (no sample louder than SILENCE_PEAK_MAX, about -54 dBFS)
+    # SILENCE_CHECKS_BEFORE_ACTION times in a row - radio never stays that
+    # quiet for a whole second three times 20 s apart - re-opens that MPD
+    # stream, at most once per SILENCE_REOPEN_COOLDOWN, and lists the
+    # speaker in /api/diagnostics/pulse-bluetooth (``silent_speakers``) until
+    # there is sound again.  cc.34/35 counted only |sample| <= 2: a "silent"
+    # MP3 decodes to faint noise and was taken for sound.
 
     SILENCE_CHECK_INTERVAL = 20.0  # seconds between checks
     SILENCE_SAMPLE_SECONDS = 1.0  # seconds recorded per speaker and check
-    SILENCE_PEAK_MAX = 2  # largest |sample| that still counts as silence
+    SILENCE_PEAK_MAX = 64  # largest |sample| that still counts as silence (about -54 dBFS)
     SILENCE_CHECKS_BEFORE_ACTION = 3  # silent checks in a row before acting
     SILENCE_REOPEN_COOLDOWN = 600.0  # seconds between two re-opens per speaker
 
@@ -3672,6 +3674,17 @@ class BluetoothAudioManager:
 
     def _silence_reopened(self) -> dict:
         return self.__dict__.setdefault("_silence_reopened_at", {})
+
+    def _silence_peaks(self) -> dict:
+        return self.__dict__.setdefault("_silence_last_peak", {})
+
+    def silence_watch_status(self) -> dict:
+        """Threshold and the last peak (0-32767) measured per playing speaker."""
+        return {
+            "peak_max": self.SILENCE_PEAK_MAX,
+            "last_peak": {a: p for a, p in sorted(self._silence_peaks().items())
+                          if a in self._mpd_instances},
+        }
 
     async def _silence_watch_loop(self) -> None:
         while True:
@@ -3707,6 +3720,7 @@ class BluetoothAudioManager:
             if peak is None:
                 continue  # no verdict: keep whatever was counted
             playing.add(address)
+            self._silence_peaks()[address] = peak
             entry = state.get(address)
             if peak > self.SILENCE_PEAK_MAX:
                 if entry and entry["checks"] >= self.SILENCE_CHECKS_BEFORE_ACTION:
