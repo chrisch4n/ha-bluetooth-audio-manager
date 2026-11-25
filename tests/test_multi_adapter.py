@@ -400,6 +400,31 @@ class ResetSelectionTest(unittest.IsolatedAsyncioTestCase):
             await m.reset_adapter("soft", adapter=HA)
         self.assertIsNone(m._adapter_reset_at)
 
+    async def test_unplugged_adapter_is_reported_not_reset(self):
+        """25.11.2026: resetting a pulled-out stick ended in a D-Bus error."""
+        from bt_audio_manager.manager import AdapterNotPresent
+        m = self.build()
+        m._lost_extra_adapters = {STICK2}
+        with self.assertRaises(AdapterNotPresent):
+            await m.reset_adapter("soft", adapter=STICK2)
+        m._extra_adapters[STICK2].set_powered.assert_not_awaited()
+        self.assertIsNone(m._adapter_reset_at)  # no reset counted, a retry is not held back
+
+    async def test_reset_all_skips_an_unplugged_adapter(self):
+        m = self.build()
+        m._lost_extra_adapters = {STICK2}
+        result = await m.reset_adapter("soft")
+        self.assertEqual(result["adapters"], [MAIN_PATH])
+        m._extra_adapters[STICK2].set_powered.assert_not_awaited()
+
+    async def test_nothing_present_is_reported(self):
+        from bt_audio_manager.manager import AdapterNotPresent
+        m = self.build()
+        m._lost_extra_adapters = {STICK2}
+        m._adapter_lost = True
+        with self.assertRaises(AdapterNotPresent):
+            await m.reset_adapter("soft")
+
 
 class AdapterSettingApiTest(AioHTTPTestCase):
 

@@ -81,6 +81,10 @@ class AdapterResetBusy(RuntimeError):
     """An adapter reset is running or the last one was too recent."""
 
 
+class AdapterNotPresent(RuntimeError):
+    """The adapter to reset is not in BlueZ right now (unplugged or dead)."""
+
+
 def _err(exc: BaseException) -> str:
     """Text for a log line: the message, or the type when there is none."""
     return str(exc) or type(exc).__name__
@@ -792,11 +796,29 @@ class BluetoothAudioManager:
         if mode not in ("soft", "usb"):
             raise ValueError("mode must be 'soft' or 'usb'")
         targets = self._active_adapters()
+        # 25.11.2026: a stick pulled out stays in the list of bound adapters
+        # (with its old path) until it is back; resetting it ended in a D-Bus
+        # error ("Method Set ... doesn't exist").  Say plainly that it is gone.
+        gone = set(getattr(self, "_lost_extra_adapters", set()))
+        gone |= set(getattr(self, "_missing_extra_adapters", set()))
+        if getattr(self, "_adapter_lost", False):
+            gone.add(self._main_adapter_mac())
         if adapter:
             wanted = adapter.upper()
+            if wanted in gone:
+                raise AdapterNotPresent(
+                    f"adapter {wanted} is not present (unplugged?) — it is used "
+                    "again as soon as it is back"
+                )
             targets = [t for t in targets if t[0] == wanted]
             if not targets:
                 raise ValueError(f"adapter {adapter} is not in use by this app")
+        else:
+            targets = [t for t in targets if t[0] not in gone]
+            if not targets:
+                raise AdapterNotPresent(
+                    "no Bluetooth adapter of this app is present (unplugged?)"
+                )
         if self._adapter_reset_lock.locked():
             raise AdapterResetBusy("an adapter reset is already running")
         now = time.monotonic()

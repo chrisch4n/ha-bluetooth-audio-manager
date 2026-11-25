@@ -421,6 +421,13 @@ class AdapterResetApiTest(AioHTTPTestCase):
         resp = await self.client.post("/api/adapter/reset", json={"mode": "soft"})
         self.assertEqual(resp.status, 409)
 
+    async def test_unplugged_adapter_is_409_with_flag(self):
+        from bt_audio_manager.manager import AdapterNotPresent
+        self.manager.reset_adapter.side_effect = AdapterNotPresent("adapter X is not present")
+        resp = await self.client.post("/api/adapter/reset", json={"mode": "soft"})
+        self.assertEqual(resp.status, 409)
+        self.assertTrue((await resp.json())["not_present"])
+
     async def test_failure_is_500(self):
         self.manager.reset_adapter.side_effect = UsbResetError("hci1 is not a USB adapter")
         resp = await self.client.post("/api/adapter/reset", json={"mode": "usb"})

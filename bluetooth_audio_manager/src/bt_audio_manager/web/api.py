@@ -280,7 +280,7 @@ def create_api_routes(
     async def adapter_reset(request: web.Request) -> web.Response:
         """Reset the Bluetooth adapter: body ``{"mode": "soft"|"usb"}`` (default soft)."""
         from ..bluez.usb_reset import UsbResetError
-        from ..manager import AdapterResetBusy
+        from ..manager import AdapterNotPresent, AdapterResetBusy
 
         try:
             body = await request.json() if request.can_read_body else {}
@@ -303,6 +303,9 @@ def create_api_routes(
                 result = await manager.reset_adapter(mode)
         except AdapterResetBusy as e:
             return web.json_response({"error": str(e)}, status=409)
+        except AdapterNotPresent as e:
+            logger.info("Adapter reset (%s) skipped: %s", mode, e)
+            return web.json_response({"error": str(e), "not_present": True}, status=409)
         except ValueError as e:
             return web.json_response({"error": str(e)}, status=400)
         except UsbResetError as e:

@@ -748,7 +748,10 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
         "409":
-          description: A reset is already running, or the last one was less than 60 s ago.
+          description: >
+            A reset is already running, or the last one was less than 60 s ago;
+            or the adapter is not present (unplugged) — then the body carries
+            `not_present: true` and nothing was reset.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }

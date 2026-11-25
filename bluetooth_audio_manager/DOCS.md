@@ -469,7 +469,8 @@ one:
 Everything else follows: connects and reconnects use the speaker's adapter,
 the adapter is watched like the main one (unplugged and back → the app
 restarts), `POST /api/adapter/reset` resets all adapters or the one given as
-`adapter`, and `POST /api/scan` takes an `adapter` too. If an additional
+`adapter` (an unplugged adapter is skipped; asked for by MAC it is
+answered with HTTP 409 and `not_present: true` instead of a D-Bus error, since cc.33), and `POST /api/scan` takes an `adapter` too. If an additional
 adapter is missing at startup the app does not wait for it — its speakers are
 unavailable until it appears, then it is used without a restart and (since
 cc.32) its speakers' reconnects start afresh at once. Since cc.32 any error
