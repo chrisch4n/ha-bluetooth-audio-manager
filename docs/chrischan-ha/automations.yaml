@@ -170,7 +170,7 @@
         daten:
           tag: radiostream_{{ p }}
       continue_on_error: true
-    note: '23.11.2026 (Claude, auf Wunsch des Nutzers): Stufe 1 nur ans eigene Handy (Poco)
+    note: '23.11.2026 (Claude, auf Wunsch des Nutzers): Stufe 1 nur ans eigene Handy (geraet_4)
       - am 23.11. um 01:45 ging sie nachts an alle 4 Geraete, eine Minute spaeter spielte die
       Box wieder. Ab Stufe 2 an alle Geraete; gleicher tag radiostream_<p>, die Entwarnung ersetzt
       beide.'
