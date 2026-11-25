@@ -130,6 +130,7 @@ class FakePinPulse:
         self.sinks = sinks
         self.streams = {s.index: s for s in streams}
         self.moves = []
+        self.mutes = []
         self.entries = list(entries)
         self.writes = []
         self.default_sink = default_sink
@@ -158,6 +159,10 @@ class FakePinPulse:
     async def sink_input_move(self, stream_index, sink_index):
         self.moves.append((stream_index, sink_index))
         self.streams[stream_index].sink = sink_index
+
+    async def sink_input_mute(self, stream_index, mute=True):
+        self.mutes.append((stream_index, bool(mute)))
+        self.streams[stream_index].mute = bool(mute)
 
 
 class TestMpdStreamPinning(unittest.IsolatedAsyncioTestCase):
@@ -238,6 +243,50 @@ class TestMpdStreamPinning(unittest.IsolatedAsyncioTestCase):
             manager._pulse.streams[10].sink = 3  # moved away again
         self.assertFalse(await manager._pin_mpd_stream(10))
         self.assertEqual(len(manager._pulse.moves), manager.PIN_MAX_MOVES)
+
+
+class TestOrphanedStreamMuting(unittest.IsolatedAsyncioTestCase):
+    """25.11.2026: when a speaker dropped, PulseAudio put its stream on the
+    default sink and ~2 s of its station played over another speaker."""
+
+    def build(self, sinks, streams):
+        manager = PulseAudioManager()
+        manager._pulse = FakePinPulse(sinks, streams)
+        return manager
+
+    async def test_stream_of_a_gone_speaker_is_muted_once(self):
+        manager = self.build([_sink(3, C)], [_mpd_stream(10, sink=3, mac=A)])
+        self.assertFalse(await manager._pin_mpd_stream(10))
+        await manager._pin_mpd_stream(10)  # the "change" event of the mute itself
+        self.assertEqual(manager._pulse.mutes, [(10, True)])
+        self.assertEqual(manager._pulse.moves, [])
+
+    async def test_moved_home_stream_is_unmuted(self):
+        manager = self.build([_sink(3, C)], [_mpd_stream(10, sink=3, mac=A)])
+        await manager._pin_mpd_stream(10)
+        manager._pulse.sinks.append(_sink(1, A))  # the speaker is back
+        self.assertEqual(await manager._pin_all_mpd_streams(), 1)
+        self.assertEqual(manager._pulse.moves, [(10, 1)])
+        self.assertEqual(manager._pulse.mutes, [(10, True), (10, False)])
+
+    async def test_muted_stream_on_its_own_sink_is_unmuted(self):
+        stream = _mpd_stream(10, sink=1, mac=A)
+        stream.mute = 1  # muted from outside (test on 25.11.2026)
+        manager = self.build([_sink(1, A)], [stream])
+        await manager._pin_mpd_stream(10)
+        self.assertEqual(manager._pulse.mutes, [(10, False)])
+
+    async def test_unmuted_stream_on_its_own_sink_is_not_touched(self):
+        manager = self.build([_sink(1, A)], [_mpd_stream(10, sink=1, mac=A)])
+        await manager._pin_mpd_stream(10)
+        self.assertEqual(manager._pulse.mutes, [])
+
+    async def test_foreign_streams_are_never_muted(self):
+        foreign = SimpleNamespace(index=20, sink=3, proplist={"application.name": "Music Assistant"},
+                                  mute=0)
+        manager = self.build([_sink(3, C)], [foreign])
+        await manager._pin_mpd_stream(20)
+        self.assertEqual(manager._pulse.mutes, [])
 
 
 class TestMpdStreamBinding(unittest.IsolatedAsyncioTestCase):

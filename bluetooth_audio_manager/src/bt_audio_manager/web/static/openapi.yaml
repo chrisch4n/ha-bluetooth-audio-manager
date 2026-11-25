@@ -1004,6 +1004,21 @@ paths:
                         sink: { type: string }
                         on_own_sink: { type: boolean }
                         bound: { type: boolean }
+                  silent_speakers:
+                    type: array
+                    description: >
+                      Speakers whose MPD is playing but whose sink renders digital
+                      silence (silence watch: one second sampled every 20 s, listed
+                      after three silent samples in a row; the stream is re-opened
+                      once per 10 minutes). Empty when everything is audible.
+                    items:
+                      type: object
+                      properties:
+                        address: { type: string }
+                        sink: { type: string }
+                        since: { type: number, description: Unix time of the first silent sample }
+                        seconds: { type: integer }
+                        reopened_at: { type: number, nullable: true }
         "503":
           description: PulseAudio not connected.
           content:
@@ -1385,6 +1400,10 @@ components:
         errors:
           type: object
           additionalProperties: { type: string }
+        restarts:
+          type: object
+          description: How often a recorder was started again because its sink had vanished.
+          additionalProperties: { type: integer }
         events:
           type: array
           items:

@@ -25,7 +25,10 @@
 >   the default followed every default-sink change — when another speaker
 >   reconnected it jumped over and had to be re-opened (about 3 s of
 >   silence). `GET /api/diagnostics/pulse-bluetooth` shows `default_sink`
->   and, per stream, `on_own_sink` and `bound`.
+>   and, per stream, `on_own_sink` and `bound`. Since cc.34 a stream whose
+>   speaker dropped (PulseAudio puts it on the default sink, i.e. another
+>   speaker, until MPD stops about 2 s later) is muted there, and an MPD
+>   stream on its own speaker's sink is never left muted.
 > - **#319 Discovery vs. playback** — no silent RSSI discovery bursts while
 >   audio is running (these caused a short dropout about once a minute);
 >   streams playing during a manual scan are restarted one by one when it
@@ -152,7 +155,17 @@
 >   or the audio service is restarted later, the app reconnects by itself
 >   (one attempt every 10 s, `PulseAudio is reachable again ...` in the log)
 >   and sets up the speakers that are still connected; before, this needed
->   an app restart. `pactl` calls are limited to 10 s.
+>   an app restart. `pactl` calls are limited to 10 s. Since cc.34 the
+>   stations that the restart paused play again right after (one speaker
+>   every 3 s); tested 25 Nov 2026: reconnected after 2 s, before cc.34
+>   the stations waited 19–25 s for Home Assistant.
+> - **Silence watch** — every 20 s the app records one second of each
+>   playing speaker's PulseAudio monitor. Three samples of exact digital
+>   silence in a row (radio practically never has a whole second of zeros)
+>   re-open that MPD stream (at most once per 10 minutes), and the speaker
+>   is listed in `silent_speakers` of `GET /api/diagnostics/pulse-bluetooth`
+>   until there is sound again. Before, a speaker could stay silent while
+>   Home Assistant showed *playing* with a running position.
 > - **Configured adapter missing at startup** — the app waits for the
 >   adapter configured by MAC instead of binding to the first powered one
 >   (which on a host with two adapters is usually Home Assistant's own, and
@@ -179,7 +192,11 @@
 >   Bluetooth) and every ≥60 ms pause of PulseAudio's Bluetooth output
 >   (`Bluetooth output stalled: ...`, the link/adapter/USB stopped taking
 >   data). `stall_clusters` groups stalls that hit several speakers at once
->   (shared path) and gives the spacing between them.
+>   (shared path) and gives the spacing between them. Since cc.34 each
+>   recorder stays on its own speaker (`parec --no-move`): when a speaker
+>   dropped, its recorder used to follow onto another speaker's monitor and
+>   reported that speaker twice. A recorder whose sink vanished starts again
+>   when the sink is back (`restarts`).
 >
 > Known limitations of this build:
 >
@@ -197,8 +214,8 @@
 >   adapters (see *Bluetooth Adapters*).
 > - Without the adapter configured by MAC the app does not play: it waits
 >   for that adapter and no longer falls back to another one.
-> - After PulseAudio was restarted, the app restores sinks and MPD, but as
->   after any reconnect MPD does not resume playback by itself.
+> - After PulseAudio was restarted, the app restores sinks and MPD and
+>   (since cc.34) plays the paused stations again.
 > - Signal strength is only measured during a scan, and a scan disturbs
 >   running streams on the same adapter.
 > - On HAOS the audio plugin's PulseAudio log is not available (see

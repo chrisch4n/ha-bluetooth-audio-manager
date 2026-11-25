@@ -127,6 +127,7 @@ def build_manager(pulse=None):
     m._pulse_retry_at = 0.0
     m._pulse_reported_at = 0.0
     m._pulse_restore_task = None
+    m._mpd_instances = {}
     m._restore_audio_after_pulse_return = AsyncMock()
     return m
 
@@ -413,3 +414,48 @@ class AudioRestartTest(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def paused_mpd(state="pause", uri="http://streams.example/bob"):
+    d = MagicMock(is_running=True, resume=AsyncMock(return_value=True))
+    d.playback_snapshot = AsyncMock(return_value={"uri": uri, "playing": state == "play",
+                                                  "state": state})
+    return d
+
+
+class ResumeAfterPulseTest(unittest.IsolatedAsyncioTestCase):
+    """25.11.2026: after a restart of the audio service every MPD had paused
+    itself and the stations waited 19-25 s for Home Assistant."""
+
+    def build(self, sink="bluez_sink.x.a2dp_sink"):
+        pulse = MagicMock(get_sink_for_address=AsyncMock(return_value=sink))
+        m = build_manager(pulse)
+        m.PULSE_RESUME_STAGGER = 0
+        return m
+
+    async def test_paused_daemons_with_a_sink_are_resumed(self):
+        m = self.build()
+        m._mpd_instances = {ADDR: paused_mpd(), "11:22:33:44:55:66": paused_mpd()}
+        self.assertEqual(len(await m._resume_after_pulse_return()), 2)
+        m._mpd_instances[ADDR].resume.assert_awaited_once_with("http://streams.example/bob")
+
+    async def test_playing_or_stopped_daemons_are_left_alone(self):
+        m = self.build()
+        m._mpd_instances = {ADDR: paused_mpd(state="play"), "11:22:33:44:55:66": paused_mpd(state="stop")}
+        self.assertEqual(await m._resume_after_pulse_return(), [])
+
+    async def test_no_resume_without_a_sink(self):
+        m = self.build(sink=None)
+        m._mpd_instances = {ADDR: paused_mpd()}
+        self.assertEqual(await m._resume_after_pulse_return(), [])
+        m._mpd_instances[ADDR].resume.assert_not_called()
+
+    async def test_restore_ends_with_the_resume(self):
+        pulse = MagicMock(get_sink_for_address=AsyncMock(return_value="bluez_sink.x.a2dp_sink"))
+        m = build_manager(pulse)
+        del m._restore_audio_after_pulse_return
+        m.PULSE_RESTORE_SETTLE = 0
+        m.PULSE_RESUME_STAGGER = 0
+        m._mpd_instances = {ADDR: paused_mpd()}
+        await m._restore_audio_after_pulse_return()
+        m._mpd_instances[ADDR].resume.assert_awaited_once()

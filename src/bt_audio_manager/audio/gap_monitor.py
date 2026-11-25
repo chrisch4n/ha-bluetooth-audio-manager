@@ -22,7 +22,10 @@ An audible dropout with neither happened inside the speaker or on the
 radio without backing up the adapter.
 
 Each monitor is read by a plain thread so a busy event loop cannot fake a
-stall.
+stall.  The recorders are pinned to their sink (``--no-move``): when a
+speaker drops, PulseAudio would otherwise move its recorder onto another
+speaker's monitor and report that speaker's audio twice (25.11.2026).  A
+recorder whose sink vanished is started again when the sink is back.
 """
 
 from __future__ import annotations
@@ -41,7 +44,66 @@ logger = logging.getLogger(__name__)
 RATE = 8000  # Hz, mono s16le
 MIN_GAP_MS = 30
 STALL_MS = 60
+RESTART_DELAY_S = 2.0  # wait before recording a vanished sink again
 _ZERO_BYTES = re.compile(rb"\x00+")
+
+
+def parec_command(sink: str, client: str, latency_ms: int = 20) -> list[str]:
+    """``parec`` reading *sink*'s monitor at 8 kHz mono, never moved elsewhere."""
+    return [
+        "parec", f"--device={sink}.monitor",
+        "--format=s16le", f"--rate={RATE}", "--channels=1", "--raw",
+        f"--latency-msec={latency_ms}", "--no-move", f"--client-name={client}",
+    ]
+
+
+def peak_of(data: bytes) -> int:
+    """Largest absolute sample of s16le mono *data* (0 = digital silence)."""
+    usable = len(data) - len(data) % 2
+    if not usable:
+        return 0
+    samples = memoryview(data[:usable]).cast("h")
+    return max(max(samples), -min(samples))
+
+
+def monitor_peak(sink: str, seconds: float = 1.0, timeout: float = 5.0) -> int | None:
+    """Record *seconds* of *sink*'s monitor; peak sample, or None if unreadable.
+
+    Blocking (run it in a thread).  Used by the silence watch.
+    """
+    want = int(RATE * seconds) * 2
+    try:
+        proc = subprocess.Popen(
+            parec_command(sink, "bt-audio-manager-silence-watch", latency_ms=50),
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+    except (FileNotFoundError, OSError):
+        return None
+    data = b""
+    deadline = time.monotonic() + timeout
+    try:
+        fd = proc.stdout.fileno()
+        while len(data) < want and time.monotonic() < deadline:
+            chunk = os.read(fd, want - len(data))
+            if not chunk:
+                break
+            data += chunk
+    except OSError:
+        pass
+    finally:
+        if proc.poll() is None:
+            try:
+                proc.terminate()
+            except ProcessLookupError:
+                pass
+        try:
+            proc.wait(timeout=2)
+        except Exception:
+            pass
+        proc.stdout.close()
+    if len(data) < want // 2:
+        return None  # sink gone or PulseAudio unreachable: no verdict
+    return peak_of(data)
 
 
 class DeliveryStallDetector:
@@ -152,6 +214,7 @@ class GapMonitor:
         self.events: collections.deque = collections.deque(maxlen=self.MAX_EVENTS)
         self.bytes_read: dict[str, int] = {s: 0 for s in self.sinks}
         self.errors: dict[str, str] = {}
+        self.restarts: dict[str, int] = {}
         self._procs: dict[str, subprocess.Popen] = {}
         self._tasks: list[asyncio.Task] = []
         self._stopping = False
@@ -232,22 +295,34 @@ class GapMonitor:
             "events_per_sink": self.summary(),
             "stall_clusters": self.stall_clusters(),
             "errors": dict(self.errors),
+            "restarts": dict(self.restarts),
             "events": events,
         }
 
     def _read_blocking(self, sink: str) -> None:
+        """Record *sink* until the monitor ends; start again if the sink vanished."""
+        while not self._stopping and time.time() < self.ends_at:
+            started = time.monotonic()
+            ended_early = self._read_once(sink)
+            if not ended_early or self._stopping:
+                return
+            with self._lock:
+                self.restarts[sink] = self.restarts.get(sink, 0) + 1
+            # Fails at once while the sink is missing; do not spin.
+            time.sleep(max(0.0, RESTART_DELAY_S - (time.monotonic() - started)))
+
+    def _read_once(self, sink: str) -> bool:
+        """One recording of *sink*; True if it ended before the monitor did."""
         silence = SilenceGapDetector()
         stalls = DeliveryStallDetector()
         try:
             proc = subprocess.Popen(
-                ["parec", f"--device={sink}.monitor",
-                 "--format=s16le", f"--rate={RATE}", "--channels=1", "--raw",
-                 "--latency-msec=20", "--client-name=bt-audio-manager-gap-monitor"],
+                parec_command(sink, "bt-audio-manager-gap-monitor"),
                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             )
         except (FileNotFoundError, OSError) as e:
             self.errors[sink] = str(e)
-            return
+            return False
         self._procs[sink] = proc
         fd = proc.stdout.fileno()
         pending = b""
@@ -282,8 +357,10 @@ class GapMonitor:
             except Exception:
                 pass
             proc.stdout.close()
-            if not self._stopping and sink not in self.errors:
-                self.errors[sink] = "recording ended early (sink gone?)"
+        if self._stopping or time.time() >= self.ends_at:
+            return False
+        self.errors[sink] = "recording ended early (sink gone?) - restarted when the sink is back"
+        return True
 
     def _record(self, kind: str, sink: str, begin: float, duration_ms: float) -> None:
         event = {

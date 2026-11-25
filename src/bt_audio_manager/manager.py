@@ -100,6 +100,7 @@ class BluetoothAudioManager:
     PULSE_FAILURES_BEFORE_RECONNECT = 3  # failed polls in a row on a connection that claims to be up
     PULSE_DOWN_REPORT_INTERVAL = 300  # seconds between "still not reachable" log lines
     PULSE_RESTORE_SETTLE = 5  # seconds a returned PulseAudio gets to load its Bluetooth modules
+    PULSE_RESUME_STAGGER = 3  # seconds between resuming speakers after PulseAudio returned
     VOLUME_LOCK_MAX_RESETS = 5  # speaker-volume resets per device per minute
     SCAN_RESUME_STAGGER = 2  # seconds between stream restarts after a scan
     USER_DISCONNECT_WINDOW = 30  # seconds a user-initiated disconnect flag stays valid
@@ -1546,6 +1547,7 @@ class BluetoothAudioManager:
         self._link_quality_task = asyncio.create_task(self._link_quality_loop())
         self._playback_watch_task = asyncio.create_task(self._playback_watch_loop())
         self._bitrate_watch_task = asyncio.create_task(self._bitrate_watch_loop())
+        self._silence_watch_task = asyncio.create_task(self._silence_watch_loop())
 
         logger.info("Bluetooth Audio Manager started successfully")
 
@@ -1562,7 +1564,8 @@ class BluetoothAudioManager:
         for task in (self._sink_poll_task, self._rssi_poll_task, self._pulse_restore_task,
                      getattr(self, "_link_quality_task", None),
                      getattr(self, "_playback_watch_task", None),
-                     getattr(self, "_bitrate_watch_task", None)):
+                     getattr(self, "_bitrate_watch_task", None),
+                     getattr(self, "_silence_watch_task", None)):
             if task and not task.done():
                 task.cancel()
                 try:
@@ -3030,10 +3033,42 @@ class BluetoothAudioManager:
                     raise
                 except Exception as e:
                     logger.warning("Audio restore for %s failed: %s", address, e)
+            await self._resume_after_pulse_return()
         except asyncio.CancelledError:
             raise
         except Exception as e:
             logger.warning("Audio restore after PulseAudio return failed: %s", e)
+
+    async def _resume_after_pulse_return(self) -> list[str]:
+        """Play again what the restart of PulseAudio paused.
+
+        When the audio service restarts, every MPD fails on its vanished
+        output and pauses itself; the stations then waited for Home
+        Assistant's watchdog (19-25 s in the test on 25.11.2026).  A daemon
+        that is paused now and has its speaker's sink back gets its station
+        again, one speaker after another.  Returns the speakers resumed.
+        """
+        resumed: list[str] = []
+        for address, mpd in list(self._mpd_instances.items()):
+            try:
+                if not mpd.is_running or not await self._sink_or_none(address):
+                    continue
+                snap = await mpd.playback_snapshot()
+                if not snap or snap.get("state") != "pause":
+                    continue
+                if resumed:
+                    await asyncio.sleep(self.PULSE_RESUME_STAGGER)
+                if await mpd.resume(snap["uri"]):
+                    resumed.append(address)
+                    logger.info(
+                        "Resumed playback on %s after PulseAudio returned (%s)",
+                        address, snap["uri"],
+                    )
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.warning("Resuming %s after PulseAudio returned failed: %s", address, _err(e))
+        return resumed
 
     async def _sink_or_none(self, address: str) -> str | None:
         """The device's PulseAudio sink name, None if absent or PA unusable."""
@@ -3614,6 +3649,111 @@ class BluetoothAudioManager:
             return None
         mac = parts[1].replace("_", ":").upper()
         return mac if len(mac) == 17 else None
+
+    # -- Silence watch ---------------------------------------------------
+    # Test 25.11.2026: an MPD stream muted in PulseAudio left its speaker
+    # silent for 5 minutes while Home Assistant showed "playing" with a
+    # running position - nothing noticed it.  Every SILENCE_CHECK_INTERVAL
+    # the app records one second of each playing speaker's sink monitor.
+    # Exact digital silence SILENCE_CHECKS_BEFORE_ACTION times in a row
+    # (radio streams practically never contain a whole second of zeros)
+    # re-opens that MPD stream, at most once per SILENCE_REOPEN_COOLDOWN,
+    # and lists the speaker in /api/diagnostics/pulse-bluetooth
+    # (``silent_speakers``) until there is sound again.
+
+    SILENCE_CHECK_INTERVAL = 20.0  # seconds between checks
+    SILENCE_SAMPLE_SECONDS = 1.0  # seconds recorded per speaker and check
+    SILENCE_PEAK_MAX = 2  # largest |sample| that still counts as silence
+    SILENCE_CHECKS_BEFORE_ACTION = 3  # silent checks in a row before acting
+    SILENCE_REOPEN_COOLDOWN = 600.0  # seconds between two re-opens per speaker
+
+    def _silence_state(self) -> dict:
+        return self.__dict__.setdefault("_silence", {})
+
+    def _silence_reopened(self) -> dict:
+        return self.__dict__.setdefault("_silence_reopened_at", {})
+
+    async def _silence_watch_loop(self) -> None:
+        while True:
+            try:
+                await asyncio.sleep(self.SILENCE_CHECK_INTERVAL)
+                await self.check_silence()
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.debug("Silence watch: %s", _err(e))
+
+    async def check_silence(self) -> list[str]:
+        """One round of the silence watch; returns the speakers re-opened."""
+        from .audio.gap_monitor import monitor_peak
+
+        state = self._silence_state()
+        if not self.pulse:
+            return []
+        reopened: list[str] = []
+        playing: set[str] = set()
+        for address, mpd in list(self._mpd_instances.items()):
+            if not mpd.is_running:
+                continue
+            try:
+                if (await mpd.get_status()).get("state") != "play":
+                    continue
+            except Exception:
+                continue
+            sink = await self._sink_or_none(address)
+            if not sink:
+                continue
+            peak = await asyncio.to_thread(monitor_peak, sink, self.SILENCE_SAMPLE_SECONDS)
+            if peak is None:
+                continue  # no verdict: keep whatever was counted
+            playing.add(address)
+            entry = state.get(address)
+            if peak > self.SILENCE_PEAK_MAX:
+                if entry and entry["checks"] >= self.SILENCE_CHECKS_BEFORE_ACTION:
+                    logger.warning(
+                        "Sound is back on %s after about %.0f s of silence",
+                        address, time.time() - entry["since"],
+                    )
+                state.pop(address, None)
+                continue
+            now = time.time()
+            if entry is None:
+                entry = state[address] = {"since": now, "checks": 0}
+            entry["checks"] += 1
+            entry["sink"] = sink
+            if entry["checks"] != self.SILENCE_CHECKS_BEFORE_ACTION:
+                continue
+            logger.warning(
+                "%s plays digital silence for about %.0f s while MPD is playing",
+                address, now - entry["since"],
+            )
+            last = self._silence_reopened().get(address)
+            if last is not None and now - last < self.SILENCE_REOPEN_COOLDOWN:
+                continue
+            self._silence_reopened()[address] = now
+            if await mpd.restart_playback():
+                entry["reopened_at"] = now
+                reopened.append(address)
+                logger.warning("Re-opened the MPD stream for %s because it was silent", address)
+        for address in list(state):
+            if address not in playing and address not in self._mpd_instances:
+                state.pop(address, None)
+        return reopened
+
+    def silent_speakers(self) -> list[dict]:
+        """Speakers whose MPD plays digital silence (silence watch)."""
+        now = time.time()
+        return [
+            {
+                "address": address,
+                "sink": entry.get("sink"),
+                "since": round(entry["since"], 1),
+                "seconds": round(now - entry["since"]),
+                "reopened_at": entry.get("reopened_at"),
+            }
+            for address, entry in sorted(self._silence_state().items())
+            if entry["checks"] >= self.SILENCE_CHECKS_BEFORE_ACTION
+        ]
 
     async def _bitrate_watch_loop(self) -> None:
         while True:

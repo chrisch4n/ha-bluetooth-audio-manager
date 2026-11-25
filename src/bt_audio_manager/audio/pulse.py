@@ -114,6 +114,8 @@ class PulseAudioManager:
         self._pin_history: dict[int, list[float]] = {}
         # stream indexes already bound to their speaker's sink (stream-restore)
         self._bound_streams: set[int] = set()
+        # stream indexes we muted because their speaker's sink was gone
+        self._muted_orphans: set[int] = set()
         # Optional fallback for _stream_owner(): proplist → speaker MAC
         self._stream_owner_resolver: Callable[[dict], str | None] | None = None
         self._stream_moved_callback: Callable[[str], None] | None = None
@@ -214,6 +216,7 @@ class PulseAudioManager:
             self._spec_failed_at = None
             self._pin_history.clear()
             self._bound_streams.clear()
+            self._muted_orphans.clear()
 
             for attempt in range(1, retries + 1):
                 try:
@@ -331,6 +334,7 @@ class PulseAudioManager:
                         elif event.facility == "sink_input" and event.t == "remove":
                             self._pin_history.pop(event.index, None)
                             self._bound_streams.discard(event.index)
+                            self._muted_orphans.discard(event.index)
                 finally:
                     _pe.close()
             except asyncio.CancelledError:
@@ -819,6 +823,7 @@ class PulseAudioManager:
         own_prefix = f"bluez_sink.{address.replace(':', '_')}."
         current = await self._pulse.sink_info(stream.sink)
         if current.name.upper().startswith(own_prefix.upper()):
+            await self._unmute_stream(stream, address, current.name)
             await self._bind_stream(stream, address, current.name)
             return False
         target = next(
@@ -827,12 +832,12 @@ class PulseAudioManager:
             None,
         )
         if target is None:
-            # Our speaker is gone; nothing to move to.  When its sink comes
-            # back the "new sink" event re-checks every stream.
-            logger.info(
-                "MPD stream for %s is on %s while its own speaker has no sink",
-                address, current.name,
-            )
+            # Our speaker is gone; nothing to move to.  PulseAudio has put
+            # the stream on the default sink, i.e. another speaker, where it
+            # plays over that speaker's station until MPD is stopped (about
+            # 2 s after a drop, seen 25.11.2026).  Mute it there; when its
+            # sink comes back the "new sink" event moves it home and unmutes.
+            await self._mute_orphan(stream, address, current.name)
             return False
 
         now = asyncio.get_running_loop().time()
@@ -855,12 +860,55 @@ class PulseAudioManager:
             "MPD stream for %s was playing on %s — moved back to %s (default sink: %s)",
             address, current.name, target.name, await self.default_sink_name() or "?",
         )
+        await self._unmute_stream(stream, address, target.name)
         await self._bind_stream(stream, address, target.name)
         if self._stream_moved_callback:
             try:
                 self._stream_moved_callback(address)
             except Exception as e:
                 logger.debug("Stream-moved callback failed for %s: %s", address, e)
+        return True
+
+    async def _mute_orphan(self, stream, address: str, sink_name: str) -> bool:
+        """Mute an MPD stream that PulseAudio put on another speaker's sink."""
+        if stream.index in self._muted_orphans:
+            return False
+        self._muted_orphans.add(stream.index)
+        if getattr(stream, "mute", False):
+            return False
+        try:
+            await self._pulse.sink_input_mute(stream.index, True)
+        except Exception as e:
+            logger.info("Could not mute the stray MPD stream for %s on %s: %s",
+                        address, sink_name, e)
+            return False
+        stream.mute = True
+        logger.warning(
+            "MPD stream for %s landed on %s while its own speaker has no sink — "
+            "muted until the speaker is back", address, sink_name,
+        )
+        return True
+
+    async def _unmute_stream(self, stream, address: str, sink_name: str) -> bool:
+        """An MPD stream on its own speaker must never be muted.
+
+        Nothing in the setup mutes MPD streams on purpose (volume and mute
+        go through MPD's software mixer).  A muted stream on its own sink is
+        either one muted by _mute_orphan or one muted from outside; either
+        way the speaker would stay silent while Home Assistant shows
+        "playing" (25.11.2026 test: 5 minutes, nothing noticed).
+        """
+        self._muted_orphans.discard(stream.index)
+        if not getattr(stream, "mute", False):
+            return False
+        try:
+            await self._pulse.sink_input_mute(stream.index, False)
+        except Exception as e:
+            logger.info("Could not unmute the MPD stream for %s on %s: %s",
+                        address, sink_name, e)
+            return False
+        stream.mute = False
+        logger.warning("MPD stream for %s was muted on %s — unmuted", address, sink_name)
         return True
 
     async def _bind_stream(self, stream, address: str, sink_name: str) -> bool:
