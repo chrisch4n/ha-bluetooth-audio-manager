@@ -1,5 +1,5 @@
-# Export aus Home Assistant (scripts.yaml), nur Radiostream-Teile, Stand 21.11.2026.
-# Anonymisiert: Box-MACs -> <MAC_87_5>/<MAC_105_9>/<MAC_97_0>, Mobilgeraete -> geraet_1..4.
+# Export aus Home Assistant (scripts.yaml), nur Radiostream-Teile, Stand 25.11.2026.
+# Anonymisiert: Box-MACs -> <MAC_87_5>/<MAC_105_9>/<MAC_97_0>, Mobilgeraete -> geraet_2..4 (geraet_1 seit 25.11.2026 entfernt).
 # Beschreibung des Systems: ../chrischan-radiostream.md
 radiostream_preset_abspielen:
   alias: Radiostream Preset abspielen
@@ -325,7 +325,8 @@ radiostream_stick_zuruecksetzen:
     kommagetrennt; bei genau einem Namen wird nur dieser Stick zurueckgesetzt (Add-on ab cc.21,
     rest_command mit adapter), sonst alle. Das Ergebnis kommt als Push mit tag radiostream_stick.
     Aufruf aus Skripten/Automationen per script.turn_on mit data.variables {stufe, sticks,
-    ausloeser}.'
+    ausloeser}. 25.11.2026 (Claude, auf Wunsch des Nutzers): Meldet das Add-on (ab cc.33)
+    einen Stick als nicht vorhanden (HTTP 409, not_present), heisst die Meldung "Stick fehlt".'
   fields:
     ausloeser:
       default: manuell
@@ -405,11 +406,15 @@ radiostream_stick_zuruecksetzen:
           variables:
             daten:
               tag: radiostream_stick
-            message: 'Sanfter Reset ({{ ziel_text }}, {{ ausloeser }}) abgelehnt oder fehlgeschlagen
-              (HTTP {{ antwort_sanft.status | default(''-'') }}): {{ (antwort_sanft.content.error
-              if antwort_sanft.content is mapping else antwort_sanft.content) | default(''keine
-              Antwort'') }}'
-            title: 'Radiostream: Stick-Reset nicht moeglich'
+            message: '{% if antwort_sanft is defined and antwort_sanft.content is mapping and antwort_sanft.content.not_present
+              %}Stick {{ ziel_text }} fehlt ({{ ausloeser }}) - abgezogen oder defekt? Ein Reset ist so
+              nicht moeglich; das Add-on benutzt den Stick wieder, sobald er zurueck ist.{% else %}Sanfter
+              Reset ({{ ziel_text }}, {{ ausloeser }}) abgelehnt oder fehlgeschlagen (HTTP {{ antwort_sanft.status
+              | default(''-'') }}): {{ (antwort_sanft.content.error if antwort_sanft.content is mapping
+              else antwort_sanft.content) | default(''keine Antwort'') }}{% endif %}'
+            title: '{{ ''Radiostream: Stick fehlt'' if (antwort_sanft is defined and antwort_sanft.content
+              is mapping and antwort_sanft.content.not_present) else ''Radiostream: Stick-Reset nicht moeglich''
+              }}'
         target:
           entity_id: script.benachrichtigung_alle_geraete
       - stop: Sanfter Reset nicht ausgefuehrt
@@ -455,11 +460,16 @@ radiostream_stick_zuruecksetzen:
           variables:
             daten:
               tag: radiostream_stick
-            message: 'USB-Reset ({{ usb_ziel | join('', '') }}, {{ ausloeser }}) abgelehnt
-              oder fehlgeschlagen (HTTP {{ antwort_usb.status | default(''-'') }}): {{ (antwort_usb.content.error
-              if antwort_usb.content is mapping else antwort_usb.content) | default(''keine
-              Antwort'') }}. Bitte den Stick von Hand abziehen und wieder einstecken.'
-            title: 'Radiostream: Stick-Reset nicht moeglich'
+            message: '{% if antwort_usb is defined and antwort_usb.content is mapping and antwort_usb.content.not_present
+              %}Stick {{ usb_ziel | join('', '') }} fehlt ({{ ausloeser }}) - abgezogen oder defekt? Bitte
+              Stick und USB-Verlaengerung pruefen; das Add-on benutzt ihn wieder, sobald er zurueck ist.{%
+              else %}USB-Reset ({{ usb_ziel | join('', '') }}, {{ ausloeser }}) abgelehnt oder fehlgeschlagen
+              (HTTP {{ antwort_usb.status | default(''-'') }}): {{ (antwort_usb.content.error if antwort_usb.content
+              is mapping else antwort_usb.content) | default(''keine Antwort'') }}. Bitte den Stick von
+              Hand abziehen und wieder einstecken.{% endif %}'
+            title: '{{ ''Radiostream: Stick fehlt'' if (antwort_usb is defined and antwort_usb.content is
+              mapping and antwort_usb.content.not_present) else ''Radiostream: Stick-Reset nicht moeglich''
+              }}'
         target:
           entity_id: script.benachrichtigung_alle_geraete
       - stop: USB-Reset nicht ausgefuehrt
@@ -757,13 +767,14 @@ radiostream_mpd_sicherstellen:
           statt der frueheren Entry-Map (geloescht) (die Map hatte noch die IDs von vor der Neuanlage Ende Oktober).'
 benachrichtigung_alle_geraete:
   alias: Benachrichtigung alle Geräte
-  description: 'Zentrale Benachrichtigung an die vier Mobilgeräte (geraet_1..4). Ersetzt die
-    dreifach kopierten notify.mobile_app_*-Blöcke in den Automationen. Felder: message (Pflicht;
-    ''clear_notification'' entfernt eine Meldung), title (optional), daten (optional, wird
-    als data an die Mobile-App durchgereicht, z.B. {tag: ...}). Ein nicht erreichbares Gerät
-    bricht die anderen nicht ab. Bewusst ein Script statt einer Notify-Gruppe: die Gruppe
+  description: 'Zentrale Benachrichtigung an die drei Mobilgeräte (geraet_4, geraet_3, geraet_2).
+    Ersetzt die dreifach kopierten notify.mobile_app_*-Blöcke in den Automationen. Felder: message
+    (Pflicht; ''clear_notification'' entfernt eine Meldung), title (optional), daten (optional,
+    wird als data an die Mobile-App durchgereicht, z.B. {tag: ...}). Ein nicht erreichbares
+    Gerät bricht die anderen nicht ab. Bewusst ein Script statt einer Notify-Gruppe: die Gruppe
     aus Notify-Entitäten kann kein data (Tag, clear_notification) durchreichen. Eingerichtet
-    02.10.2026. geraet_4 (eigenes Handy) ergänzt am 21.11.2026.'
+    02.10.2026. geraet_4 (eigenes Handy) ergänzt am 21.11.2026. geraet_1 entfernt am 25.11.2026
+    (altes Handy).'
   fields:
     daten:
       description: 'Zusatzdaten für die Mobile-App, z.B. {tag: lueften_bad}'
@@ -792,9 +803,6 @@ benachrichtigung_alle_geraete:
         daten else {}} %}{{ dict(d, title=title) if title is defined and title else d }}'
   - parallel:
     - action: notify.mobile_app_geraet_4
-      continue_on_error: true
-      data: '{{ nachricht }}'
-    - action: notify.mobile_app_geraet_1
       continue_on_error: true
       data: '{{ nachricht }}'
     - action: notify.mobile_app_geraet_3

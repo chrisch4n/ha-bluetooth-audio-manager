@@ -26,7 +26,7 @@ Zweck; die frühere Änderungsgeschichte steht in [`historie.md`](historie.md).
 | Platzhalter | Bedeutung |
 |-------------|-----------|
 | `<MAC_87_5>`, `<MAC_105_9>`, `<MAC_97_0>` | Bluetooth-Adresse der jeweiligen Box |
-| `notify.mobile_app_geraet_1..4` | Benachrichtigungsdienste der vier Handys/Tablets (Companion-App); `geraet_4` ist das eigene Handy, an das die Diagnose-Pushes gehen |
+| `notify.mobile_app_geraet_2..4` | Benachrichtigungsdienste der drei Handys/Tablets (Companion-App); `geraet_4` ist das eigene Handy, an das die Diagnose-Pushes gehen (`geraet_1` am 25.11.2026 entfernt) |
 
 Die Adresse des Add-ons in den REST-Befehlen
 (`http://1b3a7c56-bluetooth-audio-manager:8099`) und der Slug in

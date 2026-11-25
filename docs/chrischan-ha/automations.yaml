@@ -1,4 +1,4 @@
-# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 23.11.2026.
+# Export aus Home Assistant (automations.yaml), nur Radiostream-Teile, Stand 25.11.2026.
 # Anonymisiert: Box-MACs -> <MAC_87_5>/<MAC_105_9>/<MAC_97_0>, Mobilgeraete -> geraet_1..4.
 # Beschreibung des Systems: ../chrischan-radiostream.md
 - id: '1786256754488'
@@ -378,15 +378,16 @@
 - id: '1787286971104'
   alias: Radiostream permanent (97.0/105.9/87.5)
   description: 'Spielt je Box den gewaehlten Sender (select.radiosender_<p>) dauerhaft ueber
-    MPD, solange input_boolean.radiostream_<p>_aktiv an ist. HA-Start, 5-Min-Watchdog und
-    manuelles Ausloesen pruefen alle aktiven Boxen und starten neu, wenn eine nicht spielt,
-    ihre Position steht oder ein falscher Sender laeuft. Senderwechsel, Aktivierung, Rueckkehr
-    aus unavailable und Stopp (je 20 s stabil) betreffen nur die eine Box. Mixing-Schutz:
-    zwischen Starts verschiedener Boxen 3 s Abstand (input_text.radiostream_letzter_start).
-    Modus queued. Die Boxen kommen aus input_text.radiostream_address_map; die Ausloeser sind
-    je Box eingetragen. Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md
-    im Repo chrisch4n/ha-bluetooth-audio-manager (Branch chrischan). [21.11.2026 Claude, auf
-    Wunsch des Nutzers: Beschreibung gekuerzt, 30 Traces statt 5, Boxenliste aus der address_map.]'
+    MPD, solange input_boolean.radiostream_<p>_aktiv an ist. HA-Start, 5-Min-Watchdog und manuelles
+    Ausloesen pruefen alle aktiven Boxen und starten neu, wenn eine nicht spielt, ihre Position
+    steht oder ein falscher Sender laeuft. Senderwechsel, Aktivierung, Rueckkehr aus unavailable
+    und Stopp (je 20 s stabil) betreffen nur die eine Box. Mixing-Schutz: zwischen Starts verschiedener
+    Boxen 3 s Abstand (input_text.radiostream_letzter_start). Modus queued. Die Boxen kommen
+    aus input_text.radiostream_address_map; die Ausloeser sind je Box eingetragen. Aenderungsgeschichte
+    bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
+    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt, 30
+    Traces statt 5, Boxenliste aus der address_map. 25.11.2026 Claude, auf Wunsch des Nutzers:
+    Start nur mit Stream-Adresse.]'
   triggers:
   - event: start
     id: ha_start
@@ -452,9 +453,9 @@
     for:
       seconds: 20
     id: zurueck_97_0
-    note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur,
-      Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft und
-      bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
+    note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur, Steckdosen-Zyklus,
+      Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft und bei Bedarf gestartet,
+      statt bis zum naechsten 5-Min-Watchdog zu warten'
   - trigger: state
     entity_id:
     - media_player.musik_radiostream_105_9
@@ -465,9 +466,9 @@
     for:
       seconds: 20
     id: zurueck_105_9
-    note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur,
-      Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft und
-      bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
+    note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur, Steckdosen-Zyklus,
+      Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft und bei Bedarf gestartet,
+      statt bis zum naechsten 5-Min-Watchdog zu warten'
   - trigger: state
     entity_id:
     - media_player.musik_radiostream_87_5
@@ -478,9 +479,9 @@
     for:
       seconds: 20
     id: zurueck_87_5
-    note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur,
-      Steckdosen-Zyklus, Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft und
-      bei Bedarf gestartet, statt bis zum naechsten 5-Min-Watchdog zu warten'
+    note: '06.11.2026 (Claude): Player meldet sich nach einem Ausfall zurueck (Reparatur, Steckdosen-Zyklus,
+      Add-on-Neustart oder -Update) - nur DIESER Player wird geprueft und bei Bedarf gestartet,
+      statt bis zum naechsten 5-Min-Watchdog zu warten'
   - trigger: state
     entity_id:
     - media_player.musik_radiostream_97_0
@@ -550,10 +551,10 @@
                 == states(''select.radiosender_'' ~ repeat.item) }}'
             then:
             - variables:
-                warte: '{% set raw = states(''input_text.radiostream_letzter_start'') %}{%
-                  set parts = raw.split(''|'') if ''|'' in raw else ['''', ''0''] %}{% set
-                  diff = now().timestamp() - (parts[1] | float(0)) %}{{ (([3 - diff, 0] |
-                  max) if parts[0] != repeat.item else 0) | round(1) }}'
+                warte: '{% set raw = states(''input_text.radiostream_letzter_start'') %}{% set
+                  parts = raw.split(''|'') if ''|'' in raw else ['''', ''0''] %}{% set diff
+                  = now().timestamp() - (parts[1] | float(0)) %}{{ (([3 - diff, 0] | max) if
+                  parts[0] != repeat.item else 0) | round(1) }}'
             - if:
               - condition: template
                 value_template: '{{ warte | float(0) > 0 }}'
@@ -562,33 +563,43 @@
                   seconds: '{{ warte | float(0) }}'
               note: Mixing-Schutz nur, wenn innerhalb der letzten 3s ein ANDERER Player gestartet
                 wurde - und nur fuer die Restzeit. Zappen innerhalb eines Players wartet nicht.
-            - action: media_player.play_media
-              data:
-                media:
-                  media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''select.radiosender_''
-                    ~ repeat.item)) }}'
-                  media_content_type: music
-                  metadata: {}
-              target:
-                entity_id: media_player.musik_radiostream_{{ repeat.item }}
-            - action: input_number.set_value
-              data:
-                value: -1
-              target:
-                entity_id: input_number.radiostream_{{ repeat.item }}_letzte_position
-            - action: input_text.set_value
-              target:
-                entity_id: input_text.radiostream_letzter_start
-              data:
-                value: '{{ repeat.item }}|{{ now().timestamp() }}'
-              note: Merkt sich Player und Zeitpunkt dieses Starts fuer den Mixing-Schutz des
-                naechsten Starts
+            - if: &id001
+              - condition: template
+                value_template: '{{ state_attr(''sensor.radiostream_senderliste'', states(''select.radiosender_''
+                  ~ repeat.item)) not in [none, ''''] }}'
+              then:
+              - action: media_player.play_media
+                data:
+                  media:
+                    media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''select.radiosender_''
+                      ~ repeat.item)) }}'
+                    media_content_type: music
+                    metadata: {}
+                target:
+                  entity_id: media_player.musik_radiostream_{{ repeat.item }}
+              - action: input_number.set_value
+                data:
+                  value: -1
+                target:
+                  entity_id: input_number.radiostream_{{ repeat.item }}_letzte_position
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.radiostream_letzter_start
+                data:
+                  value: '{{ repeat.item }}|{{ now().timestamp() }}'
+                note: Merkt sich Player und Zeitpunkt dieses Starts fuer den Mixing-Schutz des
+                  naechsten Starts
+              note: '25.11.2026 (Claude, auf Wunsch des Nutzers): Nur starten, wenn die Senderliste
+                fuer den gewaehlten Sender eine Stream-Adresse liefert. Fehlt sie kurz (z. B.
+                beim Neuladen der Template-Entitaeten), wird die Box in diesem Lauf uebersprungen
+                statt den ganzen Lauf fuer alle Boxen abzubrechen (21.11.2026 21:44: media_content_id
+                None); der naechste Lauf (spaetestens 5 Min) versucht es erneut.'
             note: Nur abspielen, wenn der Player erreichbar ist UND dieser Tipp noch aktuell
               ist - ueberholte Zwischentipps beim schnellen Zappen werden uebersprungen
           else:
           - variables:
-              pos_jetzt: '{{ state_attr(''media_player.musik_radiostream_'' ~ repeat.item,
-                ''media_position'') | float(-1) }}'
+              pos_jetzt: '{{ state_attr(''media_player.musik_radiostream_'' ~ repeat.item, ''media_position'')
+                | float(-1) }}'
               pos_vorher: '{{ states(''input_number.radiostream_'' ~ repeat.item ~ ''_letzte_position'')
                 | float(-2) }}'
               url_soll: '{{ state_attr(''sensor.radiostream_senderliste'', states(''select.radiosender_''
@@ -610,38 +621,44 @@
               - variables:
                   warte: '{% set raw = states(''input_text.radiostream_letzter_start'') %}{%
                     set parts = raw.split(''|'') if ''|'' in raw else ['''', ''0''] %}{% set
-                    diff = now().timestamp() - (parts[1] | float(0)) %}{{ (([3 - diff, 0]
-                    | max) if parts[0] != repeat.item else 0) | round(1) }}'
+                    diff = now().timestamp() - (parts[1] | float(0)) %}{{ (([3 - diff, 0] |
+                    max) if parts[0] != repeat.item else 0) | round(1) }}'
               - if:
                 - condition: template
                   value_template: '{{ warte | float(0) > 0 }}'
                 then:
                 - delay:
                     seconds: '{{ warte | float(0) }}'
-                note: Mixing-Schutz nur, wenn innerhalb der letzten 3s ein ANDERER Player
-                  gestartet wurde - und nur fuer die Restzeit. Zappen innerhalb eines Players
-                  wartet nicht.
-              - action: media_player.play_media
-                data:
-                  media:
-                    media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''select.radiosender_''
-                      ~ repeat.item)) }}'
-                    media_content_type: music
-                    metadata: {}
-                target:
-                  entity_id: media_player.musik_radiostream_{{ repeat.item }}
-              - action: input_number.set_value
-                data:
-                  value: -1
-                target:
-                  entity_id: input_number.radiostream_{{ repeat.item }}_letzte_position
-              - action: input_text.set_value
-                target:
-                  entity_id: input_text.radiostream_letzter_start
-                data:
-                  value: '{{ repeat.item }}|{{ now().timestamp() }}'
-                note: Merkt sich Player und Zeitpunkt dieses Starts fuer den Mixing-Schutz
-                  des naechsten Starts
+                note: Mixing-Schutz nur, wenn innerhalb der letzten 3s ein ANDERER Player gestartet
+                  wurde - und nur fuer die Restzeit. Zappen innerhalb eines Players wartet nicht.
+              - if: *id001
+                then:
+                - action: media_player.play_media
+                  data:
+                    media:
+                      media_content_id: '{{ state_attr(''sensor.radiostream_senderliste'', states(''select.radiosender_''
+                        ~ repeat.item)) }}'
+                      media_content_type: music
+                      metadata: {}
+                  target:
+                    entity_id: media_player.musik_radiostream_{{ repeat.item }}
+                - action: input_number.set_value
+                  data:
+                    value: -1
+                  target:
+                    entity_id: input_number.radiostream_{{ repeat.item }}_letzte_position
+                - action: input_text.set_value
+                  target:
+                    entity_id: input_text.radiostream_letzter_start
+                  data:
+                    value: '{{ repeat.item }}|{{ now().timestamp() }}'
+                  note: Merkt sich Player und Zeitpunkt dieses Starts fuer den Mixing-Schutz
+                    des naechsten Starts
+                note: '25.11.2026 (Claude, auf Wunsch des Nutzers): Nur starten, wenn die Senderliste
+                  fuer den gewaehlten Sender eine Stream-Adresse liefert. Fehlt sie kurz (z.
+                  B. beim Neuladen der Template-Entitaeten), wird die Box in diesem Lauf uebersprungen
+                  statt den ganzen Lauf fuer alle Boxen abzubrechen (21.11.2026 21:44: media_content_id
+                  None); der naechste Lauf (spaetestens 5 Min) versucht es erneut.'
               note: Nur abspielen, wenn der MPD-Player erreichbar ist
             else:
             - action: input_number.set_value
@@ -653,8 +670,8 @@
               Sender laeuft (media_content_id != URL des gewaehlten Senders - z.B. nach Mixing-Rueckfall,
               23.09.2026 real beobachtet: 87.5 spielte den Stream von 97.0)'
         note: Senderwechsel/Reaktivierung/Rueckkehr/Stopp eines Players -> NUR dieser Player
-          wird bearbeitet (schnelle Reaktion; bei Rueckkehr oder Stopp nur, wenn er aktiv
-          ist). HA-Start, 5-Min-Takt und manuelles Ausloesen -> alle aktiven Player (Gesamtpruefung
+          wird bearbeitet (schnelle Reaktion; bei Rueckkehr oder Stopp nur, wenn er aktiv ist).
+          HA-Start, 5-Min-Takt und manuelles Ausloesen -> alle aktiven Player (Gesamtpruefung
           inkl. Stall- und Falscher-Sender-Erkennung).
     note: 'Konsolidiert 31.08.2026: ersetzt 3 fast identische Top-Level-if-Bloecke (97.0/105.9/87.5)
       durch einen repeat: for_each ueber die 3 Player-Suffixe.'
@@ -977,16 +994,17 @@
   mode: single
 - id: '1795293887000'
   alias: 'Radiostream Bitrate unten: BT-Reconnect'
-  description: Absicherung zum Add-on (ab cc.30 verbindet das Add-on selbst eine spielende
+  description: 'Absicherung zum Add-on (ab cc.30 verbindet das Add-on selbst eine spielende
     Box neu, die 5 Minuten auf der untersten SBC-Bitrate haengt, hoechstens einmal in 30 Minuten).
     Haengt eine Box trotzdem 40 Minuten unten (binary_sensor.radiostream_<p>_bitrate_unten),
     verbindet diese Automation sie per rest_command.bt_audio_force_reconnect neu, stellt danach
-    den MPD-Dienst sicher (script.radiostream_mpd_sicherstellen) und schickt einen Push an
-    das eigene Handy (tag radiostream_bitrate). Zusaetzlich alle 15 Minuten eine Pruefung,
-    falls der Sensor ohne Wechsel schon an war. Nicht waehrend Voll-Reparatur, Stick-Reset
-    oder Zyklus aller Boxen; hoechstens einmal in 30 Minuten. 30 Traces. Boxen aus input_text.radiostream_address_map.
+    den MPD-Dienst sicher (script.radiostream_mpd_sicherstellen) und schickt einen Push an das
+    eigene Handy (tag radiostream_bitrate). Zusaetzlich alle 15 Minuten eine Pruefung, falls
+    der Sensor ohne Wechsel schon an war. Nicht waehrend Voll-Reparatur, Stick-Reset oder Zyklus
+    aller Boxen; hoechstens einmal in 30 Minuten. 30 Traces. Boxen aus input_text.radiostream_address_map.
     [21.11.2026 Claude, auf Wunsch des Nutzers angelegt; am selben Abend auf 40 Minuten als
-    Absicherung umgestellt, nachdem das Add-on das selbst uebernimmt.]
+    Absicherung umgestellt, nachdem das Add-on das selbst uebernimmt. 25.11.2026 Claude, auf
+    Wunsch des Nutzers: Push auch ohne Antwort des Add-ons.]'
   triggers:
   - trigger: state
     entity_id: binary_sensor.radiostream_87_5_bitrate_unten
@@ -1016,11 +1034,10 @@
     value_template: '{% set ns = namespace(ok=false) %}{% for p in (states(''input_text.radiostream_address_map'')
       | from_json(default={})).keys() %}{% set e = ''binary_sensor.radiostream_'' ~ p ~ ''_bitrate_unten''
       %}{% if is_state(e, ''on'') and now() - states[e].last_changed > timedelta(minutes=40)
-      %}{% set ns.ok = true %}{% endif %}{% endfor %}{{ trigger.id != ''pruefen'' or ns.ok
-      }}'
-    note: Die 15-Minuten-Pruefung laeuft nur weiter, wenn eine Box seit 40 Minuten auf der
-      untersten Stufe steht - sonst wuerde jeder Pruefdurchlauf last_triggered setzen und
-      die 30-Minuten-Sperre dauerhaft blockieren
+      %}{% set ns.ok = true %}{% endif %}{% endfor %}{{ trigger.id != ''pruefen'' or ns.ok }}'
+    note: Die 15-Minuten-Pruefung laeuft nur weiter, wenn eine Box seit 40 Minuten auf der untersten
+      Stufe steht - sonst wuerde jeder Pruefdurchlauf last_triggered setzen und die 30-Minuten-Sperre
+      dauerhaft blockieren
   - condition: state
     entity_id:
     - script.radiostream_reparieren
@@ -1036,10 +1053,10 @@
   actions:
   - variables:
       player: '{% set ns = namespace(p='''') %}{% for p in (states(''input_text.radiostream_address_map'')
-        | from_json(default={})).keys() %}{% set e = ''binary_sensor.radiostream_'' ~ p ~
-        ''_bitrate_unten'' %}{% if not ns.p and is_state(e, ''on'') and now() - states[e].last_changed
-        > timedelta(minutes=40) %}{% set ns.p = p %}{% endif %}{% endfor %}{{ trigger.id if
-        trigger.id != ''pruefen'' else ns.p }}'
+        | from_json(default={})).keys() %}{% set e = ''binary_sensor.radiostream_'' ~ p ~ ''_bitrate_unten''
+        %}{% if not ns.p and is_state(e, ''on'') and now() - states[e].last_changed > timedelta(minutes=40)
+        %}{% set ns.p = p %}{% endif %}{% endfor %}{{ trigger.id if trigger.id != ''pruefen''
+        else ns.p }}'
   - if:
     - condition: template
       value_template: '{{ player == '''' }}'
@@ -1048,8 +1065,8 @@
   - variables:
       label: '{{ player | replace(''_'', ''.'') }}'
       mac: '{{ (states(''input_text.radiostream_address_map'') | from_json)[player] }}'
-      frames: '{{ state_attr(''binary_sensor.radiostream_'' ~ player ~ ''_bitrate_unten'',
-        ''sbc_frames_per_packet'') }}'
+      frames: '{{ state_attr(''binary_sensor.radiostream_'' ~ player ~ ''_bitrate_unten'', ''sbc_frames_per_packet'')
+        }}'
   - action: rest_command.bt_audio_force_reconnect
     data:
       address: '{{ mac }}'
@@ -1064,14 +1081,18 @@
     data:
       variables:
         player: '{{ player }}'
+  - variables:
+      status: '{{ antwort.status if (antwort is defined and antwort is mapping) else 0 }}'
+    note: '25.11.2026 (Claude, auf Wunsch des Nutzers): Ohne Antwort des Add-ons (Zeitueberschreitung)
+      gibt es keine Variable antwort - am 21.11. brach der Push daran ab (UndefinedError).'
   - action: notify.mobile_app_geraet_4
     continue_on_error: true
     data:
       title: 'Radiostream: {{ label }} neu verbunden'
       message: '{{ label }} hing seit 40 Minuten auf der untersten Bitrate ({{ frames }} Frames
-        pro Paket, UKW rauscht). Das Add-on hat es nicht geschafft, Bluetooth von HA aus neu
-        verbunden{{ '''' if (antwort.status | default(0)) == 200 else '' - Anfrage fehlgeschlagen
-        (HTTP '' ~ (antwort.status | default(''-'')) ~ '')'' }}.'
+        pro Paket, UKW rauscht). Das Add-on hat sie nicht selbst neu verbunden, deshalb hat
+        HA Bluetooth neu verbunden{{ '''' if status == 200 else '' - keine Bestaetigung vom
+        Add-on ('' ~ ((''HTTP '' ~ status) if status else ''keine Antwort'') ~ '')'' }}.'
       data:
         tag: radiostream_bitrate
     note: Nur an das eigene Handy (21.11.2026) - Ausfallmeldungen gehen weiter an alle Geraete

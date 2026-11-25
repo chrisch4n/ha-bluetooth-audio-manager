@@ -254,20 +254,25 @@ rest_command:
     payload: '{"address": "{{ address }}"}'
 
   bt_audio_force_reconnect:
+    # 25.11.2026 Claude, auf Wunsch des Nutzers: timeout 60 - Trennen und neu Verbinden dauert
+    # rund 20 s; mit den standardmaessigen 10 s meldet HA einen Timeout und die Antwort fehlt.
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/force-reconnect"
     method: POST
     content_type: "application/json"
     payload: '{"address": "{{ address }}"}'
+    timeout: 60
 
   bt_audio_scan:
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/scan"
     method: POST
 
   bt_audio_connect:
+    # 25.11.2026 Claude, auf Wunsch des Nutzers: timeout 60 - Verbinden kann laenger als 10 s dauern.
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/connect"
     method: post
     content_type: "application/json"
     payload: '{"address": "{{ address }}"}'
+    timeout: 60
 
   bt_audio_disconnect:
     url: "http://1b3a7c56-bluetooth-audio-manager:8099/api/disconnect"
