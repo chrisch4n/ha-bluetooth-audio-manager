@@ -10,10 +10,13 @@
     Box mit Nachdiagnose (wartet einen laufenden Stick-Reset ab und entfaellt, wenn die Box
     danach wieder da ist), 3 Voll-Reparatur mit Add-on-Neustart (hoechstens alle 30 Min, input_datetime.radiostream_letzte_automatische_voll_reparatur),
     4 nur Meldung "bitte manuell pruefen". Jede Stufe setzt den Merker input_boolean.radiostream_ausfall_gemeldet_<p>
-    und schickt einen Push mit tag radiostream_<p> (Stufe 1 nur ans eigene Handy, ab Stufe 2 an alle Geraete; ersetzt die vorige Meldung);
-    die Entwarnung kommt von automation.radiostream_player_wieder_verfugbar_benachrichtigung_loschen.
+    und schickt einen Push mit tag radiostream_<p> (Stufe 1 nur ans eigene Handy, ab Stufe 2
+    an alle Geraete; ersetzt die vorige Meldung); die Entwarnung kommt von automation.radiostream_player_wieder_verfugbar_benachrichtigung_loschen.
     Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
-    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt. 23.11.2026 Claude, auf Wunsch des Nutzers: Stufe 1 nur ans eigene Handy.]'
+    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt. 23.11.2026
+    Claude, auf Wunsch des Nutzers: Stufe 1 nur ans eigene Handy. 25.11.2026 Claude, auf Wunsch
+    des Nutzers: Aktiv-Schalter und Steckdose nach Namensmuster (input_boolean.radiostream_<p>_aktiv,
+    switch.dose_bt_<p>) statt aktiv_map/dose_switch_map.]'
   triggers:
   - entity_id:
     - media_player.musik_radiostream_87_5
@@ -101,15 +104,15 @@
       dieselben Schritte laufen; unterschieden wird ueber die Variable spielt_nicht'
   conditions:
   - condition: template
-    value_template: '{{ is_state((states(''input_text.radiostream_aktiv_map'') | from_json)[p],
-      ''on'') and is_state((states(''input_text.radiostream_dose_switch_map'') | from_json)[p],
-      ''on'') }}'
-    note: Nur eingreifen, wenn die Box aktiv ist UND ihre Steckdose an ist - eine absichtlich
+    value_template: '{{ is_state(''input_boolean.radiostream_'' ~ p ~ ''_aktiv'', ''on'') and
+      is_state(''switch.dose_bt_'' ~ p, ''on'') }}'
+    note: 'Nur eingreifen, wenn die Box aktiv ist UND ihre Steckdose an ist - eine absichtlich
       ausgeschaltete Box (Power-Button, Stopp-Schalter) ist kein Ausfall und darf weder repariert
-      noch wieder eingeschaltet werden
+      noch wieder eingeschaltet werden. 25.11.2026 (Claude, auf Wunsch des Nutzers): Aktiv-Schalter
+      und Steckdose nach Namensmuster statt aktiv_map/dose_switch_map'
   - condition: template
-    value_template: '{{ not (spielt_nicht and is_state(player, ''unavailable'') and (now()
-      - states[player].last_changed).total_seconds() >= 300) }}'
+    value_template: '{{ not (spielt_nicht and is_state(player, ''unavailable'') and (now() -
+      states[player].last_changed).total_seconds() >= 300) }}'
     note: '11.11.2026 (Claude): Einstieg ''spielt nicht'' ueberspringen, solange der Player
       seit mindestens 5 Min durchgehend unavailable ist - dann laeuft bereits die Stufenleiter
       fuer Ausfaelle, zwei Reparaturen gleichzeitig sollen nicht konkurrieren'
@@ -124,8 +127,8 @@
   - action: input_boolean.turn_on
     target:
       entity_id: input_boolean.radiostream_ausfall_gemeldet_{{ p }}
-    note: 'Merker: fuer diese Box wurde eine Ausfall-Meldung verschickt - nur dann gibt es
-      spaeter eine Entwarnung'
+    note: 'Merker: fuer diese Box wurde eine Ausfall-Meldung verschickt - nur dann gibt es spaeter
+      eine Entwarnung'
   - if:
     - condition: trigger
       id:
@@ -135,48 +138,48 @@
       continue_on_error: true
       data:
         message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
-          ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }}) {{
-          stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche ggf.
-          nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'', ''steckdosen_zyklus'':
+          ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }})
+          {{ stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche
+          ggf. nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'', ''steckdosen_zyklus'':
           ''Diagnose hat nicht geholfen, zyklisiere gezielt nur die betroffene Steckdose (ohne
           Add-on-Neustart) und pruefe danach erneut.'', ''addon_neustart'': ''Steckdosen-Zyklus
           hat nicht geholfen, eskaliere auf volle Reparatur (Steckdosen-Zyklus + Add-on-Neustart,
-          betrifft kurz alle drei Boxen).'', ''manuell_pruefen'': ''Auch die volle Reparatur hat
-          nicht geholfen. Bitte manuell pruefen (Strom, Box, Adapter).''}[trigger.id] }}'
+          betrifft kurz alle drei Boxen).'', ''manuell_pruefen'': ''Auch die volle Reparatur
+          hat nicht geholfen. Bitte manuell pruefen (Strom, Box, Adapter).''}[trigger.id] }}'
         title: '{{ ''Radiostream spielt nicht'' if spielt_nicht else ''Radiostream ausgefallen''
           }}'
         data:
           tag: radiostream_{{ p }}
     else:
     - note: 'Push pro Geraet ueber die Mobile-App-Dienste mit tag radiostream_<player>: gleiche
-        Markierung ersetzt die vorige Meldung, pro Box gibt es also immer nur EINE Meldung, die
-        sich von Stufe zu Stufe aktualisiert und am Ende durch die Entwarnung ersetzt wird'
+        Markierung ersetzt die vorige Meldung, pro Box gibt es also immer nur EINE Meldung,
+        die sich von Stufe zu Stufe aktualisiert und am Ende durch die Entwarnung ersetzt wird'
       action: script.benachrichtigung_alle_geraete
       data:
         message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
-          ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }}) {{
-          stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche ggf.
-          nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'', ''steckdosen_zyklus'':
+          ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }})
+          {{ stoerung }}. {{ {''diagnose'': ''Pruefe per API ob Bluetooth gesund ist - reiche
+          ggf. nur die HA-MPD-Integration neu ein, sonst Force-Reconnect.'', ''steckdosen_zyklus'':
           ''Diagnose hat nicht geholfen, zyklisiere gezielt nur die betroffene Steckdose (ohne
           Add-on-Neustart) und pruefe danach erneut.'', ''addon_neustart'': ''Steckdosen-Zyklus
           hat nicht geholfen, eskaliere auf volle Reparatur (Steckdosen-Zyklus + Add-on-Neustart,
-          betrifft kurz alle drei Boxen).'', ''manuell_pruefen'': ''Auch die volle Reparatur hat
-          nicht geholfen. Bitte manuell pruefen (Strom, Box, Adapter).''}[trigger.id] }}'
+          betrifft kurz alle drei Boxen).'', ''manuell_pruefen'': ''Auch die volle Reparatur
+          hat nicht geholfen. Bitte manuell pruefen (Strom, Box, Adapter).''}[trigger.id] }}'
         title: '{{ ''Radiostream spielt nicht'' if spielt_nicht else ''Radiostream ausgefallen''
           }}'
         daten:
           tag: radiostream_{{ p }}
       continue_on_error: true
-    note: '23.11.2026 (Claude, auf Wunsch des Nutzers): Stufe 1 nur ans eigene Handy (Poco) -
-      am 23.11. um 01:45 ging sie nachts an alle 4 Geraete, eine Minute spaeter spielte die Box
-      wieder. Ab Stufe 2 an alle Geraete; gleicher tag radiostream_<p>, die Entwarnung ersetzt
+    note: '23.11.2026 (Claude, auf Wunsch des Nutzers): Stufe 1 nur ans eigene Handy (Poco)
+      - am 23.11. um 01:45 ging sie nachts an alle 4 Geraete, eine Minute spaeter spielte die
+      Box wieder. Ab Stufe 2 an alle Geraete; gleicher tag radiostream_<p>, die Entwarnung ersetzt
       beide.'
   - action: persistent_notification.create
     continue_on_error: true
     data:
       message: 'Stufe {{ {''diagnose'': ''1'', ''steckdosen_zyklus'': ''2'', ''addon_neustart'':
-        ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }})
-        {{ stoerung }}.'
+        ''3'', ''manuell_pruefen'': ''4''}[trigger.id] }}/4: {{ box_name }} ({{ player }}) {{
+        stoerung }}.'
       notification_id: radiostream_ausfall_musik_radiostream_{{ p }}
       title: '{{ ''Radiostream spielt nicht'' if spielt_nicht else ''Radiostream ausgefallen''
         }}'
@@ -204,8 +207,7 @@
           entity_id: script.radiostream_stick_zuruecksetzen
           state: 'on'
         then:
-        - wait_template: '{{ is_state(''script.radiostream_stick_zuruecksetzen'', ''off'')
-            }}'
+        - wait_template: '{{ is_state(''script.radiostream_stick_zuruecksetzen'', ''off'') }}'
           timeout:
             minutes: 8
           continue_on_timeout: true
@@ -218,8 +220,8 @@
           then:
           - stop: Box ist nach dem Stick-Reset wieder da - kein Steckdosen-Zyklus noetig
         note: '13.11.2026 (Claude): Laeuft gerade der Stick-Reset (script.radiostream_stick_zuruecksetzen,
-          startet automatisch je Stick, wenn alle Boxen eines Sticks 4 Min ohne Verbindung
-          sind), erst dessen Ende abwarten - ein Steckdosen-Zyklus mitten im einzelnen Neuverbinden
+          startet automatisch je Stick, wenn alle Boxen eines Sticks 4 Min ohne Verbindung sind),
+          erst dessen Ende abwarten - ein Steckdosen-Zyklus mitten im einzelnen Neuverbinden
           der Boxen wuerde stoeren. Ist die Box danach wieder da, entfaellt der Zyklus.'
       - action: script.turn_on
         data:
@@ -274,8 +276,7 @@
           data:
             variables:
               player: '{{ p }}'
-          note: 'Eskalation: Steckdosen-Zyklus hat nicht geholfen - volle Reparatur inkl.
-            Add-on-Neustart'
+          note: 'Eskalation: Steckdosen-Zyklus hat nicht geholfen - volle Reparatur inkl. Add-on-Neustart'
           target:
             entity_id: script.radiostream_reparieren
         else:
@@ -283,8 +284,8 @@
           continue_on_error: true
           data:
             title: 'Radiostream: Eskalation gesperrt'
-            message: 'Stufe 3/4: {{ box_name }}: automatische Voll-Reparatur uebersprungen
-              - innerhalb der letzten 30 Minuten lief bereits eine. Bitte manuell pruefen.'
+            message: 'Stufe 3/4: {{ box_name }}: automatische Voll-Reparatur uebersprungen -
+              innerhalb der letzten 30 Minuten lief bereits eine. Bitte manuell pruefen.'
             daten:
               tag: radiostream_{{ p }}
           note: '06.11.2026 (Claude): wie die uebrigen Meldungen ueber script.benachrichtigung_alle_geraete
@@ -717,14 +718,15 @@
 - id: '1790922426090'
   alias: Radiostream Player nach HA-Start prüfen
   description: 'Schliesst die Luecke von Bug-Watch und Entwarnung, die beide einen Zustandswechsel
-    brauchen: 3 Minuten nach dem HA-Start wird jede Box einmal geprueft, nacheinander. (a)
-    Seit dem Start unavailable, aktiv und Steckdose an: Merker setzen, Push, einmal die Diagnose;
+    brauchen: 3 Minuten nach dem HA-Start wird jede Box einmal geprueft, nacheinander. (a) Seit
+    dem Start unavailable, aktiv und Steckdose an: Merker setzen, Push, einmal die Diagnose;
     ist die Box laut Add-on danach per Bluetooth getrennt, einmal der Steckdosen-Zyklus mit
     Nachdiagnose. Keine weitere Eskalation (kein Add-on- oder HA-Neustart), damit keine Schleife
     entsteht. (b) Merker an, Box wieder da: Entwarnung nachholen. Die Boxen kommen aus input_text.radiostream_address_map.
     Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
-    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt,
-    Boxenliste aus der address_map.]'
+    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt, Boxenliste
+    aus der address_map.] 25.11.2026 Claude, auf Wunsch des Nutzers: Aktiv-Schalter und Steckdose
+    nach Namensmuster (input_boolean.radiostream_<p>_aktiv, switch.dose_bt_<p>) statt aktiv_map/dose_switch_map.'
   triggers:
   - event: start
     trigger: homeassistant
@@ -737,9 +739,8 @@
       for_each: '{{ states(''input_text.radiostream_address_map'') | from_json | list }}'
       sequence:
       - variables:
-          aktiv_ok: '{{ is_state((states(''input_text.radiostream_aktiv_map'') | from_json)[repeat.item],
-            ''on'') and is_state((states(''input_text.radiostream_dose_switch_map'') | from_json)[repeat.item],
-            ''on'') }}'
+          aktiv_ok: '{{ is_state((''input_boolean.radiostream_'' ~ repeat.item ~ ''_aktiv''),
+            ''on'') and is_state((''switch.dose_bt_'' ~ repeat.item), ''on'') }}'
           e: media_player.musik_radiostream_{{ repeat.item }}
           label: '{{ repeat.item.replace(''_'', ''.'') }}'
           merker: input_boolean.radiostream_ausfall_gemeldet_{{ repeat.item }}
@@ -788,35 +789,35 @@
             timeout:
               seconds: 180
             continue_on_timeout: true
-            note: '06.10.2026: Die Diagnose kann mit ihren Wiederholungen laenger als die
-              90 s oben laufen - vor dem Steckdosen-Zyklus sicher abwarten, bis alle drei
-              Reparatur-Skripte fertig sind'
+            note: '06.10.2026: Die Diagnose kann mit ihren Wiederholungen laenger als die 90
+              s oben laufen - vor dem Steckdosen-Zyklus sicher abwarten, bis alle drei Reparatur-Skripte
+              fertig sind'
           - action: rest_command.bt_audio_get_devices
             response_variable: geraete
             continue_on_error: true
             note: '06.10.2026: Nur Bluetooth-Geraete abfragen (keine Sink-Abfrage, kein Stocken)
               - entscheidet, ob ein Steckdosen-Zyklus ueberhaupt sinnvoll ist'
           - variables:
-              bt_getrennt: '{% set liste = geraete.content.devices if (geraete is defined
-                and geraete.content is defined and geraete.content.devices is defined) else
-                [] %}{% set d = liste | selectattr(''address'', ''equalto'', (states(''input_text.radiostream_address_map'')
+              bt_getrennt: '{% set liste = geraete.content.devices if (geraete is defined and
+                geraete.content is defined and geraete.content.devices is defined) else [] %}{%
+                set d = liste | selectattr(''address'', ''equalto'', (states(''input_text.radiostream_address_map'')
                 | from_json)[repeat.item]) | list | first %}{{ d is defined and d is not none
                 and not d.connected }}'
             note: Wahr nur, wenn das Add-on die Box kennt UND sie als getrennt meldet. Abfrage
               fehlgeschlagen oder Box unbekannt -> falsch -> kein Zyklus
           - if:
             - condition: template
-              value_template: '{{ is_state(e, ''unavailable'') and bt_getrennt and is_state((states(''input_text.radiostream_aktiv_map'')
-                | from_json)[repeat.item], ''on'') and is_state((states(''input_text.radiostream_dose_switch_map'')
-                | from_json)[repeat.item], ''on'') and is_state(''script.radiostream_reparieren_ultralight'',
-                ''off'') and is_state(''script.radiostream_reparieren_light'', ''off'') }}'
+              value_template: '{{ is_state(e, ''unavailable'') and bt_getrennt and is_state((''input_boolean.radiostream_''
+                ~ repeat.item ~ ''_aktiv''), ''on'') and is_state((''switch.dose_bt_'' ~ repeat.item),
+                ''on'') and is_state(''script.radiostream_reparieren_ultralight'', ''off'')
+                and is_state(''script.radiostream_reparieren_light'', ''off'') }}'
             then:
             - action: script.benachrichtigung_alle_geraete
               continue_on_error: true
               data:
                 message: '{{ label }}: Die Diagnose hat nicht geholfen, die Box ist per Bluetooth
-                  weiter getrennt. Schalte einmalig ihre Steckdose aus und wieder ein und
-                  prüfe danach erneut.'
+                  weiter getrennt. Schalte einmalig ihre Steckdose aus und wieder ein und prüfe
+                  danach erneut.'
                 title: Radiostream ausgefallen
                 daten:
                   tag: radiostream_{{ repeat.item }}
@@ -853,15 +854,15 @@
                     player: '{{ repeat.item }}'
               - delay:
                   seconds: 2
-              - wait_template: '{{ is_state(''script.radiostream_reparieren_ultralight'',
-                  ''off'') }}'
+              - wait_template: '{{ is_state(''script.radiostream_reparieren_ultralight'', ''off'')
+                  }}'
                 timeout:
                   seconds: 180
                 continue_on_timeout: true
                 note: Auf das Ende der Nachdiagnose warten, bevor der naechste Player geprueft
                   wird
-              note: 'Nachdiagnose wie in Stufe 2 des Watchdogs: verbindet die Box neu und
-                startet bei Bedarf den MPD-Dienst nach'
+              note: 'Nachdiagnose wie in Stufe 2 des Watchdogs: verbindet die Box neu und startet
+                bei Bedarf den MPD-Dienst nach'
             note: '06.10.2026: EINMAL pro HA-Start und Box - nur wenn der Player noch unavailable
               ist, die Box laut Add-on per Bluetooth getrennt ist, sie aktiv ist, ihre Steckdose
               an ist und keine Reparatur mehr laeuft. Keine weitere Eskalation (kein Add-on-
@@ -951,14 +952,16 @@
   alias: Radiostream Stick-Reset je Stick
   description: '13.11.2026 (Claude, auf Wunsch des Nutzers): Automatischer Stick-Reset ueber
     script.radiostream_stick_zuruecksetzen mit Stufe ''auto'' (erst Adapter aus/an, bei Bedarf
-    USB-Reset wie Abziehen und Einstecken). Laeuft vor dem Steckdosen-Zyklus des Bug-Watch
-    (5 Min); der wartet, bis der Stick-Reset fertig ist, und zykliert nur Boxen, die danach
-    noch fehlen. Nicht waehrend einer Voll-Reparatur, eines Steckdosen-Zyklus aller Boxen
-    oder des Stick-Resets selbst; hoechstens einmal in 30 Minuten (letzter Lauf des Skripts,
-    auch manuell). Anlass: Der Stick hing am 11.11. und 13.11.2026, nur Abziehen half. 18.11.2026
-    (Claude, auf Wunsch des Nutzers): je Stick statt Boxen-Zaehler - ausgeloest, wenn sensor.radiostream_sticks_ohne_verbindung
-    seit 4 Minuten einen oder mehrere Sticks nennt (alle aktiven Boxen dieses Sticks mit eingeschalteter
-    Steckdose ohne Verbindung); zurueckgesetzt wird nur der genannte Stick, bei mehreren alle.'
+    USB-Reset wie Abziehen und Einstecken). Laeuft vor dem Steckdosen-Zyklus des Bug-Watch (5
+    Min); der wartet, bis der Stick-Reset fertig ist, und zykliert nur Boxen, die danach noch
+    fehlen. Nicht waehrend einer Voll-Reparatur, eines Steckdosen-Zyklus (script.radiostream_steckdose_zyklieren,
+    eine oder alle Boxen) oder des Stick-Resets selbst; hoechstens einmal in 30 Minuten (letzter
+    Lauf des Skripts, auch manuell). Anlass: Der Stick hing am 11.11. und 13.11.2026, nur Abziehen
+    half. 18.11.2026 (Claude, auf Wunsch des Nutzers): je Stick statt Boxen-Zaehler - ausgeloest,
+    wenn sensor.radiostream_sticks_ohne_verbindung seit 4 Minuten einen oder mehrere Sticks
+    nennt (alle aktiven Boxen dieses Sticks mit eingeschalteter Steckdose ohne Verbindung);
+    zurueckgesetzt wird nur der genannte Stick, bei mehreren alle. 25.11.2026 (Claude, auf Wunsch
+    des Nutzers): Die beiden Steckdosen-Skripte sind zusammengelegt.'
   triggers:
   - trigger: state
     entity_id: sensor.radiostream_sticks_ohne_verbindung
@@ -973,8 +976,9 @@
     entity_id:
     - script.radiostream_stick_zuruecksetzen
     - script.radiostream_reparieren
-    - script.radiostream_steckdosen_alle_zyklieren
-    note: Nicht in eine laufende Reparatur oder einen laufenden Zyklus hinein
+    - script.radiostream_steckdose_zyklieren
+    note: Nicht in eine laufende Reparatur oder einen laufenden Steckdosen-Zyklus hinein (seit
+      25.11.2026 ein Skript fuer eine oder alle Boxen)
     state: 'off'
   - condition: template
     note: Hoechstens ein Stick-Reset in 30 Minuten (auch ein manueller zaehlt) - verhindert
@@ -1000,11 +1004,12 @@
     verbindet diese Automation sie per rest_command.bt_audio_force_reconnect neu, stellt danach
     den MPD-Dienst sicher (script.radiostream_mpd_sicherstellen) und schickt einen Push an das
     eigene Handy (tag radiostream_bitrate). Zusaetzlich alle 15 Minuten eine Pruefung, falls
-    der Sensor ohne Wechsel schon an war. Nicht waehrend Voll-Reparatur, Stick-Reset oder Zyklus
-    aller Boxen; hoechstens einmal in 30 Minuten. 30 Traces. Boxen aus input_text.radiostream_address_map.
+    der Sensor ohne Wechsel schon an war. Nicht waehrend Voll-Reparatur, Stick-Reset oder Steckdosen-Zyklus;
+    hoechstens einmal in 30 Minuten. 30 Traces. Boxen aus input_text.radiostream_address_map.
     [21.11.2026 Claude, auf Wunsch des Nutzers angelegt; am selben Abend auf 40 Minuten als
     Absicherung umgestellt, nachdem das Add-on das selbst uebernimmt. 25.11.2026 Claude, auf
-    Wunsch des Nutzers: Push auch ohne Antwort des Add-ons.]'
+    Wunsch des Nutzers: Push auch ohne Antwort des Add-ons; die beiden Steckdosen-Skripte sind
+    zusammengelegt.]'
   triggers:
   - trigger: state
     entity_id: binary_sensor.radiostream_87_5_bitrate_unten
@@ -1042,7 +1047,7 @@
     entity_id:
     - script.radiostream_reparieren
     - script.radiostream_stick_zuruecksetzen
-    - script.radiostream_steckdosen_alle_zyklieren
+    - script.radiostream_steckdose_zyklieren
     state: 'off'
     note: Nicht in eine laufende Reparatur hinein
   - condition: template

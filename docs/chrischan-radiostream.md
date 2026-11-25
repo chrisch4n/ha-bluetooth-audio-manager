@@ -212,16 +212,18 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 
 ### Zentrale Helfer
 
-- `input_text.radiostream_address_map`, `..._port_map`, `..._dose_switch_map`,
-  `..._aktiv_map`, `..._stick_map`, `..._stick_mac_map` –
-  JSON-Maps pro Box bzw. Stick, einzige Quelle für MACs, Ports, Steckdosen
-  und die Stick-Zuordnung. Die Config-Entry-ID der MPD-Integration holen die
+- `input_text.radiostream_address_map`, `..._port_map`, `..._stick_map`,
+  `..._stick_mac_map` – JSON-Maps pro Box bzw. Stick, einzige Quelle für die
+  Boxenliste, MACs, Ports und die Stick-Zuordnung. Steckdose und Aktiv-Schalter
+  einer Box folgen seit 25.11.2026 festen Namensmustern (`switch.dose_bt_<p>`,
+  `input_boolean.radiostream_<p>_aktiv`); die beiden Maps dafür
+  (`..._dose_switch_map`, `..._aktiv_map`) waren nur diese Muster und sind gelöscht. Die Config-Entry-ID der MPD-Integration holen die
   Skripte seit 25.11.2026 per `config_entry_id('media_player.musik_radiostream_<p>')`;
   die frühere `..._mpd_entry_map` hatte noch die IDs von vor der Neuanlage der
   MPD-Integrationen Ende Oktober (Neuladen brach mit UnknownEntry ab) und ist gelöscht. (Bis 21.11.2026 gab es zusätzlich
   `..._schalter_map` mit drei Template-Schaltern `switch.<p>_schalter` und den
   Auswahlhelfern `input_select.radiostream_<p>_steckdose` – ein Umweg zur selben
-  Steckdose, entfernt; `radiostream_power_toggle` nutzt `dose_switch_map`.)
+  Steckdose, entfernt.)
 - `input_boolean.radiostream_<p>_aktiv` – soll die Box spielen.
 - `input_boolean.radiostream_ausfall_gemeldet_<p>` – für diese Box wurde ein
   Ausfall gemeldet (nur dann gibt es eine Entwarnung).
@@ -244,8 +246,8 @@ aber nicht erzwingen; der Bitpool ist der entsprechende Hebel.
 
 Die `description` jeder Automation und jedes Skripts nennt seit 21.11.2026 nur noch den
 Zweck; die frühere Änderungsgeschichte steht in [`chrischan-ha/historie.md`](chrischan-ha/historie.md).
-Boxenlisten in Vorlagen kommen aus `input_text.radiostream_address_map` (bzw.
-`dose_switch_map`), nur Auslöser und Entitäten je Box sind fest eingetragen.
+Boxenlisten in Vorlagen kommen aus `input_text.radiostream_address_map`, nur
+Auslöser und Entitäten je Box sind fest eingetragen.
 *Radiostream permanent* und die Bitrate-Absicherung behalten 30 statt 5 Traces, weil ihre
 regelmäßigen Prüfungen sonst echte Läufe verdrängen.
 
@@ -320,13 +322,12 @@ Meldung „bitte manuell prüfen" nach 40.
 |--------|---------|
 | `radiostream_reparieren_ultralight` („Diagnose") | Stufe 1, auch per Button. |
 | `radiostream_reparieren_light` („BT-Reconnect") | Force-Reconnect einer Box über das Add-on. |
-| `radiostream_steckdose_zyklieren` | Steckdose einer Box 30 s aus und wieder an. |
-| `radiostream_steckdosen_alle_zyklieren` | Alle eingeschalteten Boxen nacheinander zurücksetzen: jede 30 s stromlos, dann wieder an, 90 s später die nächste (dauert etwa 6 Minuten, nie mehr als ein Sender still); ohne Add-on-Neustart. Button in Stufe 2 (lief vom 13. bis 14.11.2026 auch jede Nacht um 04:30). Bis 13.11.2026 gingen alle gleichzeitig aus und mit 20 s Abstand wieder an – dabei kamen die Boxen fast gleichzeitig zurück, und der Realtek-Stick geriet zweimal durcheinander. Daneben gibt es den Gruppenschalter `switch.radiostream_steckdosen_alle` für alle drei Steckdosen. |
+| `radiostream_steckdose_zyklieren` | Stufe 2 ohne Add-on-Neustart. Feld `player` = eine Box: deren Steckdose 30 s aus und wieder an. `player` leer oder `alle`: alle eingeschalteten Boxen nacheinander zurücksetzen: jede 30 s stromlos, dann wieder an, 90 s später die nächste (dauert etwa 6 Minuten, nie mehr als ein Sender still); ohne Add-on-Neustart. Button in Stufe 2 (lief vom 13. bis 14.11.2026 auch jede Nacht um 04:30). Bis 13.11.2026 gingen alle gleichzeitig aus und mit 20 s Abstand wieder an – dabei kamen die Boxen fast gleichzeitig zurück, und der Realtek-Stick geriet zweimal durcheinander. Daneben gibt es den Gruppenschalter `switch.radiostream_steckdosen_alle` für alle drei Steckdosen. Seit 25.11.2026 ein Skript für beides (vorher zusätzlich `radiostream_steckdosen_alle_zyklieren`). |
 | `radiostream_stick_zuruecksetzen` | Bluetooth-Stick zurücksetzen, ohne ihn abzuziehen (`rest_command.bt_audio_adapter_reset`, Add-on ab cc.18). Feld *sticks*: `alle` (Standard, Button) oder Stick-Namen aus `input_text.radiostream_stick_mac_map`, kommagetrennt – bei genau einem Namen nur dieser Stick (seit 18.11.2026). Stufe *auto*: erst sanft (Adapter über BlueZ aus/an, Boxen verbinden sich einzeln), ist ein Ziel-Stick nach gut 2 Minuten weiter ganz ohne Verbindung, folgt der USB-Reset (wie Abziehen und Einstecken: Firmware wird neu geladen; beim Hauptadapter startet das Add-on neu). *sanft* / *usb* nur die jeweilige Stufe. Ergebnis als Push (Tag `radiostream_stick`). Button „Stick zurücksetzen" in der Ansicht *Reparatur*; läuft automatisch je Stick. Live getestet am 13.11.2026: sanft ~1 Min Pause, USB ~40 s (die Boxen verbanden sich danach von selbst). |
 | `radiostream_reparieren` („Voll-Reparatur") | Steckdose(n) aus, Add-on-Neustart, Steckdose(n) an, MPD-Integrationen neu laden, MPD sicherstellen. |
 | `radiostream_mpd_sicherstellen` | Startet einen fehlenden MPD-Dienst einer verbundenen Box. |
 | `radiostream_notfall_forget_pair` | Box entfernen, neu pairen, MPD zuweisen. Feld `player` (87_5/97_0/105_9) statt `address`/`mpd_port` – MAC und Port kommen dann aus den zentralen Maps (seit 19.11.2026). Koppelt am Stick der Box (`input_text.radiostream_stick_map` → `radiostream_stick_mac_map`, `rest_command.bt_audio_pair_device` mit `adapter`, Timeout 60 s); vorher landete eine vergessene Box immer am Hauptadapter. |
-| `radiostream_power_toggle` | An/Aus pro Box (Steckdose und Aktiv-Schalter); Steckdose aus `dose_switch_map` (seit 21.11.2026 direkt). |
+| `radiostream_power_toggle` | An/Aus pro Box (Steckdose `switch.dose_bt_<p>` und Aktiv-Schalter `input_boolean.radiostream_<p>_aktiv`, seit 25.11.2026 nach Namensmuster). |
 | `radiostream_aussetzer_diagnose` (seit 21.11.2026) | Gap-Monitor des Add-ons für einige Minuten (Feld `minuten`, Standard 10), Ergebnis als Push nur an das eigene Handy (Tag `radiostream_diagnose`): je Box Stockungen am Bluetooth-Ausgang und Stille im Stream, dazu wie oft mehrere Boxen gleichzeitig stockten (Stick/USB). Button in *Reparatur → Status*. |
 | `radiostream_preset_abspielen` | Preset auf eine Box legen. |
 

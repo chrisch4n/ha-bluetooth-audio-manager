@@ -375,7 +375,7 @@ views:
           text: 'Stufe 2 · Steckdosen-Zyklus für 105.9: Steckdose 30 s stromlos, dann wieder
             an. Kein Add-on-Neustart, die anderen beiden Sender laufen weiter. Fortfahren?'
     - type: tile
-      entity: script.radiostream_steckdosen_alle_zyklieren
+      entity: script.radiostream_steckdose_zyklieren
       name: Alle drei nacheinander (ca. 6 Min)
       icon: m3o:power-settings-new
       hide_state: true
@@ -385,7 +385,10 @@ views:
         action: perform-action
         perform_action: script.turn_on
         target:
-          entity_id: script.radiostream_steckdosen_alle_zyklieren
+          entity_id: script.radiostream_steckdose_zyklieren
+        data:
+          variables:
+            player: alle
         confirmation:
           text: 'Stufe 2 für alle drei, nacheinander: jede eingeschaltete Box 30 s stromlos,
             90 s später die nächste. Es ist immer nur ein Sender still, Dauer etwa 6 Minuten.
@@ -394,7 +397,10 @@ views:
         action: perform-action
         perform_action: script.turn_on
         target:
-          entity_id: script.radiostream_steckdosen_alle_zyklieren
+          entity_id: script.radiostream_steckdose_zyklieren
+        data:
+          variables:
+            player: alle
         confirmation:
           text: 'Stufe 2 für alle drei, nacheinander: jede eingeschaltete Box 30 s stromlos,
             90 s später die nächste. Es ist immer nur ein Sender still, Dauer etwa 6 Minuten.

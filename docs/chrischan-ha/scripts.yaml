@@ -174,14 +174,15 @@ radiostream_notfall_forget_pair:
       Box gibt es noch keinen Player)
 radiostream_power_toggle:
   alias: Radiostream Power umschalten
-  description: 'An/Aus einer Box (Universal-Player, Dashboard). action=on: immer Steckdose
-    an, 8 s spaeter input_boolean.radiostream_<player>_aktiv an, danach script.radiostream_mpd_sicherstellen.
-    action=off: je nach input_boolean.radiostream_power_schaltet_steckdosen die Steckdose
-    aus (Strom weg) oder nur den Aktiv-Schalter aus (Stream-Modus). Steckdose und Aktiv-Schalter
-    aus input_text.radiostream_dose_switch_map / _aktiv_map. Aenderungsgeschichte bis 21.11.2026:
+  description: 'An/Aus einer Box (Universal-Player, Dashboard). action=on: immer Steckdose an,
+    8 s spaeter input_boolean.radiostream_<player>_aktiv an, danach script.radiostream_mpd_sicherstellen.
+    action=off: je nach input_boolean.radiostream_power_schaltet_steckdosen die Steckdose aus
+    (Strom weg) oder nur den Aktiv-Schalter aus (Stream-Modus). Steckdose switch.dose_bt_<player>,
+    Aktiv-Schalter input_boolean.radiostream_<player>_aktiv. Aenderungsgeschichte bis 21.11.2026:
     docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager (Branch chrischan).
     [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt; Steckdose direkt aus
-    dose_switch_map statt ueber Template-Schalter.]'
+    dose_switch_map statt ueber Template-Schalter. 25.11.2026 Claude, auf Wunsch des Nutzers:
+    Steckdose und Aktiv-Schalter nach Namensmuster statt aktiv_map/dose_switch_map.]'
   fields:
     action:
       description: on oder off
@@ -202,14 +203,11 @@ radiostream_power_toggle:
           - '87_5'
   mode: parallel
   sequence:
-  - variables:
-      aktiv_map: '{{ states(''input_text.radiostream_aktiv_map'') | from_json }}'
-      switch_map: '{{ states(''input_text.radiostream_dose_switch_map'') | from_json }}'
   - else:
     - else:
       - action: input_boolean.turn_off
         target:
-          entity_id: '{{ aktiv_map[player] }}'
+          entity_id: input_boolean.radiostream_{{ player }}_aktiv
       if:
       - condition: state
         entity_id: input_boolean.radiostream_power_schaltet_steckdosen
@@ -217,23 +215,23 @@ radiostream_power_toggle:
       then:
       - action: switch.turn_off
         target:
-          entity_id: '{{ switch_map[player] }}'
+          entity_id: switch.dose_bt_{{ player }}
     if:
     - condition: template
       value_template: '{{ action == ''on'' }}'
     then:
     - action: switch.turn_on
       target:
-        entity_id: '{{ switch_map[player] }}'
+        entity_id: switch.dose_bt_{{ player }}
     - delay:
         seconds: 8
-      note: 'NEU 21.09.2026: Box braucht nach dem Stromstoss Zeit zum Booten/Reconnecten,
-        bevor MPD sinnvoll starten kann - vorher wurde sofort im selben Moment gestartet,
-        was den ersten Play-Versuch oft ins Leere laufen liess (musste dann vom Watchdog nach
-        2+ Min repariert werden)'
+      note: 'NEU 21.09.2026: Box braucht nach dem Stromstoss Zeit zum Booten/Reconnecten, bevor
+        MPD sinnvoll starten kann - vorher wurde sofort im selben Moment gestartet, was den
+        ersten Play-Versuch oft ins Leere laufen liess (musste dann vom Watchdog nach 2+ Min
+        repariert werden)'
     - action: input_boolean.turn_on
       target:
-        entity_id: '{{ aktiv_map[player] }}'
+        entity_id: input_boolean.radiostream_{{ player }}_aktiv
     - action: script.turn_on
       target:
         entity_id: script.radiostream_mpd_sicherstellen
@@ -246,72 +244,65 @@ radiostream_power_toggle:
         (ueberspringt unavailable) eingreifen.
 radiostream_steckdose_zyklieren:
   alias: Radiostream Steckdose zyklieren (ohne Add-on-Neustart)
-  description: 'Schaltet NUR die Steckdose des angegebenen Players kurz aus und wieder ein,
-    OHNE das Bluetooth Audio Manager Add-on neu zu starten - stoert die anderen beiden laufenden
-    Boxen nicht. [07.09.2026 von Claude: Steckdosen-Zuordnung jetzt zentral aus input_text.radiostream_dose_switch_map
-    (JSON) gelesen statt hartcodiert.] [22.09.2026: Steckdosen-Aus-Dauer von 15 auf 30 Sekunden
-    verdoppelt - 15s reichte bei einem hartnaeckigen Ausfall (87.5, 22.09.) moeglicherweise
-    nicht aus, um die Box vollstaendig stromlos genug fuer einen wirksamen Reset zu machen.]'
+  description: 'Stufe 2: setzt Boxen per Steckdose zurueck, OHNE das Bluetooth Audio Manager
+    Add-on neu zu starten. Feld player = eine Box: nur deren Steckdose 30 s stromlos, dann wieder
+    an - die anderen Boxen laufen weiter. Feld player leer oder ''alle'': alle eingeschalteten
+    Boxen nacheinander, je 30 s stromlos, wieder an, 90 s Pause bis zur naechsten - nie mehr
+    als eine Box still, die Boxen verbinden sich einzeln neu (gleichzeitiges Neuverbinden brachte
+    den Stick durcheinander); Dauer bei drei Boxen etwa 6 Minuten, ausgeschaltete Steckdosen
+    bleiben aus. Die Wiedergabe startet danach "Radiostream permanent". Boxen aus input_text.radiostream_address_map,
+    Steckdose switch.dose_bt_<p>. Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md
+    im Repo chrisch4n/ha-bluetooth-audio-manager (Branch chrischan). [25.11.2026 Claude, auf
+    Wunsch des Nutzers: mit dem frueheren Skript "Steckdosen alle zyklieren" zusammengelegt;
+    Steckdose nach Namensmuster statt dose_switch_map.]'
   fields:
     player:
-      description: 97_0, 105_9 oder 87_5
+      description: Box (97_0, 105_9 oder 87_5) - leer lassen oder 'alle' fuer alle eingeschalteten
+        Boxen nacheinander
       name: Player
-      required: true
+      required: false
       selector:
         select:
           options:
-          - '97_0'
-          - '105_9'
-          - '87_5'
-  mode: single
-  sequence:
-  - variables:
-      switch_map: '{{ states(''input_text.radiostream_dose_switch_map'') | from_json }}'
-  - action: switch.turn_off
-    target:
-      entity_id: '{{ switch_map[player] }}'
-  - delay:
-      seconds: 30
-  - action: switch.turn_on
-    target:
-      entity_id: '{{ switch_map[player] }}'
-radiostream_steckdosen_alle_zyklieren:
-  alias: Radiostream Steckdosen alle zyklieren
-  description: 'Setzt alle eingeschalteten Boxen nacheinander per Steckdose zurueck: je 30
-    s stromlos, wieder an, 90 s Pause bis zur naechsten - nie mehr als eine Box still, die
-    Boxen verbinden sich einzeln neu (gleichzeitiges Neuverbinden brachte den Stick durcheinander).
-    Dauer bei drei Boxen etwa 6 Minuten. Ausgeschaltete Steckdosen bleiben aus; kein Add-on-Neustart,
-    die Wiedergabe startet "Radiostream permanent". Button in Reparatur, Stufe 2. Steckdosen
-    aus input_text.radiostream_dose_switch_map. Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md
-    im Repo chrisch4n/ha-bluetooth-audio-manager (Branch chrischan). [21.11.2026 Claude, auf
-    Wunsch des Nutzers: Beschreibung gekuerzt (der naechtliche Lauf ist geloescht), Boxenliste
-    aus der Map.]'
+          - label: '97.0'
+            value: '97_0'
+          - label: '105.9'
+            value: '105_9'
+          - label: '87.5'
+            value: '87_5'
+          - label: Alle eingeschalteten nacheinander
+            value: alle
   icon: m3o:power-settings-new
   mode: single
   sequence:
   - variables:
-      switch_map: '{{ states(''input_text.radiostream_dose_switch_map'') | from_json }}'
-      vorher_an: '{% set ns = namespace(l=[]) %}{% for p in switch_map %}{% if is_state(switch_map[p],
-        ''on'') %}{% set ns.l = ns.l + [p] %}{% endif %}{% endfor %}{{ ns.l }}'
+      alle: '{{ player is not defined or player in [none, '''', ''alle''] }}'
+      ziele: '{% if alle %}{% set ns = namespace(l=[]) %}{% for p in states(''input_text.radiostream_address_map'')
+        | from_json %}{% if is_state(''switch.dose_bt_'' ~ p, ''on'') %}{% set ns.l = ns.l +
+        [p] %}{% endif %}{% endfor %}{{ ns.l }}{% else %}{{ [player] }}{% endif %}'
   - condition: template
-    note: Keine Steckdose an - nichts zu tun
-    value_template: '{{ vorher_an | count > 0 }}'
-  - note: 'Box fuer Box: aus, 30 s warten, an, 90 s warten (Hochfahren + Verbinden), erst
-      dann die naechste - nie mehr als eine Box gleichzeitig weg, kein gleichzeitiges Neuverbinden'
+    note: Bei 'alle' und keiner eingeschalteten Steckdose ist nichts zu tun
+    value_template: '{{ ziele | count > 0 }}'
+  - note: Box fuer Box - bei einer einzelnen Box genau ein Durchlauf
     repeat:
-      for_each: '{{ vorher_an }}'
+      for_each: '{{ ziele }}'
       sequence:
       - action: switch.turn_off
         target:
-          entity_id: '{{ switch_map[repeat.item] }}'
+          entity_id: switch.dose_bt_{{ repeat.item }}
       - delay:
           seconds: 30
-        note: Gleiche Aus-Dauer wie der Einzel-Zyklus (30 s, seit 22.09.2026)
+        note: 30 s stromlos (seit 22.09.2026; 15 s reichten bei einem hartnaeckigen Ausfall
+          nicht)
       - action: switch.turn_on
         target:
-          entity_id: '{{ switch_map[repeat.item] }}'
+          entity_id: switch.dose_bt_{{ repeat.item }}
       - delay:
-          seconds: 90
+          seconds: '{{ 90 if alle else 0 }}'
+        note: 'Nur bei ''alle'': 90 s fuer Hochfahren und Verbinden, erst dann die naechste
+          Box - auch nach der letzten, damit Bitrate-Waechter und Reparaturen das Neuverbinden
+          abwarten. Bei einer Box wartet der Aufrufer selbst (Bug-Watch, Start-Pruefung: 60
+          s).'
 radiostream_stick_zuruecksetzen:
   alias: Radiostream Stick zurücksetzen
   description: '13.11.2026 (Claude, auf Wunsch des Nutzers): Setzt Bluetooth-Sticks des Add-ons
@@ -818,12 +809,12 @@ radiostream_reparieren:
     1b3a7c56_bluetooth_audio_manager neu und schaltet danach wieder ein - bei allen nacheinander
     mit 20 s Abstand, nur die vorher eingeschalteten. Der Add-on-Neustart betrifft immer alle
     Boxen. Danach die MPD-Integrationen nacheinander neu laden und je Box script.radiostream_mpd_sicherstellen.
-    Steckdosen aus input_text.radiostream_dose_switch_map, MPD-Eintraege per config_entry_id()
-    des Players.
-    Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md im Repo chrisch4n/ha-bluetooth-audio-manager
-    (Branch chrischan). [21.11.2026 Claude, auf Wunsch des Nutzers: Beschreibung gekuerzt,
-    Boxenlisten aus den Maps. 25.11.2026 Claude, auf Wunsch des Nutzers: MPD-Eintrag per config_entry_id()
-    statt Entry-Map.]'
+    Steckdosen switch.dose_bt_<p> fuer die Boxen aus input_text.radiostream_address_map, MPD-Eintraege
+    per config_entry_id() des Players. Aenderungsgeschichte bis 21.11.2026: docs/chrischan-ha/historie.md
+    im Repo chrisch4n/ha-bluetooth-audio-manager (Branch chrischan). [21.11.2026 Claude, auf
+    Wunsch des Nutzers: Beschreibung gekuerzt, Boxenlisten aus den Maps. 25.11.2026 Claude,
+    auf Wunsch des Nutzers: MPD-Eintrag per config_entry_id() statt Entry-Map; Steckdosen nach
+    Namensmuster statt dose_switch_map.]'
   fields:
     player:
       description: 97_0, 105_9 oder 87_5 - leer lassen fuer alle drei (Totalausfall)
@@ -838,9 +829,13 @@ radiostream_reparieren:
   mode: single
   sequence:
   - variables:
-      switch_map: '{{ states(''input_text.radiostream_dose_switch_map'') | from_json }}'
+      switch_map: '{% set b = (states(''input_text.radiostream_address_map'') | from_json).keys()
+        | list %}{{ dict(zip(b, b | map(''regex_replace'', ''^'', ''switch.dose_bt_'') | list))
+        }}'
       vorher_an: '{% set ns = namespace(l=[]) %}{% for p in switch_map %}{% if is_state(switch_map[p],
         ''on'') %}{% set ns.l = ns.l + [p] %}{% endif %}{% endfor %}{{ ns.l }}'
+    note: '25.11.2026 (Claude, auf Wunsch des Nutzers): switch_map wird aus den Boxen der address_map
+      und dem Namensmuster switch.dose_bt_<p> gebildet (statt der frueheren Dose-Switch-Map)'
   - else:
     - action: switch.turn_off
       target:
@@ -888,9 +883,9 @@ radiostream_reparieren:
       seconds: 20
   - note: 'MPD-Integrationen nacheinander mit 3 s Abstand neu laden (seit 20.09.2026 sequenziell,
       vorsorglich gegen dieselbe Race-Condition-Klasse wie beim Mixing-Bug). 25.11.2026 (Claude,
-      auf Wunsch des Nutzers): Boxen aus der switch_map, Eintrag je Box per config_entry_id() statt
-      der frueheren Entry-Map (geloescht) (veraltete IDs von vor Ende Oktober); continue_on_error, damit ein Fehlschlag
-      MPD sicherstellen danach nicht verhindert.'
+      auf Wunsch des Nutzers): Boxen aus der switch_map, Eintrag je Box per config_entry_id()
+      statt der frueheren Entry-Map (geloescht) (veraltete IDs von vor Ende Oktober); continue_on_error,
+      damit ein Fehlschlag MPD sicherstellen danach nicht verhindert.'
     repeat:
       for_each: '{{ switch_map | list }}'
       sequence:
